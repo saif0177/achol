@@ -4,13 +4,9 @@ import { translations } from '../../i18n/translations';
 import {
   RotateCcw,
   X,
-  Mic,
-  MicOff,
-  Sparkles,
   Sliders,
   Palette,
-  Layers,
-  Search
+  Layers
 } from 'lucide-react';
 
 interface FilterSidebarProps {
@@ -32,9 +28,6 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 }) => {
   const t = translations[language];
 
-  // Voice recognition state
-  const [isListening, setIsListening] = useState(false);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
   const [selectedHue, setSelectedHue] = useState<number>(0);
   const [currentAge, setCurrentAge] = useState<number>(
     filters.ageRange === '18-25'
@@ -138,93 +131,6 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       colorFamily: matched.id,
       targetColorHex: `hsl(${val}, 85%, 50%)`
     });
-  };
-
-  // Smart text/voice NLP color resolver
-  const resolveColorQuery = (text: string) => {
-    const q = text.toLowerCase();
-    if (q.includes('blue') || q.includes('navy') || q.includes('sky') || q.includes('নীল') || q.includes('আসমানী')) {
-      onFilterChange({ ...filters, colorFamily: 'blue' });
-      return;
-    }
-    if (q.includes('red') || q.includes('crimson') || q.includes('maroon') || q.includes('লাল') || q.includes('খয়েরি')) {
-      onFilterChange({ ...filters, colorFamily: 'red' });
-      return;
-    }
-    if (q.includes('green') || q.includes('emerald') || q.includes('mehendi') || q.includes('সবুজ') || q.includes('পান্না')) {
-      onFilterChange({ ...filters, colorFamily: 'green' });
-      return;
-    }
-    if (q.includes('gold') || q.includes('yellow') || q.includes('mustard') || q.includes('হলুদ') || q.includes('সোনালি')) {
-      onFilterChange({ ...filters, colorFamily: 'gold' });
-      return;
-    }
-    if (q.includes('teal') || q.includes('peacock') || q.includes('ময়ূরকণ্ঠী') || q.includes('ফিরোজা')) {
-      onFilterChange({ ...filters, colorFamily: 'teal' });
-      return;
-    }
-    if (q.includes('pink') || q.includes('rani') || q.includes('গোলাপি') || q.includes('রানি')) {
-      onFilterChange({ ...filters, colorFamily: 'pink' });
-      return;
-    }
-    if (q.includes('white') || q.includes('ivory') || q.includes('সাদা') || q.includes('আইভরি')) {
-      onFilterChange({ ...filters, colorFamily: 'white' });
-      return;
-    }
-    if (q.includes('black') || q.includes('jet') || q.includes('কালো')) {
-      onFilterChange({ ...filters, colorFamily: 'black' });
-      return;
-    }
-  };
-
-  // Voice Recognition Handler
-  const handleToggleVoice = () => {
-    const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      const promptColor = window.prompt(
-        language === 'bn'
-          ? 'আপনার পছন্দের রঙের নাম লিখুন (যেমন: নীল, লাল, সোনালি, সবুজ):'
-          : 'Type your preferred color (e.g. Royal Blue, Crimson Red, Bottle Green):'
-      );
-      if (promptColor) {
-        setVoiceTranscript(promptColor);
-        resolveColorQuery(promptColor);
-      }
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = language === 'bn' ? 'bn-BD' : 'en-US';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const spoken = event.results[0][0].transcript;
-        setVoiceTranscript(spoken);
-        resolveColorQuery(spoken);
-        setIsListening(false);
-      };
-
-      recognition.onerror = () => {
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } catch {
-      setIsListening(false);
-    }
   };
 
   // Age slider handler
@@ -346,20 +252,36 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
       )}
 
-      {/* 3. Color RAM Spectrum Slider + Smart Nearest Color Recognition */}
+      {/* 3. Color RAM Spectrum Slider */}
       <div className="space-y-3 pt-3 border-t border-stone-100">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
             <Palette className="w-3.5 h-3.5 text-amber-800" />
-            <span>{language === 'bn' ? 'কালার র‍্যাম ও স্মার্ট নির্বাচন' : 'Color Spectrum & Smart Match'}</span>
+            <span>{language === 'bn' ? 'কালার স্পেকট্রাম নির্বাচন' : 'Color Spectrum'}</span>
           </label>
           {filters.colorFamily && (
-            <button
-              onClick={() => onFilterChange({ ...filters, colorFamily: '', targetColorHex: undefined })}
-              className="text-[10px] text-stone-400 hover:text-amber-900 font-semibold"
-            >
-              {language === 'bn' ? 'রিমুভ' : 'Clear'}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-amber-900 text-xs capitalize flex items-center gap-1">
+                <span
+                  className="w-2.5 h-2.5 rounded-full inline-block border border-stone-300"
+                  style={{
+                    backgroundColor:
+                      standardColorFamilies.find((c) => c.id === filters.colorFamily)?.hex || '#DC2626'
+                  }}
+                />
+                <span>
+                  {standardColorFamilies.find((c) => c.id === filters.colorFamily)?.[
+                    language === 'bn' ? 'nameBn' : 'nameEn'
+                  ] || filters.colorFamily}
+                </span>
+              </span>
+              <button
+                onClick={() => onFilterChange({ ...filters, colorFamily: '', targetColorHex: undefined })}
+                className="text-[10px] text-stone-400 hover:text-amber-900 font-semibold cursor-pointer"
+              >
+                {language === 'bn' ? 'রিমুভ' : 'Clear'}
+              </button>
+            </div>
           )}
         </div>
 
@@ -386,90 +308,6 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             <span>Blue</span>
             <span>Violet</span>
           </div>
-        </div>
-
-        {/* Voice & Smart Text Assistant */}
-        <div className="bg-stone-50 border border-stone-200/80 rounded-xl p-2.5 space-y-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleToggleVoice}
-              className={`p-2 rounded-lg transition-all ${
-                isListening
-                  ? 'bg-rose-600 text-white animate-pulse'
-                  : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-              }`}
-              title={language === 'bn' ? 'ভয়েস দিয়ে রঙ বলুন' : 'Speak color name'}
-            >
-              {isListening ? <Mic className="w-4 h-4 animate-bounce" /> : <Mic className="w-4 h-4" />}
-            </button>
-            <div className="flex-1 min-w-0">
-              <input
-                type="text"
-                placeholder={
-                  language === 'bn'
-                    ? 'রঙের নাম লিখুন বা বলুন (যেমন: আসমানী, পান্না)...'
-                    : "Type color (e.g. Navy, Emerald, Maroon)..."
-                }
-                value={voiceTranscript}
-                onChange={(e) => {
-                  setVoiceTranscript(e.target.value);
-                  resolveColorQuery(e.target.value);
-                }}
-                className="w-full text-xs bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-700"
-              />
-            </div>
-          </div>
-
-          {/* Active Detected Nearest Color Status */}
-          {filters.colorFamily && (
-            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-stone-200/60 font-medium">
-              <span className="text-stone-500">
-                {language === 'bn' ? 'শনাক্তকৃত নিকটবর্তী রঙ:' : 'Nearest Matched Tone:'}
-              </span>
-              <span className="font-bold text-amber-900 capitalize flex items-center gap-1">
-                <span
-                  className="w-2.5 h-2.5 rounded-full inline-block border border-stone-300"
-                  style={{
-                    backgroundColor:
-                      standardColorFamilies.find((c) => c.id === filters.colorFamily)?.hex || '#DC2626'
-                  }}
-                />
-                {standardColorFamilies.find((c) => c.id === filters.colorFamily)?.[
-                  language === 'bn' ? 'nameBn' : 'nameEn'
-                ] || filters.colorFamily}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Preset Color Swatches for 1-Click Fast Selection */}
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {standardColorFamilies.map((color) => {
-            const isSelected = filters.colorFamily === color.id;
-            return (
-              <button
-                key={color.id}
-                onClick={() =>
-                  onFilterChange({
-                    ...filters,
-                    colorFamily: isSelected ? '' : color.id,
-                    targetColorHex: color.hex
-                  })
-                }
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border transition-all cursor-pointer ${
-                  isSelected
-                    ? 'border-amber-900 bg-amber-50 text-amber-950 font-bold shadow-xs ring-1 ring-amber-900'
-                    : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300'
-                }`}
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full border border-stone-300"
-                  style={{ backgroundColor: color.hex }}
-                />
-                <span>{language === 'bn' ? color.nameBn.split(' ')[0] : color.nameEn.split(' ')[0]}</span>
-              </button>
-            );
-          })}
         </div>
       </div>
 

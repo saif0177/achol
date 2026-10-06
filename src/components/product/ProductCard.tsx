@@ -102,13 +102,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
 
-          {/* Wishlist Button */}
+          {/* Wishlist Button: hidden by default, smoothly reveals when hovering over the card */}
           <button
             onClick={handleWishlistClick}
-            className="absolute top-2.5 right-2.5 p-2 rounded-full bg-white/90 hover:bg-white text-stone-700 hover:text-rose-600 shadow-sm transition-colors"
+            className="absolute top-2.5 right-2.5 p-2 rounded-full bg-white/95 dark:bg-stone-900/95 text-stone-700 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-500 shadow-md transition-all duration-200 transform cursor-pointer opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
+            title={t.navWishlist}
           >
             <Heart
-              className={`w-4 h-4 ${isWishlisted ? 'fill-rose-600 text-rose-600' : ''}`}
+              className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-rose-600 text-rose-600' : ''}`}
             />
           </button>
         </div>
@@ -152,21 +153,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </span>
             </div>
 
-            {/* Price & Savings */}
-            <div className="pt-1 flex items-baseline gap-2.5">
+            {/* Clean Price & Sleek Discount Percentage */}
+            <div className="pt-1 flex items-center gap-2.5">
               <span className="font-serif text-2xl font-bold text-stone-900">
                 ৳{product.price.toLocaleString()}
               </span>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <span className="text-sm text-stone-400 line-through">
-                  ৳{product.originalPrice.toLocaleString()}
-                </span>
-              )}
-              {savingsAmount > 0 && (
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                  {language === 'bn'
-                    ? `সাশ্রয় ৳${savingsAmount.toLocaleString()}`
-                    : `Save ৳${savingsAmount.toLocaleString()}`}
+              {product.discountPercent && product.discountPercent > 0 && (
+                <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                  {product.discountPercent}% OFF
                 </span>
               )}
             </div>
@@ -301,34 +295,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Top Floating Badges & Wishlist */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-          {/* Discount Tag */}
-          <div className="flex flex-col gap-1 items-start">
+          {/* Aesthetic Discount Tag (Requirement 5: clean percent discount badge) */}
+          <div className="flex items-start">
             {product.discountPercent && product.discountPercent > 0 ? (
-              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-700 text-white rounded shadow-xs">
-                -{product.discountPercent}% OFF
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-800 to-amber-900 text-amber-50 rounded-lg shadow-sm border border-amber-700/30">
+                <span>-{product.discountPercent}%</span>
+                <span className="text-[9px] font-semibold opacity-90">OFF</span>
               </span>
             ) : product.isNewArrival ? (
-              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-stone-900 text-white rounded shadow-xs">
+              <span className="inline-block px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-stone-900/90 text-white rounded-lg shadow-sm">
                 NEW
               </span>
             ) : null}
-            {savingsAmount > 0 && (
-              <span className="inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase bg-emerald-700 text-white rounded shadow-xs font-mono">
-                {language === 'bn'
-                  ? `সাশ্রয় ৳${savingsAmount.toLocaleString()}`
-                  : `Save ৳${savingsAmount.toLocaleString()}`}
-              </span>
-            )}
           </div>
 
-          {/* Wishlist Button */}
+          {/* Wishlist Button: hidden by default every time, smoothly appears when hovering over the card */}
           <button
             onClick={handleWishlistClick}
-            className="pointer-events-auto p-2 rounded-full bg-white/90 hover:bg-white text-stone-700 hover:text-rose-600 transition-colors shadow-xs"
+            className="pointer-events-auto p-2 rounded-full bg-white/95 dark:bg-stone-900/95 text-stone-700 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-500 shadow-md transition-all duration-200 transform cursor-pointer opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
             title={t.navWishlist}
           >
             <Heart
-              className={`w-3.5 h-3.5 ${
+              className={`w-3.5 h-3.5 transition-colors ${
                 isWishlisted ? 'fill-rose-600 text-rose-600' : ''
               }`}
             />
@@ -389,15 +377,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* Price & Variant Bar */}
-        <div className="pt-2 border-t border-stone-100 flex items-end justify-between">
-          <div className="flex flex-col">
-            <span className="font-serif text-base sm:text-lg font-bold text-stone-900 leading-none">
+        {/* Clean Price & Variant Bar (No clunky strikethrough price pattern) */}
+        <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-end justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-serif text-base sm:text-lg font-bold text-stone-900 dark:text-white leading-none">
               ৳{product.price.toLocaleString()}
             </span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="text-[11px] text-stone-400 line-through mt-0.5">
-                ৳{product.originalPrice.toLocaleString()}
+            {product.discountPercent && product.discountPercent > 0 && (
+              <span className="text-[10px] font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-900/60 px-1.5 py-0.5 rounded">
+                {product.discountPercent}% OFF
               </span>
             )}
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   Star,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Share2,
   ChevronRight,
+  ChevronLeft,
   ZoomIn,
   Sparkles,
   Info,
@@ -30,6 +31,8 @@ interface ProductDetailPageProps {
   onAddToCart: (product: Product, variant: ProductVariant, quantity: number) => void;
   onDirectOrder: (product: Product, variant: ProductVariant, quantity: number) => void;
   onSelectProduct: (product: Product, selectedVariant?: ProductVariant) => void;
+  onOpenAllReviews?: (product: Product) => void;
+  onExploreCategory?: (categoryId: string) => void;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
@@ -39,7 +42,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onBack,
   onAddToCart,
   onDirectOrder,
-  onSelectProduct
+  onSelectProduct,
+  onOpenAllReviews,
+  onExploreCategory
 }) => {
   const t = translations[language];
 
@@ -118,8 +123,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   );
   const whatsappUrl = `https://wa.me/8801700000000?text=${whatsappText}`;
 
-  // Related Sarees
-  const relatedSarees = store.getRecommended(product.id, 4);
+  // Related Sarees (Requirement 6: more sarees in category)
+  const relatedSarees = store.getRecommended(product.id, 8);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = direction === 'left' ? -280 : 280;
+      carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   // New review submission
   const handleSubmitReview = (e: React.FormEvent) => {
@@ -703,29 +716,29 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </form>
               )}
 
-              {/* Reviews List */}
+              {/* Reviews List (Requirement 7: show just 3 reviews on details page) */}
               <div className="space-y-3">
                 {reviews.length === 0 ? (
                   <p className="text-xs text-stone-500 py-3 italic">
                     {language === 'bn' ? 'এখনো কোনো রিভিউ দেওয়া হয়নি।' : 'No reviews yet for this product.'}
                   </p>
                 ) : (
-                  reviews.map((rev) => (
+                  reviews.slice(0, 3).map((rev) => (
                     <div
                       key={rev.id}
-                      className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/60 space-y-1.5 text-xs"
+                      className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-700/60 space-y-1.5 text-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-stone-900">{rev.customerName}</span>
+                        <span className="font-bold text-stone-900 dark:text-white">{rev.customerName}</span>
                         <div className="flex items-center text-amber-500">
                           {Array.from({ length: rev.rating }).map((_, i) => (
                             <Star key={i} className="w-3 h-3 fill-current" />
                           ))}
                         </div>
                       </div>
-                      <p className="text-stone-600 leading-relaxed italic">"{rev.comment}"</p>
+                      <p className="text-stone-600 dark:text-stone-300 leading-relaxed italic">"{rev.comment}"</p>
                       <div className="flex items-center justify-between text-[10px] text-stone-400 pt-1">
-                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
                           <CheckCircle2 className="w-2.5 h-2.5" />
                           Verified Buyer
                         </span>
@@ -734,53 +747,130 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     </div>
                   ))
                 )}
+
+                {/* Requirement 7: Dedicated button to see all reviews for this saree on a separate page */}
+                {reviews.length > 0 && onOpenAllReviews && (
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => onOpenAllReviews(product)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-900/10 hover:bg-amber-900 text-amber-950 dark:text-amber-300 hover:text-white border border-amber-900/30 rounded-xl text-xs font-bold transition-all shadow-2xs group cursor-pointer"
+                    >
+                      <span>
+                        {language === 'bn'
+                          ? `এই শাড়ির সবগুলো (${reviews.length}টি) রিভিউ ও রেটিং দেখুন`
+                          : `See All (${reviews.length}) Customer Reviews for this Saree`}
+                      </span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
           </div>
         </div>
 
-        {/* 3. Related Collection Sarees */}
+        {/* 3. Related Collection Sarees (Requirement 6: horizontal scrollable + explore more button) */}
         {relatedSarees.length > 0 && (
-          <div className="mt-16 pt-10 border-t border-stone-200 space-y-6">
-            <div className="flex items-center justify-between">
+          <div className="mt-16 pt-10 border-t border-stone-200 dark:border-stone-800 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 block">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 block">
                   {language === 'bn' ? 'সংশ্লিষ্ট কালেকশন' : 'Related Collection'}
                 </span>
-                <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-                  {language === 'bn' ? 'এই ধরনের অন্যান্য জনপ্রিয় শাড়ি' : 'You May Also Cherish'}
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-white">
+                  {language === 'bn' ? `${product.sareeType} কালেকশনের অন্যান্য শাড়ি` : `More in ${product.sareeType}`}
                 </h3>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {/* Horizontal carousel arrow controls */}
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => scrollCarousel('left')}
+                    className="p-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 text-stone-700 dark:text-stone-300 transition-colors shadow-2xs cursor-pointer"
+                    title="Scroll left"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollCarousel('right')}
+                    className="p-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 text-stone-700 dark:text-stone-300 transition-colors shadow-2xs cursor-pointer"
+                    title="Scroll right"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {onExploreCategory && (
+                  <button
+                    type="button"
+                    onClick={() => onExploreCategory(product.categoryId)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-900/10 hover:bg-amber-900 text-amber-950 dark:text-amber-300 hover:text-white border border-amber-900/30 rounded-xl text-xs font-bold transition-all shadow-2xs group cursor-pointer"
+                  >
+                    <span>
+                      {language === 'bn' ? 'আরও শাড়ি এক্সপ্লোর করুন' : `Explore More ${product.sareeType}`}
+                    </span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {relatedSarees.map((saree) => (
-                <div
-                  key={saree.id}
-                  onClick={() => onSelectProduct(saree)}
-                  className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-md transition-shadow cursor-pointer group"
-                >
-                  <div className="aspect-[3/4] w-full overflow-hidden bg-stone-100">
-                    <img
-                      src={saree.primaryImage}
-                      alt={saree.nameEn}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+            {/* Horizontal Scrollable Carousel Container */}
+            <div className="relative">
+              <div
+                ref={carouselRef}
+                className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth"
+              >
+                {relatedSarees.map((saree) => (
+                  <div
+                    key={saree.id}
+                    onClick={() => onSelectProduct(saree)}
+                    className="w-48 sm:w-56 shrink-0 snap-start bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <div className="aspect-[3/4] w-full overflow-hidden bg-stone-100 dark:bg-stone-800">
+                      <img
+                        src={saree.primaryImage}
+                        alt={saree.nameEn}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-3.5 space-y-1">
+                      <span className="text-[10px] font-mono text-amber-900 dark:text-amber-400 font-semibold">
+                        {saree.code}
+                      </span>
+                      <h4 className="font-serif text-xs font-bold text-stone-900 dark:text-white truncate">
+                        {language === 'bn' ? saree.nameBn : saree.nameEn}
+                      </h4>
+                      <span className="font-bold text-stone-900 dark:text-amber-400 text-xs block">
+                        ৳{saree.price.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-3 space-y-1">
-                    <span className="text-[10px] font-mono text-amber-900 font-semibold">
-                      {saree.code}
-                    </span>
-                    <h4 className="font-serif text-xs font-bold text-stone-900 truncate">
-                      {language === 'bn' ? saree.nameBn : saree.nameEn}
+                ))}
+
+                {/* Final Explore All Category Tile */}
+                {onExploreCategory && (
+                  <div
+                    onClick={() => onExploreCategory(product.categoryId)}
+                    className="w-44 sm:w-52 shrink-0 snap-start bg-amber-50 dark:bg-stone-900 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-900/60 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-amber-900 text-white flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+                      <Sparkles className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
+                      {language === 'bn' ? 'সবগুলো দেখুন' : 'Explore All'}
                     </h4>
-                    <span className="font-bold text-stone-900 text-xs block">
-                      ৳{saree.price.toLocaleString()}
-                    </span>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 line-clamp-1">
+                      {product.sareeType}
+                    </p>
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
           </div>
         )}

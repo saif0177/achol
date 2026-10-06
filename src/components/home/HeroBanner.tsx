@@ -62,7 +62,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   return (
     <div className="relative w-full overflow-hidden bg-stone-900 border-b border-stone-800">
       {/* Visual background image with measured contrast scrim for WCAG AA readability */}
-      <div className="relative min-h-[500px] lg:min-h-[580px] w-full flex items-center">
+      <div className="relative h-[520px] sm:h-[560px] lg:h-[600px] w-full flex items-center">
         {current.image ? (
           <div className="absolute inset-0">
             <img
@@ -80,8 +80,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         )}
 
         {/* Content Box */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-2xl space-y-6">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+          <div className="max-w-2xl space-y-4 sm:space-y-5">
             
             {/* Kicker Tag */}
             <div className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-amber-300 font-medium">
@@ -101,31 +101,31 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
             {/* Countdown widget if offer active */}
             {current.hasCountdown && timeLeft && (
-              <div className="pt-2">
-                <div className="inline-flex flex-col gap-2 p-3 bg-stone-900/80 backdrop-blur-md rounded-lg border border-amber-900/50">
-                  <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
+              <div className="pt-1">
+                <div className="inline-flex flex-row flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 px-3 py-1.5 bg-stone-900/80 backdrop-blur-md rounded-lg border border-amber-900/50 max-w-full">
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium shrink-0">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{t.countdownEndsIn}</span>
+                    <span>{t.countdownEndsIn}:</span>
                   </div>
-                  <div className="flex items-center gap-3 text-center">
-                    <div className="px-2 py-1 bg-stone-950 rounded">
-                      <span className="font-mono text-base font-bold text-white tabular-nums">{timeLeft.days}</span>
-                      <span className="block text-[9px] uppercase text-stone-400">{t.days}</span>
+                  <div className="flex items-center gap-1.5 text-center">
+                    <div className="px-2 py-0.5 bg-stone-950 rounded flex items-baseline gap-1">
+                      <span className="font-mono text-xs sm:text-sm font-bold text-white tabular-nums">{timeLeft.days}</span>
+                      <span className="text-[9px] uppercase text-stone-400">{t.days}</span>
                     </div>
-                    <span className="text-amber-500 font-mono font-bold">:</span>
-                    <div className="px-2 py-1 bg-stone-950 rounded">
-                      <span className="font-mono text-base font-bold text-white tabular-nums">{timeLeft.hours}</span>
-                      <span className="block text-[9px] uppercase text-stone-400">{t.hours}</span>
+                    <span className="text-amber-500 font-mono text-xs font-bold">:</span>
+                    <div className="px-2 py-0.5 bg-stone-950 rounded flex items-baseline gap-1">
+                      <span className="font-mono text-xs sm:text-sm font-bold text-white tabular-nums">{timeLeft.hours}</span>
+                      <span className="text-[9px] uppercase text-stone-400">{t.hours}</span>
                     </div>
-                    <span className="text-amber-500 font-mono font-bold">:</span>
-                    <div className="px-2 py-1 bg-stone-950 rounded">
-                      <span className="font-mono text-base font-bold text-white tabular-nums">{timeLeft.minutes}</span>
-                      <span className="block text-[9px] uppercase text-stone-400">{t.minutes}</span>
+                    <span className="text-amber-500 font-mono text-xs font-bold">:</span>
+                    <div className="px-2 py-0.5 bg-stone-950 rounded flex items-baseline gap-1">
+                      <span className="font-mono text-xs sm:text-sm font-bold text-white tabular-nums">{timeLeft.minutes}</span>
+                      <span className="text-[9px] uppercase text-stone-400">{t.minutes}</span>
                     </div>
-                    <span className="text-amber-500 font-mono font-bold">:</span>
-                    <div className="px-2 py-1 bg-stone-950 rounded">
-                      <span className="font-mono text-base font-bold text-white tabular-nums">{timeLeft.seconds}</span>
-                      <span className="block text-[9px] uppercase text-stone-400">{t.seconds}</span>
+                    <span className="text-amber-500 font-mono text-xs font-bold">:</span>
+                    <div className="px-2 py-0.5 bg-stone-950 rounded flex items-baseline gap-1">
+                      <span className="font-mono text-xs sm:text-sm font-bold text-white tabular-nums">{timeLeft.seconds}</span>
+                      <span className="text-[9px] uppercase text-stone-400">{t.seconds}</span>
                     </div>
                   </div>
                 </div>

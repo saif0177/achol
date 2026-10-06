@@ -733,40 +733,98 @@ const INITIAL_REVIEWS: Review[] = [
   }
 ];
 
-const INITIAL_LANDING_POPUP: LandingPopupConfig = {
-  id: 'popup-welcome',
-  isActive: true,
-  titleEn: 'Heritage Festival Privilege',
-  titleBn: 'ঐতিহ্য উৎসবের বিশেষ উপহার',
-  subtitleEn: 'Enjoy ৳500 OFF on your first authentic Dhakai Jamdani or Muslin saree order with Free Nationwide Delivery!',
-  subtitleBn: 'আপনার প্রথম জামদানি বা মসলিন শাড়ির অর্ডারে পান নগদ ৫০০ টাকা ছাড় ও সারাদেশে সম্পূর্ণ ফ্রি ডেলিভারি!',
-  image: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
-  discountCode: 'WELCOME500',
-  ctaTextEn: 'Claim ৳500 Discount',
-  ctaTextBn: '৳৫০০ ছাড় নিয়ে অর্ডার করুন',
-  ctaLink: 'shop'
-};
+const INITIAL_LANDING_POPUPS: LandingPopupConfig[] = [
+  {
+    id: 'popup-welcome',
+    isActive: true,
+    titleEn: 'Heritage Festival Privilege',
+    titleBn: 'ঐতিহ্য উৎসবের বিশেষ উপহার',
+    subtitleEn: 'Enjoy ৳500 OFF on your first authentic Dhakai Jamdani or Muslin saree order with Free Nationwide Delivery!',
+    subtitleBn: 'আপনার প্রথম জামদানি বা মসলিন শাড়ির অর্ডারে পান নগদ ৫০০ টাকা ছাড় ও সারাদেশে সম্পূর্ণ ফ্রি ডেলিভারি!',
+    image: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
+    discountCode: 'WELCOME500',
+    ctaTextEn: 'Claim ৳500 Discount',
+    ctaTextBn: '৳৫০০ ছাড় নিয়ে অর্ডার করুন',
+    ctaLink: 'shop',
+    displayMode: 'standard',
+    hasTimer: true,
+    endTime: new Date(Date.now() + 72 * 3600 * 1000).toISOString()
+  },
+  {
+    id: 'popup-jamdani-flash',
+    isActive: true,
+    titleEn: 'Royal Jamdani Artisan Drop',
+    titleBn: 'রাজকীয় জামদানি বিশেষ কারিগর অফার',
+    subtitleEn: 'Limited 100-count heirloom Jamdani batch direct from Rupganj looms with Flat 15% OFF!',
+    subtitleBn: 'রূপগঞ্জের তাঁতিদের হাতে বোনা মিহি জামদানিতে পরবর্তী ৪৮ ঘণ্টার জন্য বিশেষ ১৫% ছাড়!',
+    image: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+    discountCode: 'JAMDANI15',
+    ctaTextEn: 'Explore Jamdani Drop',
+    ctaTextBn: 'জামদানি কালেকশন দেখুন',
+    ctaLink: 'dhakai-jamdani',
+    displayMode: 'standard',
+    hasTimer: true,
+    endTime: new Date(Date.now() + 48 * 3600 * 1000).toISOString()
+  },
+  {
+    id: 'popup-pure-graphic',
+    isActive: true,
+    titleEn: 'Silk & Handloom Visual Banner',
+    titleBn: 'সিল্ক ও তাঁত ভিজ্যুয়াল ব্যানার',
+    subtitleEn: 'Direct photoshoot from weavers hub. Tap anywhere to claim VIP offer.',
+    subtitleBn: 'সরাসরি তাঁতপল্লী থেকে বিশেষ আয়োজন। অফার পেতে ট্যাপ করুন।',
+    image: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
+    discountCode: 'VIPROYAL',
+    ctaTextEn: 'Shop Collection',
+    ctaTextBn: 'কালেকশন দেখুন',
+    ctaLink: 'rajshahi-silk',
+    displayMode: 'image_only',
+    hasTimer: false
+  }
+];
+
+const INITIAL_LANDING_POPUP: LandingPopupConfig = INITIAL_LANDING_POPUPS[0];
 
 const INITIAL_FLASH_SALES: FlashSaleCampaign[] = [
   {
     id: 'fs-eid-special',
     titleEn: 'Royal Heritage Flash Sale — Flat 15% OFF',
     titleBn: 'রাজকীয় জামদানি ফ্ল্যাশ সেল — ফ্ল্যাট ১৫% ছাড়',
+    subtitleEn: 'Limited master artisan batch of Dhakai Jamdani & Muslin with verified loom certificate.',
+    subtitleBn: 'রূপগঞ্জ ও ডেমরার ঐতিহ্যবাহী তাঁতশিল্পীদের হাতে বোনা খাঁটি শাড়িতে বিশেষ ছাড়।',
     discountPercent: 15,
     hasTimer: true,
-    endTime: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+    startTime: new Date().toISOString(),
+    endTime: new Date(Date.now() + 36 * 3600 * 1000 + 42 * 60 * 1000).toISOString(),
     isActive: true,
-    bannerImage: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'
+    bannerImage: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
+    displayMode: 'banner_with_text',
+    showButton: true,
+    buttonTextEn: 'Shop Flash Deals',
+    buttonTextBn: 'ফ্ল্যাশ ডিল কিনুন',
+    targetLink: 'flash-sale',
+    badgeTextEn: 'LIMITED FLASH DROP',
+    badgeTextBn: 'সীমিত সময়ের ধামাকা'
   },
   {
     id: 'fs-handloom-festival',
-    titleEn: 'Artisan Handloom Weekend Deals',
-    titleBn: 'তাঁতি সম্মাননা উৎসব — বিশেষ মূল্যছাড়',
+    titleEn: 'Artisan Tangail Taat Handloom Festive Banner',
+    titleBn: 'টাঙ্গাইল তাঁত উৎসব — গ্রাফিক ব্যানার অফার',
+    subtitleEn: 'Pure combed cotton weaves from Bajitpur and Tangail master weavers.',
+    subtitleBn: 'টাঙ্গাইলের ঐতিহ্যবাহী সুতি শাড়িতে বিশেষ কারিগর অফার।',
     discountPercent: 20,
     hasTimer: true,
-    endTime: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+    startTime: new Date().toISOString(),
+    endTime: new Date(Date.now() + 52 * 3600 * 1000).toISOString(),
     isActive: true,
-    bannerImage: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg'
+    bannerImage: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+    displayMode: 'image_only',
+    showButton: false,
+    buttonTextEn: 'Explore Handlooms',
+    buttonTextBn: 'তাঁতের শাড়ি দেখুন',
+    targetLink: 'tangail-taat',
+    badgeTextEn: 'ARTISAN WEAVE',
+    badgeTextBn: 'তাঁতি সম্মাননা'
   }
 ];
 
@@ -779,6 +837,7 @@ class StoreService {
   private reviews: Review[] = [];
   private customerAccounts: Map<string, CustomerAccount> = new Map();
   private flashSales: FlashSaleCampaign[] = [];
+  private landingPopups: LandingPopupConfig[] = INITIAL_LANDING_POPUPS;
   private landingPopup: LandingPopupConfig = INITIAL_LANDING_POPUP;
   private notifications: AppNotification[] = [];
 
@@ -806,8 +865,14 @@ class StoreService {
       const storedReviews = localStorage.getItem('aanchol_reviews');
       this.reviews = storedReviews ? JSON.parse(storedReviews) : INITIAL_REVIEWS;
 
-      const storedPopup = localStorage.getItem('aanchol_landing_popup');
-      this.landingPopup = storedPopup ? JSON.parse(storedPopup) : INITIAL_LANDING_POPUP;
+      const storedPopups = localStorage.getItem('aanchol_landing_popups');
+      if (storedPopups) {
+        this.landingPopups = JSON.parse(storedPopups);
+      } else {
+        const storedPopup = localStorage.getItem('aanchol_landing_popup');
+        this.landingPopups = storedPopup ? [JSON.parse(storedPopup)] : INITIAL_LANDING_POPUPS;
+      }
+      this.landingPopup = this.landingPopups[0] || INITIAL_LANDING_POPUP;
 
       const storedFlashSales = localStorage.getItem('aanchol_flash_sales');
       this.flashSales = storedFlashSales ? JSON.parse(storedFlashSales) : INITIAL_FLASH_SALES;
@@ -945,23 +1010,82 @@ class StoreService {
     }
   }
 
-  // LANDING POPUP
+  public updateSubcategory(
+    categoryId: string,
+    subcatId: string,
+    updated: { nameEn: string; nameBn: string; slug?: string }
+  ): void {
+    const cat = this.categories.find((c) => c.id === categoryId);
+    if (cat && cat.subcategories) {
+      const idx = cat.subcategories.findIndex((s) => s.id === subcatId);
+      if (idx >= 0) {
+        cat.subcategories[idx] = { ...cat.subcategories[idx], ...updated };
+        this.persist('aanchol_categories', this.categories);
+      }
+    }
+  }
+
+  // LANDING POPUPS (Requirement 3: Multiple popups, random rotation on direct jump, add/edit/delete/toggle)
+  public getLandingPopups(): LandingPopupConfig[] {
+    return this.landingPopups.filter((p) => p.isActive);
+  }
+
+  public getAllLandingPopupsAdmin(): LandingPopupConfig[] {
+    return this.landingPopups;
+  }
+
+  public getRandomActiveLandingPopup(): LandingPopupConfig | null {
+    const active = this.getLandingPopups();
+    if (active.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * active.length);
+    return active[randomIndex];
+  }
+
+  public saveLandingPopup(popup: LandingPopupConfig): void {
+    const idx = this.landingPopups.findIndex((p) => p.id === popup.id);
+    if (idx >= 0) {
+      this.landingPopups[idx] = popup;
+    } else {
+      this.landingPopups.unshift(popup);
+    }
+    this.persist('aanchol_landing_popups', this.landingPopups);
+    this.landingPopup = this.landingPopups[0] || INITIAL_LANDING_POPUP;
+  }
+
+  public deleteLandingPopup(id: string): void {
+    this.landingPopups = this.landingPopups.filter((p) => p.id !== id);
+    this.persist('aanchol_landing_popups', this.landingPopups);
+    this.landingPopup = this.landingPopups[0] || INITIAL_LANDING_POPUP;
+  }
+
+  public toggleLandingPopup(id: string): void {
+    const p = this.landingPopups.find((item) => item.id === id);
+    if (p) {
+      p.isActive = !p.isActive;
+      this.persist('aanchol_landing_popups', this.landingPopups);
+    }
+  }
+
   public getLandingPopupConfig(): LandingPopupConfig {
-    return this.landingPopup;
+    const random = this.getRandomActiveLandingPopup();
+    return random || this.landingPopups[0] || INITIAL_LANDING_POPUP;
   }
 
   public saveLandingPopupConfig(config: LandingPopupConfig): void {
-    this.landingPopup = config;
-    this.persist('aanchol_landing_popup', this.landingPopup);
+    this.saveLandingPopup(config);
   }
 
-  // FLASH SALE CAMPAIGNS
+  // FLASH SALE CAMPAIGNS (Requirement 1 & 2: Edit sale, Live Timer control, Image-only mode, custom banners)
   public getFlashSales(): FlashSaleCampaign[] {
     return this.flashSales.filter((s) => s.isActive);
   }
 
   public getAllFlashSalesAdmin(): FlashSaleCampaign[] {
     return this.flashSales;
+  }
+
+  public getFlashSaleById(id: string): FlashSaleCampaign | undefined {
+    return this.flashSales.find((s) => s.id === id);
   }
 
   public saveFlashSale(sale: FlashSaleCampaign): void {
@@ -977,6 +1101,23 @@ class StoreService {
   public deleteFlashSale(id: string): void {
     this.flashSales = this.flashSales.filter((s) => s.id !== id);
     this.persist('aanchol_flash_sales', this.flashSales);
+  }
+
+  public updateFlashSaleTimer(id: string, endTime: string): void {
+    const sale = this.flashSales.find((s) => s.id === id);
+    if (sale) {
+      sale.endTime = endTime;
+      sale.hasTimer = true;
+      this.persist('aanchol_flash_sales', this.flashSales);
+    }
+  }
+
+  public toggleFlashSaleActive(id: string): void {
+    const sale = this.flashSales.find((s) => s.id === id);
+    if (sale) {
+      sale.isActive = !sale.isActive;
+      this.persist('aanchol_flash_sales', this.flashSales);
+    }
   }
 
   // BANNERS

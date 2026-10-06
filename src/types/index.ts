@@ -92,17 +92,30 @@ export interface LandingPopupConfig {
   ctaTextEn: string;
   ctaTextBn: string;
   ctaLink: string;
+  displayMode?: 'standard' | 'image_only';
+  hasTimer?: boolean;
+  endTime?: string;
 }
 
 export interface FlashSaleCampaign {
   id: string;
   titleEn: string;
   titleBn: string;
+  subtitleEn?: string;
+  subtitleBn?: string;
   discountPercent: number;
   hasTimer: boolean;
+  startTime?: string;
   endTime?: string;
   isActive: boolean;
-  bannerImage?: string;
+  bannerImage: string;
+  displayMode?: 'banner_with_text' | 'image_only';
+  showButton?: boolean;
+  buttonTextEn?: string;
+  buttonTextBn?: string;
+  targetLink?: string;
+  badgeTextEn?: string;
+  badgeTextBn?: string;
 }
 
 export interface Banner {

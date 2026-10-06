@@ -14,6 +14,7 @@ import {
 import { Product, ProductVariant, Language, Order, Address } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { MapLocationPicker } from './MapLocationPicker';
 
 interface DirectOrderModalProps {
   isOpen: boolean;
@@ -56,6 +57,8 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
   const [deliveryNote, setDeliveryNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [pinnedCoords, setPinnedCoords] = useState<{ lat?: number; lng?: number }>({});
 
   if (!isOpen) return null;
 
@@ -295,9 +298,19 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-stone-700 font-semibold mb-1">
-                {language === 'bn' ? 'সম্পূর্ণ ডেলিভারি ঠিকানা' : 'Complete Delivery Address'} *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-stone-700 font-semibold">
+                  {language === 'bn' ? 'সম্পূর্ণ ডেলিভারি ঠিকানা' : 'Complete Delivery Address'} *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowMapPicker(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer"
+                >
+                  <MapPin className="w-3 h-3 text-amber-800" />
+                  <span>{language === 'bn' ? 'ম্যাপে ঠিকানা দিন' : 'Pin on Google Map'}</span>
+                </button>
+              </div>
               <textarea
                 rows={2}
                 required
@@ -310,6 +323,14 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
                 }
                 className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-900"
               />
+              {pinnedCoords.lat && (
+                <div className="mt-1 flex items-center gap-1.5 p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-800 font-medium">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-700 shrink-0" />
+                  <span>
+                    {language === 'bn' ? 'গুগল ম্যাপে পিন করা হয়েছে' : 'Pinned on Google Maps'}: ({pinnedCoords.lat.toFixed(4)}, {pinnedCoords.lng?.toFixed(4)})
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -365,6 +386,22 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
         </form>
 
       </div>
+
+      {/* Google Maps Location Picker Modal */}
+      {showMapPicker && (
+        <MapLocationPicker
+          language={language}
+          initialAddress={fullAddress}
+          onSelectCoordinates={(lat, lng, addressDesc, dist) => {
+            setPinnedCoords({ lat, lng });
+            setFullAddress(addressDesc);
+            if (dist) {
+              setIsInsideDhaka(dist.toLowerCase().includes('dhaka'));
+            }
+          }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   );
 };

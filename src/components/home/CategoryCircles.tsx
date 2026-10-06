@@ -81,6 +81,17 @@ export const CategoryCircles: React.FC<CategoryCirclesProps> = ({
 
         </div>
 
+        {/* Noticeable Explore All Categories Action Bar (Requirement 4) */}
+        <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-center">
+          <button
+            onClick={() => onSelectCategory('')}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-stone-100 hover:bg-amber-900 text-stone-800 hover:text-white text-xs font-bold transition-all shadow-2xs group cursor-pointer border border-stone-200 hover:border-amber-900"
+          >
+            <span>{language === 'bn' ? 'সকল শাড়ি ও ক্যাটাগরি এক্সপ্লোর করুন' : 'Explore All Saree Categories'}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:bg-amber-300" />
+          </button>
+        </div>
+
       </div>
     </section>
   );

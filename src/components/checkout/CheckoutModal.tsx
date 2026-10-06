@@ -369,9 +369,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-stone-700 font-semibold mb-1">
-                    {language === 'bn' ? 'সম্পূর্ণ ঠিকানা' : 'Complete Delivery Address'} *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-stone-700 font-semibold">
+                      {language === 'bn' ? 'সম্পূর্ণ ঠিকানা' : 'Complete Delivery Address'} *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowMapPicker(true)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-amber-800" />
+                      <span>{language === 'bn' ? 'গুগল ম্যাপে ঠিকানা পিন করুন' : 'Pinpoint on Google Map'}</span>
+                    </button>
+                  </div>
                   <textarea
                     rows={2}
                     required
@@ -380,6 +390,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     placeholder="House, Road, Area, Sector, Landmarks..."
                     className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-900"
                   />
+
+                  {pinnedCoords.lat && (
+                    <div className="mt-1.5 flex items-center gap-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-800 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <span>
+                        {language === 'bn' ? 'গুগল ম্যাপস লোকেশন ভেরিফাইড' : 'Google Maps Location Verified'}: ({pinnedCoords.lat.toFixed(4)}, {pinnedCoords.lng?.toFixed(4)})
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -581,6 +600,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Google Maps Location Picker Modal */}
+      {showMapPicker && (
+        <MapLocationPicker
+          language={language}
+          initialAddress={fullAddress}
+          onSelectCoordinates={(lat, lng, addressDesc, dist) => {
+            setPinnedCoords({ lat, lng, desc: addressDesc });
+            setFullAddress(addressDesc);
+            if (dist) setDistrict(dist);
+          }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   );
 };

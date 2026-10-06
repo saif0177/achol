@@ -23,6 +23,7 @@ import { LandingPopup } from './components/home/LandingPopup';
 // Product Components
 import { ProductCard } from './components/product/ProductCard';
 import { ProductDetailPage } from './components/product/ProductDetailPage';
+import { ProductReviewsPage } from './components/product/ProductReviewsPage';
 import { FilterSidebar } from './components/product/FilterSidebar';
 import { SareeGuideModal } from './components/product/SareeGuideModal';
 
@@ -55,8 +56,16 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('bn');
   const t = translations[language];
 
-  // Active view: 'home' | 'shop' | 'product-detail' | 'flash-sale' | 'admin'
-  const [activeView, setActiveView] = useState<'home' | 'shop' | 'product-detail' | 'flash-sale' | 'admin'>('home');
+  // Google Maps Platform Quota Defense
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  useEffect(() => {
+    const handleQuotaExceeded = () => setQuotaExceeded(true);
+    window.addEventListener('gmp-quota-exceeded', handleQuotaExceeded);
+    return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
+  }, []);
+
+  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'admin'
+  const [activeView, setActiveView] = useState<'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'admin'>('home');
 
   // Cart State (saved to localStorage)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -124,6 +133,38 @@ export default function App() {
   const [showOrderSuccessToast, setShowOrderSuccessToast] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
   const [wishlistToast, setWishlistToast] = useState<WishlistToastData | null>(null);
+
+  // Dark Mode Theme State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('aanchol_dark_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('aanchol_dark_mode', String(next));
+      } catch {}
+      if (next) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // Persist Cart
   useEffect(() => {
@@ -273,6 +314,24 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-stone-900 selection:bg-amber-900 selection:text-white font-sans">
       
+      {/* Google Maps Platform Quota Defense Banner */}
+      {quotaExceeded && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
+          <span>
+            Google Maps Platform quota reached. If you are the app owner, visit{' '}
+            <a
+              href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-semibold text-amber-950 hover:text-amber-800"
+            >
+              maps developer site
+            </a>{' '}
+            for instructions to update your account.
+          </span>
+        </div>
+      )}
+
       {/* Landing Popup Banner (Requirement 1: popup after landing, controlled via admin) */}
       {activeView === 'home' && (
         <LandingPopup
@@ -305,13 +364,15 @@ export default function App() {
         onOpenFlashSale={() => setActiveView('flash-sale')}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         unreadNotificationsCount={store.getUnreadNotificationCount()}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
       />
 
       {/* Main Content Pages */}
       <main className="flex-1">
         
         {/* ========================================================
-            VIEW: DEDICATED SEPARATE PRODUCT DETAIL PAGE (Requirement 9)
+            VIEW: DEDICATED SEPARATE PRODUCT DETAIL PAGE (Requirement 6 & 7)
             ======================================================== */}
         {activeView === 'product-detail' && selectedProduct && (
           <ProductDetailPage
@@ -322,11 +383,31 @@ export default function App() {
             onAddToCart={handleAddToCart}
             onDirectOrder={handleOpenDirectOrder}
             onSelectProduct={handleSelectProduct}
+            onOpenAllReviews={(prod) => {
+              setSelectedProduct(prod);
+              setActiveView('product-reviews');
+            }}
+            onExploreCategory={(catId) => {
+              handleSelectCategory(catId);
+            }}
           />
         )}
 
         {/* ========================================================
-            VIEW: DEDICATED FLASH SALE DEALS PAGE (Requirement 12)
+            VIEW: SEPARATE DEDICATED REVIEWS PAGE (Requirement 7)
+            ======================================================== */}
+        {activeView === 'product-reviews' && selectedProduct && (
+          <ProductReviewsPage
+            product={selectedProduct}
+            selectedVariant={selectedVariant}
+            language={language}
+            onBackToProduct={() => setActiveView('product-detail')}
+            onDirectOrder={handleOpenDirectOrder}
+          />
+        )}
+
+        {/* ========================================================
+            VIEW: DEDICATED FLASH SALE DEALS PAGE (Requirement 1 & 12)
             ======================================================== */}
         {activeView === 'flash-sale' && (
           <FlashSalePage
@@ -360,7 +441,7 @@ export default function App() {
               activeCategoryId={filters.categoryId}
             />
 
-            {/* 3. Flash Sale Section with Countdown Urgency */}
+            {/* 3. Flash Sale Section with High Aesthetic & Urgency (Requirement 1) */}
             <FlashSaleSection
               products={specialOffers}
               language={language}
@@ -372,7 +453,7 @@ export default function App() {
               onViewAllFlash={() => setActiveView('flash-sale')}
             />
 
-            {/* 4. Top Selling Handloom Sarees */}
+            {/* 4. Top Selling Handloom Sarees with Noticeable Explore Button (Requirement 4) */}
             <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                 <div>
@@ -383,15 +464,16 @@ export default function App() {
                     {language === 'bn' ? 'জনপ্রিয় ঐতিহ্যবাহী শাড়িসমূহ' : 'Most Cherished Sarees'}
                   </h2>
                 </div>
+                {/* Highly Noticeable Explore More Button */}
                 <button
                   onClick={() => {
                     setFilters({ ...defaultFilters, sortBy: 'top_selling' });
                     setActiveView('shop');
                   }}
-                  className="text-xs font-semibold text-amber-900 hover:text-amber-800 flex items-center gap-1 group self-start sm:self-auto cursor-pointer"
+                  className="px-5 py-2.5 bg-stone-900 dark:bg-amber-950 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 group self-start sm:self-auto cursor-pointer border border-stone-800 hover:border-amber-700"
                 >
-                  <span>{language === 'bn' ? 'সবগুলো দেখুন' : 'Explore All'}</span>
-                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
+                  <span>{language === 'bn' ? 'সব জনপ্রিয় শাড়ি এক্সপ্লোর করুন' : 'Explore All Bestsellers'}</span>
+                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-amber-300" />
                 </button>
               </div>
 
@@ -410,9 +492,23 @@ export default function App() {
                   />
                 ))}
               </div>
+
+              {/* Noticeable Mid-page Collection Banner */}
+              <div className="mt-8 pt-6 border-t border-stone-200/80 flex items-center justify-center">
+                <button
+                  onClick={() => {
+                    setFilters({ ...defaultFilters, sortBy: 'top_selling' });
+                    setActiveView('shop');
+                  }}
+                  className="px-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold text-xs rounded-2xl border border-amber-300 transition-all flex items-center gap-2 shadow-2xs group cursor-pointer"
+                >
+                  <span>{language === 'bn' ? 'হাতে বোনা সব জনপ্রিয় শাড়ি ব্রাউজ করুন (১০০+ কালেকশন)' : 'Browse Full 100+ Authentic Handloom Collection'}</span>
+                  <ArrowRight className="w-4 h-4 text-amber-800 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </section>
 
-            {/* 5. Top Rated Masterpieces */}
+            {/* 5. Top Rated Masterpieces with Noticeable Explore Button (Requirement 4) */}
             <section className="py-12 bg-stone-100/70 border-y border-stone-200">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
@@ -424,15 +520,16 @@ export default function App() {
                       {language === 'bn' ? 'সেরা রেটিং প্রাপ্ত ঢাকাই সম্ভার' : 'Top Rated Weaves'}
                     </h2>
                   </div>
+                  {/* Highly Noticeable Explore More Button */}
                   <button
                     onClick={() => {
                       setFilters({ ...defaultFilters, sortBy: 'top_rated' });
                       setActiveView('shop');
                     }}
-                    className="text-xs font-semibold text-amber-900 hover:text-amber-800 flex items-center gap-1 group self-start sm:self-auto cursor-pointer"
+                    className="px-5 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 group self-start sm:self-auto cursor-pointer border border-amber-800 hover:border-amber-600"
                   >
-                    <span>{language === 'bn' ? 'সবগুলো দেখুন' : 'Explore All'}</span>
-                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
+                    <span>{language === 'bn' ? 'সব সেরা রেটিং শাড়ি দেখুন' : 'Explore All Top Rated'}</span>
+                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-amber-300" />
                   </button>
                 </div>
 
@@ -650,16 +747,23 @@ export default function App() {
       {/* Floating WhatsApp Contact */}
       <WhatsAppButton language={language} />
 
-      {/* Mobile Sticky Bottom Navigation */}
+      {/* Mobile Sticky Bottom Navigation (Requirement 2 & 8) */}
       <MobileBottomNav
         language={language}
         cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
+        onOpenWishlist={() => {
+          setActiveView('shop');
+          setFilters({ ...defaultFilters, onlyInStock: false });
+        }}
         onOpenAccount={() => setIsAccountOpen(true)}
         onOpenFlashSale={() => setActiveView('flash-sale')}
         onNavigateHome={() => setActiveView('home')}
         onNavigateShop={() => setActiveView('shop')}
         activeView={activeView}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
       />
 
       {/* ========================================================
