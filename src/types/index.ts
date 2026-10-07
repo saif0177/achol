@@ -69,6 +69,10 @@ export interface Product {
   heritageArticleBn?: string;
   artisanVillage?: string;
   weavingDurationDays?: number;
+  isFreeDelivery?: boolean;
+  promotionalCategoryId?: string;
+  promotionalCategoryIds?: string[];
+  specifications?: { key: string; value: string }[];
 }
 
 export interface CategoryArticle {
@@ -105,7 +109,66 @@ export interface Category {
   threadCount?: string;
   displayOrder: number;
   isActive: boolean;
+  isPromotional?: boolean;
+  isHidden?: boolean;
   subcategories: { id: string; nameEn: string; nameBn: string; slug?: string }[];
+}
+
+export interface HiddenPromotionalCategory {
+  id: string;
+  nameEn: string;
+  nameBn: string;
+  slug: string;
+  descriptionEn?: string;
+  descriptionBn?: string;
+  bannerImage?: string;
+  hasFreeDelivery?: boolean;
+  isActive: boolean;
+  productIds?: string[];
+}
+
+export type PromotionType = 'percentage' | 'fixed' | 'free_delivery' | 'coupon' | 'flash_sale' | 'seasonal';
+export type PromotionPlacement =
+  | 'homepage_banner'
+  | 'homepage_popup'
+  | 'offer_page'
+  | 'sale_category'
+  | 'flash_sale_section'
+  | 'banner'
+  | 'popup'
+  | 'offers_page'
+  | 'product_card'
+  | 'product_detail'
+  | 'checkout';
+
+export interface Promotion {
+  id: string;
+  titleEn: string;
+  titleBn: string;
+  subtitleEn?: string;
+  subtitleBn?: string;
+  type: PromotionType;
+  discountPercent?: number;
+  discountAmount?: number;
+  fixedDiscount?: number;
+  code?: string;
+  placements: PromotionPlacement[];
+  productIds?: string[];
+  categoryIds?: string[];
+  promotionalCategoryId?: string;
+  destinationType?: 'actual_category' | 'hidden_promotional_category' | 'offer_page' | 'products' | 'shop';
+  destinationCategoryId?: string;
+  hasFreeDelivery?: boolean;
+  minOrderAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  image?: string;
+  ctaTextEn?: string;
+  ctaTextBn?: string;
+  ctaLink?: string;
+  badgeEn?: string;
+  badgeBn?: string;
 }
 
 export interface LandingPopupConfig {
@@ -122,7 +185,9 @@ export interface LandingPopupConfig {
   ctaLink: string;
   displayMode?: 'standard' | 'image_only';
   hasTimer?: boolean;
+  startDate?: string;
   endTime?: string;
+  cooldownMinutes?: number;
 }
 
 export interface FlashSaleCampaign {
@@ -252,7 +317,7 @@ export interface Order {
   pointsEarned?: number;
   deliveryFee: number;
   finalTotal: number;
-  paymentMethod: 'cod' | 'bkash' | 'nagad' | 'card';
+  paymentMethod: 'cod' | 'bkash' | 'nagad' | 'card' | 'rocket';
   paymentStatus: 'pending' | 'paid';
   orderStatus: OrderStatus;
   shippingAddress: Address;
@@ -274,6 +339,12 @@ export interface Order {
   };
   customerNote?: string;
   cancellationReason?: string;
+  paymentDetails?: {
+    bkashPhone?: string;
+    transactionId?: string;
+    isVerified?: boolean;
+    verifiedAt?: string;
+  };
 }
 
 export interface PrivatePriceCode {

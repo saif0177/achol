@@ -464,6 +464,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {product.suitableAgeRange} Years
                     </span>
                   </div>
+
+                  {product.specifications && product.specifications.length > 0 && product.specifications.map((spec, sIdx) => (
+                    <div key={sIdx} className="p-3 bg-white rounded-lg border border-stone-200/80">
+                      <span className="text-stone-400 uppercase tracking-wider block font-medium mb-0.5">
+                        {spec.key}
+                      </span>
+                      <span className="text-stone-900 font-semibold">
+                        {spec.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

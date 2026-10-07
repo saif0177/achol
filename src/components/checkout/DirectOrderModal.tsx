@@ -49,10 +49,11 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     }
   );
 
+  const activeCustomer = store.getActiveCustomer();
   const [quantity, setQuantity] = useState(1);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [fullAddress, setFullAddress] = useState('');
+  const [customerName, setCustomerName] = useState(activeCustomer?.name || '');
+  const [customerPhone, setCustomerPhone] = useState(activeCustomer?.phone || '');
+  const [fullAddress, setFullAddress] = useState(activeCustomer?.savedAddresses[0]?.fullAddress || '');
   const [isInsideDhaka, setIsInsideDhaka] = useState(true);
   const [deliveryNote, setDeliveryNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,6 +125,29 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
       isGift: false,
       customerNote: deliveryNote ? `[Direct 1-Click Order] ${deliveryNote}` : '[Direct 1-Click Order]'
     });
+
+    // Seamless loyalty & profile sync without requiring customer to create password
+    let account = store.getCustomerAccount(customerPhone.trim());
+    if (!account) {
+      account = {
+        phone: customerPhone.trim(),
+        name: customerName.trim(),
+        isVerified: true,
+        loyaltyPoints: Math.floor(finalTotal / 100),
+        savedAddresses: [shippingAddress],
+        wishlistProductIds: [],
+        orderIds: [newOrder.id]
+      };
+      store.saveCustomerAccount(account);
+    } else {
+      account.name = customerName.trim();
+      account.loyaltyPoints = (account.loyaltyPoints || 0) + Math.floor(finalTotal / 100);
+      if (!account.orderIds.includes(newOrder.id)) {
+        account.orderIds.push(newOrder.id);
+      }
+      store.saveCustomerAccount(account);
+    }
+    store.setActiveCustomerPhone(customerPhone.trim());
 
     setIsSubmitting(false);
     onOrderSuccess(newOrder);
@@ -308,7 +332,7 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer"
                 >
                   <MapPin className="w-3 h-3 text-amber-800" />
-                  <span>{language === 'bn' ? 'ম্যাপে ঠিকানা দিন' : 'Pin on Google Map'}</span>
+                  <span>{language === 'bn' ? 'ম্যাপে ঠিকানা দিন' : 'Pin on Map'}</span>
                 </button>
               </div>
               <textarea

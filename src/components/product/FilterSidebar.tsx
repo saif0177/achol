@@ -332,10 +332,10 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           )}
         </div>
 
-        {/* Chromatic Spectrum Bar */}
-        <div className="space-y-1.5">
+        {/* Chromatic Spectrum Bar & Visual Color Swatches Palette (Requirement 5) */}
+        <div className="space-y-2.5">
           <div
-            className="relative h-4 w-full rounded-full overflow-hidden shadow-inner cursor-pointer"
+            className="relative h-3.5 w-full rounded-full overflow-hidden shadow-inner cursor-pointer"
             style={{
               background:
                 'linear-gradient(to right, #ff0000 0%, #ff7f00 15%, #ffff00 30%, #00ff00 45%, #00ffff 60%, #0000ff 75%, #8b00ff 90%, #ff0000 100%)'
@@ -350,12 +350,39 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
             />
           </div>
-          <div className="flex items-center justify-between text-[10px] text-stone-400">
-            <span>Red</span>
-            <span>Yellow</span>
-            <span>Green</span>
-            <span>Blue</span>
-            <span>Violet</span>
+
+          {/* Visual Color Swatches Ramp / Grid with Accessible Labels */}
+          <div className="grid grid-cols-3 gap-1.5 pt-1">
+            {standardColorFamilies.map((col) => {
+              const isSelected = localFilters.colorFamily === col.id;
+              return (
+                <button
+                  key={col.id}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      updateLocal({ colorFamily: '', targetColorHex: undefined });
+                    } else {
+                      updateLocal({ colorFamily: col.id, targetColorHex: col.hex });
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 p-1.5 rounded-lg border text-[11px] font-medium transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-50 border-amber-800 text-amber-950 font-bold ring-1 ring-amber-800'
+                      : 'border-stone-200 hover:border-stone-300 text-stone-700 bg-white'
+                  }`}
+                  title={col.nameEn}
+                >
+                  <span
+                    className="w-3.5 h-3.5 rounded-full shrink-0 border border-stone-300 flex items-center justify-center shadow-2xs"
+                    style={{ backgroundColor: col.hex }}
+                  >
+                    {isSelected && <Check className="w-2.5 h-2.5 text-white drop-shadow-sm" />}
+                  </span>
+                  <span className="truncate">{language === 'bn' ? col.nameBn.split(' ')[0] : col.nameEn.split(' ')[0]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -431,49 +458,111 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
       </div>
 
-      {/* 6. Price Range Dual Slider */}
+      {/* 6. Price Range Dual Slider with Exact Min & Max (Requirement 5) */}
       <div className="space-y-3 pt-3 border-t border-stone-100">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold uppercase tracking-wider text-stone-700">
             {t.priceRange}
           </label>
-          <span className="font-mono text-xs font-bold text-amber-900">
+          <span className="font-mono text-xs font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
             ৳{localFilters.minPrice.toLocaleString()} - ৳{localFilters.maxPrice.toLocaleString()}
           </span>
         </div>
-        <div className="space-y-2">
-          <input
-            type="range"
-            min="2000"
-            max="50000"
-            step="1000"
-            value={localFilters.maxPrice}
-            onChange={(e) => updateLocal({ maxPrice: Number(e.target.value) })}
-            className="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-900"
-          />
+
+        {/* Quick Price Preset Chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { label: 'All', min: 0, max: 60000 },
+            { label: '< ৳5K', min: 0, max: 5000 },
+            { label: '৳5K-15K', min: 5000, max: 15000 },
+            { label: '৳15K-30K', min: 15000, max: 30000 },
+            { label: '৳30K+', min: 30000, max: 60000 }
+          ].map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => updateLocal({ minPrice: preset.min, maxPrice: preset.max })}
+              className={`px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors cursor-pointer border ${
+                localFilters.minPrice === preset.min && localFilters.maxPrice === preset.max
+                  ? 'bg-amber-900 text-white border-amber-900'
+                  : 'bg-stone-50 hover:bg-stone-100 text-stone-600 border-stone-200'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Dual Range Controls */}
+        <div className="space-y-2 pt-1">
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px] text-stone-500 font-mono">
+              <span>Min: ৳{localFilters.minPrice.toLocaleString()}</span>
+              <span>Max: ৳{localFilters.maxPrice.toLocaleString()}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-[10px] text-stone-400 block mb-0.5">Min (৳)</span>
+                <input
+                  type="number"
+                  min="0"
+                  max={localFilters.maxPrice - 500}
+                  step="500"
+                  value={localFilters.minPrice}
+                  onChange={(e) => updateLocal({ minPrice: Math.max(0, Number(e.target.value)) })}
+                  className="w-full px-2 py-1 text-xs border border-stone-200 rounded-lg bg-stone-50 font-mono"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-stone-400 block mb-0.5">Max (৳)</span>
+                <input
+                  type="number"
+                  min={localFilters.minPrice + 500}
+                  max="100000"
+                  step="500"
+                  value={localFilters.maxPrice}
+                  onChange={(e) => updateLocal({ maxPrice: Math.min(100000, Number(e.target.value)) })}
+                  className="w-full px-2 py-1 text-xs border border-stone-200 rounded-lg bg-stone-50 font-mono"
+                />
+              </div>
+            </div>
+            <input
+              type="range"
+              min="1000"
+              max="60000"
+              step="1000"
+              value={localFilters.maxPrice}
+              onChange={(e) => updateLocal({ maxPrice: Number(e.target.value) })}
+              className="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-900 mt-2"
+            />
+          </div>
         </div>
       </div>
 
-      {/* 7. Quick Checkboxes */}
-      <div className="space-y-2.5 pt-3 border-t border-stone-100 text-xs">
-        <label className="flex items-center gap-2 cursor-pointer text-stone-700">
+      {/* 7. Availability Options (Requirement 5: In Stock, Out of Stock, On Sale) */}
+      <div className="space-y-2 pt-3 border-t border-stone-100 text-xs">
+        <label className="text-xs font-semibold uppercase tracking-wider text-stone-700 block">
+          {language === 'bn' ? 'স্টক ও অফার প্রাপ্যতা' : 'Availability & Offers'}
+        </label>
+        
+        <label className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900">
           <input
             type="checkbox"
             checked={localFilters.onlyInStock}
             onChange={(e) => updateLocal({ onlyInStock: e.target.checked })}
             className="rounded border-stone-300 text-amber-900 focus:ring-amber-900 cursor-pointer"
           />
-          <span>{t.inStockOnly}</span>
+          <span className="font-medium">{language === 'bn' ? 'স্টকে আছে (In Stock)' : 'In Stock Only'}</span>
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer text-stone-700">
+        <label className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900">
           <input
             type="checkbox"
             checked={localFilters.onlyOnSale}
             onChange={(e) => updateLocal({ onlyOnSale: e.target.checked })}
             className="rounded border-stone-300 text-amber-900 focus:ring-amber-900 cursor-pointer"
           />
-          <span className="text-rose-700 font-semibold">{t.onSaleOnly}</span>
+          <span className="text-rose-700 font-semibold">{language === 'bn' ? 'ছাড় ও বিশেষ অফারে আছে (On Sale)' : 'On Sale & Special Offers'}</span>
         </label>
       </div>
 

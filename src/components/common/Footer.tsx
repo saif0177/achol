@@ -121,7 +121,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <span className="text-stone-400">
-                  {language === 'bn' ? 'হোয়াটসঅ্যাপ ভিডিও প্রিভিউ' : 'WhatsApp Video Inspection'}
+                  {language === 'bn' ? 'সরাসরি চ্যাট সহায়তা' : 'Direct Chat Assistance'}
                 </span>
               </li>
             </ul>

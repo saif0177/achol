@@ -30,6 +30,7 @@ import { SareeGuideModal } from './components/product/SareeGuideModal';
 // Category & Flash Sale Pages
 import { CategoryHeritageHeader } from './components/category/CategoryHeritageHeader';
 import { FlashSalePage } from './components/flash-sale/FlashSalePage';
+import { AllOffersPage } from './components/offers/AllOffersPage';
 
 // Cart & Checkout Components
 import { CartDrawer } from './components/cart/CartDrawer';
@@ -65,8 +66,8 @@ export default function App() {
     return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
   }, []);
 
-  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'admin'
-  const [activeView, setActiveView] = useState<'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'admin'>('home');
+  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'admin'
+  const [activeView, setActiveView] = useState<'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'admin'>('home');
 
   // Cart State (saved to localStorage)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -363,10 +364,16 @@ export default function App() {
         onOpenTracking={() => setIsTrackingOpen(true)}
         onOpenSareeGuide={() => setIsSareeGuideOpen(true)}
         onOpenFlashSale={() => setActiveView('flash-sale')}
+        onOpenOffers={() => setActiveView('offers')}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         unreadNotificationsCount={store.getUnreadNotificationCount()}
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
+        onSearchSubmit={(q) => {
+          setFilters({ ...defaultFilters, searchQuery: q });
+          setActiveView('shop');
+        }}
+        onSelectProduct={handleSelectProduct}
       />
 
       {/* Main Content Pages */}
@@ -419,6 +426,20 @@ export default function App() {
             onDirectOrder={handleOpenDirectOrder}
             wishlist={wishlist}
             onToggleWishlist={handleToggleWishlist}
+          />
+        )}
+
+        {/* ========================================================
+            VIEW: DEDICATED ALL OFFERS & PRIVILEGES PAGE (Requirement 4C, 22)
+            ======================================================== */}
+        {activeView === 'offers' && (
+          <AllOffersPage
+            language={language}
+            onBack={() => setActiveView('home')}
+            onShopOffer={(_offer) => {
+              setFilters({ ...defaultFilters, onlyOnSale: true });
+              setActiveView('shop');
+            }}
           />
         )}
 

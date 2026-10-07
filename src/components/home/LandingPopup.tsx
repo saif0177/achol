@@ -25,6 +25,19 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
     const randomConfig = store.getRandomActiveLandingPopup();
     if (!randomConfig || !randomConfig.isActive) return;
 
+    // Check expiration: Expired popups must automatically stop appearing (Requirement 4B)
+    if (randomConfig.endTime && new Date(randomConfig.endTime).getTime() <= Date.now()) {
+      return;
+    }
+
+    // Check cooldown: Reasonable cooldown (approx 5 minutes) to avoid interrupting browsing (Requirement 4B)
+    const lastShown = Number(localStorage.getItem('aanchol_last_popup_shown') || '0');
+    const cooldownMinutes = randomConfig.cooldownMinutes || 5;
+    const cooldownMs = cooldownMinutes * 60 * 1000;
+    if (Date.now() - lastShown < cooldownMs) {
+      return;
+    }
+
     setConfig(randomConfig);
 
     // Calculate initial timer if present
@@ -42,6 +55,9 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
     // Gentle appearance delay after landing
     const timer = setTimeout(() => {
       setIsOpen(true);
+      try {
+        localStorage.setItem('aanchol_last_popup_shown', String(Date.now()));
+      } catch {}
     }, 1200);
 
     return () => clearTimeout(timer);

@@ -67,6 +67,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Payment: Default Cash on Delivery (Requirement 11)
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bkash' | 'nagad'>('cod');
+  const [bkashPhone, setBkashPhone] = useState('');
+  const [bkashTrxId, setBkashTrxId] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
 
   // Check if returning customer & load loyalty points
@@ -193,7 +195,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           }
         : undefined,
       appliedCoupon: appliedCodeName || undefined,
-      customerNote: deliveryNote.trim() || undefined
+      customerNote: deliveryNote.trim() || undefined,
+      paymentDetails: (paymentMethod === 'bkash' || paymentMethod === 'nagad') ? {
+        bkashPhone: bkashPhone.trim() || customerPhone.trim(),
+        transactionId: bkashTrxId.trim(),
+        isVerified: false
+      } : undefined
     });
 
     setIsPlacing(false);
@@ -379,7 +386,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
                     >
                       <MapPin className="w-3.5 h-3.5 text-amber-800" />
-                      <span>{language === 'bn' ? 'গুগল ম্যাপে ঠিকানা পিন করুন' : 'Pinpoint on Google Map'}</span>
+                      <span>{language === 'bn' ? 'ম্যাপে ঠিকানা পিন করুন' : 'Pinpoint on Map'}</span>
                     </button>
                   </div>
                   <textarea
@@ -453,7 +460,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setPaymentMethod('bkash')}
                   className={`p-2.5 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                     paymentMethod === 'bkash'
-                      ? 'border-pink-600 bg-pink-50 text-pink-900'
+                      ? 'border-pink-600 bg-pink-50 text-pink-900 font-bold'
                       : 'border-stone-200 hover:bg-stone-50'
                   }`}
                 >
@@ -464,13 +471,61 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setPaymentMethod('nagad')}
                   className={`p-2.5 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                     paymentMethod === 'nagad'
-                      ? 'border-orange-600 bg-orange-50 text-orange-900'
+                      ? 'border-orange-600 bg-orange-50 text-orange-900 font-bold'
                       : 'border-stone-200 hover:bg-stone-50'
                   }`}
                 >
                   Nagad Payment
                 </button>
               </div>
+
+              {/* bKash / Nagad Detailed Manual Instructions & TrxID Verification */}
+              {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
+                <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3 text-xs animate-in fade-in duration-200">
+                  <div className="space-y-1">
+                    <span className="font-bold text-stone-900 block">
+                      {paymentMethod === 'bkash' ? 'bKash Merchant Payment:' : 'Nagad Merchant Payment:'}
+                    </span>
+                    <p className="text-stone-600 text-[11px] leading-relaxed">
+                      {language === 'bn'
+                        ? `আমাদের মার্চেন্ট/ব্যক্তিগত নম্বর 01712-444888 এ মোট ৳${finalTotal.toLocaleString()} সেন্ড মানি বা পেমেন্ট করে নিচের বক্সে আপনার ট্রানজেকশন আইডি (TrxID) প্রদান করুন।`
+                        : `Please Send Money / Payment of ৳${finalTotal.toLocaleString()} to verified number 01712-444888, then enter your Transaction ID (TrxID) below.`}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                      <label className="text-[10px] font-bold text-stone-600 block mb-1">
+                        {paymentMethod === 'bkash' ? 'bKash Mobile Number' : 'Nagad Mobile Number'}
+                      </label>
+                      <input
+                        type="tel"
+                        value={bkashPhone}
+                        onChange={(e) => setBkashPhone(e.target.value)}
+                        placeholder="017xxxxxxxx"
+                        className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-stone-600 block mb-1">
+                        Transaction ID (TrxID)
+                      </label>
+                      <input
+                        type="text"
+                        value={bkashTrxId}
+                        onChange={(e) => setBkashTrxId(e.target.value.toUpperCase())}
+                        placeholder="e.g. 9B8C7A6D5E"
+                        className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-mono font-bold uppercase"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-amber-900 block font-medium">
+                    {language === 'bn'
+                      ? 'অর্ডার প্লেস করার পর আমাদের টিম TrxID যাচাই করে পার্সেল স্টিডফাস্ট কুরিয়ারে হস্তান্তর করবে।'
+                      : 'Our dispatch team verifies the TrxID prior to handing parcel to Steadfast Courier.'}
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>

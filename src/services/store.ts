@@ -1,4 +1,4 @@
-import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle } from '../types';
+import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle, Promotion, HiddenPromotionalCategory } from '../types';
 
 const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
@@ -153,6 +153,8 @@ const INITIAL_PRODUCTS: Product[] = [
     length: '5.5 meters (12 Haat) with running Blouse Piece',
     hasBlousePiece: true,
     stock: 12,
+    isFreeDelivery: true,
+    promotionalCategoryIds: ['promo-eid', 'promo-freedel'],
     isFeatured: true,
     isNewArrival: false,
     isSale: true,
@@ -232,6 +234,8 @@ const INITIAL_PRODUCTS: Product[] = [
     length: '5.5 meters (12 Haat)',
     hasBlousePiece: false,
     stock: 4,
+    isFreeDelivery: true,
+    promotionalCategoryIds: ['promo-eid'],
     isFeatured: true,
     isNewArrival: true,
     isSale: true,
@@ -301,6 +305,8 @@ const INITIAL_PRODUCTS: Product[] = [
     length: '5.5 meters (12 Haat) with 0.8m Blouse Piece',
     hasBlousePiece: true,
     stock: 28,
+    isFreeDelivery: false,
+    promotionalCategoryIds: ['promo-flash'],
     isFeatured: true,
     isNewArrival: false,
     isSale: true,
@@ -965,6 +971,143 @@ The resulting silk filament possesses a triangular prism-like structure that ref
   }
 ];
 
+export const INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES: HiddenPromotionalCategory[] = [
+  {
+    id: 'promo-eid',
+    nameEn: 'Eid Special Handloom Drop',
+    nameBn: 'পবিত্র ঈদ স্পেশাল কালেকশন',
+    slug: 'eid-special-drop',
+    descriptionEn: 'Curated royal sarees with exclusive Eid privileges and festive discounts.',
+    descriptionBn: 'পবিত্র ঈদ উপলক্ষে বিশেষ ছাড়ে নির্বাচিত রাজকীয় শাড়িসমূহ।',
+    bannerImage: '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg',
+    hasFreeDelivery: true,
+    isActive: true,
+    productIds: ['p-jm108', 'p-dm204', 'p-tt401']
+  },
+  {
+    id: 'promo-freedel',
+    nameEn: 'Free Nationwide Delivery Sarees',
+    nameBn: 'ফ্রি ডেলিভারি শাড়ি সম্ভার',
+    slug: 'free-delivery-sarees',
+    descriptionEn: 'Handpicked heirloom weaves delivered anywhere in Bangladesh with ৳0 delivery charge.',
+    descriptionBn: 'নির্বাচিত এই শাড়িগুলোতে থাকছে সারাদেশে সম্পূর্ণ ফ্রি ডেলিভারি (৳০)।',
+    bannerImage: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
+    hasFreeDelivery: true,
+    isActive: true,
+    productIds: ['p-jm108', 'p-ms204']
+  },
+  {
+    id: 'promo-flash',
+    nameEn: 'Flash Sale Limited Drop',
+    nameBn: 'ফ্ল্যাশ সেল সীমিত অফার',
+    slug: 'flash-sale-drop',
+    descriptionEn: 'Flash price drops on authentic handloom masterworks for the next 48 hours only.',
+    descriptionBn: 'সীমিত সময়ের জন্য বিশেষ মূল্যে সরাসরি তাঁত থেকে প্রাপ্ত শাড়ি।',
+    bannerImage: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+    hasFreeDelivery: false,
+    isActive: true,
+    productIds: ['p-tt401', 'p-sk501']
+  }
+];
+
+export const INITIAL_PROMOTIONS: Promotion[] = [
+  {
+    id: 'promo-eid-15',
+    titleEn: 'Royal Eid Handloom Celebration — 15% OFF',
+    titleBn: 'পবিত্র ঈদ স্পেশাল উৎসব অফার — ১৫% ছাড়',
+    subtitleEn: 'Enjoy flat 15% discount on all authentic Dhakai Jamdani & Rajshahi Silk sarees with code EID15.',
+    subtitleBn: 'কুপন কোড EID15 ব্যবহার করে সকল ঐতিহ্যবাহী ঢাকাই জামদানি ও রাজশাহী সিল্কে পান ফ্ল্যাট ১৫% ছাড়।',
+    type: 'percentage',
+    discountPercent: 15,
+    code: 'EID15',
+    promotionalCategoryId: 'promo-eid',
+    destinationType: 'hidden_promotional_category',
+    destinationCategoryId: 'promo-eid',
+    productIds: ['p-jm108', 'p-dm204', 'p-tt401'],
+    placements: ['homepage_banner', 'homepage_popup', 'offer_page', 'sale_category'],
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    image: '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg',
+    ctaTextEn: 'Claim 15% Off',
+    ctaTextBn: '১৫% ছাড় উপভোগ করুন',
+    ctaLink: 'offer-promo-eid-15',
+    badgeEn: 'FESTIVE DROP',
+    badgeBn: 'ঈদ ধামাকা'
+  },
+  {
+    id: 'promo-free-delivery',
+    titleEn: 'Nationwide Free Express Delivery Promotion',
+    titleBn: 'সারাদেশে সম্পূর্ণ ফ্রি এক্সপ্রেস হোম ডেলিভারি অফার',
+    subtitleEn: 'Zero delivery charges anywhere across Bangladesh on selected sarees or with code FREESHIP.',
+    subtitleBn: 'নির্বাচিত শাড়িতে অথবা কোড FREESHIP দিয়ে পান শূন্য খরচে সারাদেশের হোম ডেলিভারি।',
+    type: 'free_delivery',
+    code: 'FREESHIP',
+    hasFreeDelivery: true,
+    promotionalCategoryId: 'promo-freedel',
+    destinationType: 'hidden_promotional_category',
+    destinationCategoryId: 'promo-freedel',
+    productIds: ['p-jm108', 'p-ms204'],
+    minOrderAmount: 0,
+    placements: ['homepage_banner', 'offer_page', 'sale_category'],
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    image: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
+    ctaTextEn: 'Shop With Free Delivery',
+    ctaTextBn: 'ফ্রি ডেলিভারিতে অর্ডার করুন',
+    ctaLink: 'offer-promo-free-delivery',
+    badgeEn: 'ZERO SHIPPING',
+    badgeBn: 'ফ্রি ডেলিভারি'
+  },
+  {
+    id: 'promo-welcome-500',
+    titleEn: '৳500 Welcome Voucher on First Saree Order',
+    titleBn: 'প্রথম অর্ডারে নগদ ৫০০ টাকা স্বাগতম ভাউচার',
+    subtitleEn: 'New to Aanchol? Enjoy flat ৳500 discount on your first handloom heirloom saree order with code WELCOME500.',
+    subtitleBn: 'আঁচলে প্রথমবার শাড়ি কিনছেন? কোড WELCOME500 দিয়ে প্রথম অর্ডারে পান নগদ ৫০০ টাকা ছাড়।',
+    type: 'fixed',
+    fixedDiscount: 500,
+    code: 'WELCOME500',
+    minOrderAmount: 3000,
+    destinationType: 'shop',
+    placements: ['homepage_popup', 'offer_page'],
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    image: '/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg',
+    ctaTextEn: 'Use ৳500 Voucher',
+    ctaTextBn: '৫০০ টাকার ভাউচার ব্যবহার করুন',
+    ctaLink: 'offer-promo-welcome-500',
+    badgeEn: 'WELCOME GIFT',
+    badgeBn: 'স্বাগতম উপহার'
+  },
+  {
+    id: 'promo-flash-drop',
+    titleEn: 'Artisan Tangail Taat & Silk Flash Sale — 20% OFF',
+    titleBn: 'টাঙ্গাইল তাঁত ও সিল্ক ফ্ল্যাশ সেল — ২০% মূল্যছাড়',
+    subtitleEn: 'Limited loom batch from Tangail and Rajshahi basin on instant 20% promotional discount.',
+    subtitleBn: 'টাঙ্গাইল ও রাজশাহীর তাঁতিদের হাতে বোনা নির্বাচিত শাড়িতে সীমিত সময়ের জন্য ২০% মূল্যছাড়।',
+    type: 'flash_sale',
+    discountPercent: 20,
+    code: 'FLASH20',
+    promotionalCategoryId: 'promo-flash',
+    destinationType: 'hidden_promotional_category',
+    destinationCategoryId: 'promo-flash',
+    productIds: ['p-tt401', 'p-sk501'],
+    placements: ['flash_sale_section', 'offer_page'],
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+    isActive: true,
+    image: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+    ctaTextEn: 'Shop Flash Deals',
+    ctaTextBn: 'ফ্ল্যাশ ডিল দেখুন',
+    ctaLink: 'offer-promo-flash-drop',
+    badgeEn: 'LIMITED 48H',
+    badgeBn: '৪৮ ঘণ্টার অফার'
+  }
+];
+
 class StoreService {
   private products: Product[] = [];
   private categories: Category[] = [];
@@ -978,6 +1121,9 @@ class StoreService {
   private landingPopup: LandingPopupConfig = INITIAL_LANDING_POPUP;
   private notifications: AppNotification[] = [];
   private categoryArticles: CategoryArticle[] = INITIAL_CATEGORY_ARTICLES;
+  private promotions: Promotion[] = INITIAL_PROMOTIONS;
+  private hiddenPromotionalCategories: HiddenPromotionalCategory[] = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
+  private activeCustomerPhone: string | null = null;
 
   constructor() {
     this.init();
@@ -987,6 +1133,9 @@ class StoreService {
     try {
       const storedProducts = localStorage.getItem('aanchol_products');
       this.products = storedProducts ? JSON.parse(storedProducts) : INITIAL_PRODUCTS;
+
+      const storedHiddenCategories = localStorage.getItem('aanchol_hidden_promotional_categories');
+      this.hiddenPromotionalCategories = storedHiddenCategories ? JSON.parse(storedHiddenCategories) : INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
 
       const storedCategories = localStorage.getItem('aanchol_categories');
       this.categories = storedCategories ? JSON.parse(storedCategories) : INITIAL_CATEGORIES;
@@ -1051,6 +1200,12 @@ class StoreService {
       }
       const storedArticles = localStorage.getItem('aanchol_category_articles');
       this.categoryArticles = storedArticles ? JSON.parse(storedArticles) : INITIAL_CATEGORY_ARTICLES;
+
+      const storedPromotions = localStorage.getItem('aanchol_promotions');
+      this.promotions = storedPromotions ? JSON.parse(storedPromotions) : INITIAL_PROMOTIONS;
+
+      const storedActivePhone = localStorage.getItem('aanchol_active_phone');
+      this.activeCustomerPhone = storedActivePhone || '01712345678';
     } catch {
       this.products = INITIAL_PRODUCTS;
       this.categories = INITIAL_CATEGORIES;
@@ -1062,6 +1217,9 @@ class StoreService {
       this.flashSales = INITIAL_FLASH_SALES;
       this.notifications = INITIAL_NOTIFICATIONS;
       this.categoryArticles = INITIAL_CATEGORY_ARTICLES;
+      this.promotions = INITIAL_PROMOTIONS;
+      this.hiddenPromotionalCategories = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
+      this.activeCustomerPhone = '01712345678';
     }
   }
 
@@ -1355,73 +1513,100 @@ class StoreService {
     this.persist('aanchol_banners', this.banners);
   }
 
-  // INTELLIGENT SEARCH & FUZZY MATCHING
+  // INTELLIGENT SEARCH & FUZZY MATCHING (Requirement 6)
   public searchProducts(query: string, filters?: Partial<FilterState>): Product[] {
     let list = this.getProducts();
 
     if (query && query.trim()) {
       const q = query.trim().toLowerCase();
+      const tokens = q.split(/\s+/).filter(Boolean);
 
-      // Normalize common transliterated saree typos & English/Bangla terms
-      const typoMap: Record<string, string> = {
-        jamdany: 'jamdani',
-        jomdani: 'jamdani',
-        zamzami: 'jamdani',
-        jamdani: 'jamdani',
-        moslin: 'muslin',
-        musline: 'muslin',
-        maslin: 'muslin',
-        tat: 'taat',
-        tanti: 'taat',
-        tangail: 'tangail',
-        shilk: 'silk',
-        silke: 'silk',
-        kotan: 'katan',
-        katon: 'katan',
-        banarasi: 'katan',
-        benarosi: 'katan',
-        lal: 'red',
-        neel: 'blue',
-        nil: 'blue',
-        shobuj: 'green',
-        holud: 'yellow',
-        shada: 'white',
-        kalo: 'black'
+      const synonymMap: Record<string, string[]> = {
+        jamdani: ['jamdani', 'jamdany', 'jomdani', 'zamzami', 'জামদানি', 'dhakai jamdani'],
+        muslin: ['muslin', 'moslin', 'musline', 'maslin', 'মসলিন', 'phuti karpas'],
+        taat: ['taat', 'tat', 'tanti', 'তাঁত', 'টাঙ্গাইল', 'tangail', 'pitloom'],
+        silk: ['silk', 'shilk', 'silke', 'সিল্ক', 'রেশম', 'mulberry', 'rajshahi'],
+        katan: ['katan', 'kotan', 'katon', 'কাতান', 'বেনারসি', 'benarasi', 'banarasi', 'মিরপুর', 'mirpur'],
+        red: ['red', 'crimson', 'vermilion', 'maroon', 'lal', 'লাল', 'রক্তিম', 'মেরুন'],
+        blue: ['blue', 'navy', 'neel', 'nil', 'indigo', 'নীল', 'আসমানী'],
+        green: ['green', 'emerald', 'shobuj', 'সবুজ', 'পান্না'],
+        yellow: ['yellow', 'mustard', 'holud', 'হলুদ', 'সরিষা'],
+        white: ['white', 'ivory', 'shada', 'সাদা', 'শুভ্র', 'আইভরি'],
+        black: ['black', 'kalo', 'কালো'],
+        gold: ['gold', 'zari', 'golden', 'sonali', 'সোনালি', 'জরি'],
+        cotton: ['cotton', 'suti', 'সুতি', 'কম্বড'],
+        bridal: ['bridal', 'wedding', 'biye', 'বিয়ে', 'বধূ', 'কনে', 'হলুদ', 'holud']
       };
 
-      const normalizedQ = typoMap[q] || q;
+      const matchScore = (p: Product): number => {
+        let score = 0;
+        const codeLower = p.code.toLowerCase();
+        const nameEnLower = p.nameEn.toLowerCase();
+        const nameBn = p.nameBn;
+        const sareeTypeLower = p.sareeType.toLowerCase();
+        const fabricLower = p.fabric.toLowerCase();
+        const fabricBn = p.fabricBn;
+        const occasionLower = p.occasion.toLowerCase();
+        const occasionBn = p.occasionBn;
+        const descEn = p.descriptionEn.toLowerCase();
+        const descBn = p.descriptionBn;
+        const keywords = p.keywords.map((k) => k.toLowerCase());
 
-      list = list.filter((p) => {
-        // Direct product code match (Priority 1)
-        if (p.code.toLowerCase().includes(q)) return true;
+        // Exact code match (Highest priority)
+        if (codeLower === q) return 100;
+        if (codeLower.includes(q)) score += 50;
 
-        // Name match (EN & BN)
-        if (p.nameEn.toLowerCase().includes(q) || p.nameEn.toLowerCase().includes(normalizedQ)) return true;
-        if (p.nameBn.includes(query.trim())) return true;
+        // Exact name match
+        if (nameEnLower.includes(q)) score += 40;
+        if (nameBn.includes(query.trim())) score += 40;
 
-        // Saree Type match
-        if (p.sareeType.toLowerCase().includes(q) || p.sareeType.toLowerCase().includes(normalizedQ)) return true;
+        // Token matching
+        let matchedTokensCount = 0;
+        for (const token of tokens) {
+          // Check synonym expansion
+          let tokenExpanded: string[] = [token];
+          for (const [key, syns] of Object.entries(synonymMap)) {
+            if (syns.some((s) => s.includes(token) || token.includes(s))) {
+              tokenExpanded.push(key, ...syns);
+            }
+          }
+          tokenExpanded = Array.from(new Set(tokenExpanded));
 
-        // Keywords match
-        if (p.keywords.some((k) => k.toLowerCase().includes(q) || k.toLowerCase().includes(normalizedQ))) return true;
+          const matchesAnySyn = (target: string) =>
+            tokenExpanded.some((s) => target.includes(s));
 
-        // Fabric match
-        if (p.fabric.toLowerCase().includes(q) || p.fabricBn.includes(query.trim())) return true;
+          let tokenMatched = false;
+          if (matchesAnySyn(codeLower)) { score += 25; tokenMatched = true; }
+          if (matchesAnySyn(nameEnLower) || tokenExpanded.some((s) => nameBn.includes(s))) { score += 30; tokenMatched = true; }
+          if (matchesAnySyn(sareeTypeLower)) { score += 25; tokenMatched = true; }
+          if (matchesAnySyn(fabricLower) || tokenExpanded.some((s) => fabricBn.includes(s))) { score += 20; tokenMatched = true; }
+          if (matchesAnySyn(occasionLower) || tokenExpanded.some((s) => occasionBn.includes(s))) { score += 15; tokenMatched = true; }
+          if (keywords.some((k) => matchesAnySyn(k))) { score += 20; tokenMatched = true; }
+          if (p.variants.some((v) => matchesAnySyn(v.colorFamily) || matchesAnySyn(v.colorNameEn.toLowerCase()) || tokenExpanded.some((s) => v.colorNameBn.includes(s)))) {
+            score += 25; tokenMatched = true;
+          }
+          if (p.specifications?.some((spec) => matchesAnySyn(spec.key.toLowerCase()) || matchesAnySyn(spec.value.toLowerCase()))) {
+            score += 15; tokenMatched = true;
+          }
+          if (matchesAnySyn(descEn) || tokenExpanded.some((s) => descBn.includes(s))) {
+            score += 10; tokenMatched = true;
+          }
 
-        // Color variants match
-        if (
-          p.variants.some(
-            (v) =>
-              v.colorNameEn.toLowerCase().includes(q) ||
-              v.colorNameBn.includes(query.trim()) ||
-              v.colorFamily.toLowerCase() === normalizedQ
-          )
-        ) {
-          return true;
+          if (tokenMatched) matchedTokensCount++;
         }
 
-        return false;
-      });
+        if (tokens.length > 1 && matchedTokensCount < Math.ceil(tokens.length * 0.7)) {
+          return 0;
+        }
+
+        return score;
+      };
+
+      list = list
+        .map((p) => ({ product: p, score: matchScore(p) }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map((item) => item.product);
     }
 
     // Apply Filters
@@ -1655,6 +1840,20 @@ class StoreService {
     }
   }
 
+  public updatePaymentStatus(orderId: string, status: Order['paymentStatus']): void {
+    const order = this.orders.find((o) => o.id === orderId);
+    if (order) {
+      order.paymentStatus = status;
+      if (order.paymentDetails) {
+        order.paymentDetails.isVerified = status === 'paid';
+        if (status === 'paid') {
+          order.paymentDetails.verifiedAt = new Date().toISOString();
+        }
+      }
+      this.persist('aanchol_orders', this.orders);
+    }
+  }
+
   public cancelOrder(orderId: string, reason?: string): { success: boolean; message: string } {
     const order = this.orders.find((o) => o.id === orderId);
     if (!order) {
@@ -1855,6 +2054,439 @@ class StoreService {
     this.notifications.unshift(newNotif);
     this.persist('aanchol_notifications', this.notifications);
     return newNotif;
+  }
+
+  // ==========================================
+  // UNIFIED PROMOTION CAMPAIGNS (Requirement 4C, 4D, 22)
+  // ==========================================
+  public getPromotions(): Promotion[] {
+    const now = Date.now();
+    return this.promotions.filter((p) => {
+      if (!p.isActive) return false;
+      if (p.startDate && new Date(p.startDate).getTime() > now) return false;
+      if (p.endDate && new Date(p.endDate).getTime() < now) return false; // Automatic expiration!
+      return true;
+    });
+  }
+
+  public getAllPromotionsAdmin(): Promotion[] {
+    return this.promotions;
+  }
+
+  public getPromotionById(id: string): Promotion | undefined {
+    return this.promotions.find((p) => p.id === id);
+  }
+
+  public savePromotion(promotion: Promotion): void {
+    const idx = this.promotions.findIndex((p) => p.id === promotion.id);
+    if (idx >= 0) {
+      this.promotions[idx] = promotion;
+    } else {
+      this.promotions.unshift(promotion);
+    }
+    this.persist('aanchol_promotions', this.promotions);
+  }
+
+  public deletePromotion(id: string): void {
+    this.promotions = this.promotions.filter((p) => p.id !== id);
+    this.persist('aanchol_promotions', this.promotions);
+  }
+
+  public togglePromotionActive(id: string): void {
+    const p = this.promotions.find((item) => item.id === id);
+    if (p) {
+      p.isActive = !p.isActive;
+      this.persist('aanchol_promotions', this.promotions);
+    }
+  }
+
+  // ==========================================
+  // HIDDEN PROMOTIONAL CATEGORIES (Requirement 11)
+  // ==========================================
+  public getHiddenPromotionalCategories(): HiddenPromotionalCategory[] {
+    return this.hiddenPromotionalCategories;
+  }
+
+  public getActiveHiddenPromotionalCategories(): HiddenPromotionalCategory[] {
+    return this.hiddenPromotionalCategories.filter((c) => c.isActive);
+  }
+
+  public getHiddenPromotionalCategoryById(id: string): HiddenPromotionalCategory | undefined {
+    return this.hiddenPromotionalCategories.find((c) => c.id === id);
+  }
+
+  public saveHiddenPromotionalCategory(category: HiddenPromotionalCategory): void {
+    const idx = this.hiddenPromotionalCategories.findIndex((c) => c.id === category.id);
+    if (idx >= 0) {
+      this.hiddenPromotionalCategories[idx] = category;
+    } else {
+      this.hiddenPromotionalCategories.push(category);
+    }
+    this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+  }
+
+  public deleteHiddenPromotionalCategory(id: string): void {
+    this.hiddenPromotionalCategories = this.hiddenPromotionalCategories.filter((c) => c.id !== id);
+    // Remove this category from products
+    this.products.forEach((p) => {
+      if (p.promotionalCategoryIds) {
+        p.promotionalCategoryIds = p.promotionalCategoryIds.filter((cid) => cid !== id);
+      }
+      if (p.promotionalCategoryId === id) {
+        p.promotionalCategoryId = undefined;
+      }
+    });
+    this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+    this.persist('aanchol_products', this.products);
+  }
+
+  public toggleHiddenPromotionalCategoryActive(id: string): void {
+    const c = this.hiddenPromotionalCategories.find((item) => item.id === id);
+    if (c) {
+      c.isActive = !c.isActive;
+      this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+    }
+  }
+
+  // Find all products associated with a promotion or hidden category
+  public getProductsForPromotion(promotion: Promotion): Product[] {
+    const all = this.getProducts();
+
+    // 1. Explicit productIds
+    if (promotion.productIds && promotion.productIds.length > 0) {
+      const explicit = all.filter((p) => promotion.productIds?.includes(p.id));
+      if (explicit.length > 0) return explicit;
+    }
+
+    // 2. Hidden promotional category link
+    if (promotion.promotionalCategoryId) {
+      const promoCat = this.hiddenPromotionalCategories.find((c) => c.id === promotion.promotionalCategoryId);
+      const catProducts = all.filter(
+        (p) =>
+          p.promotionalCategoryIds?.includes(promotion.promotionalCategoryId!) ||
+          p.promotionalCategoryId === promotion.promotionalCategoryId ||
+          (promoCat?.productIds && promoCat.productIds.includes(p.id))
+      );
+      if (catProducts.length > 0) return catProducts;
+    }
+
+    // 3. Normal category link
+    if (promotion.destinationCategoryId) {
+      const byCat = all.filter((p) => p.categoryId === promotion.destinationCategoryId);
+      if (byCat.length > 0) return byCat;
+    }
+
+    if (promotion.categoryIds && promotion.categoryIds.length > 0) {
+      const byCats = all.filter((p) => promotion.categoryIds?.includes(p.categoryId));
+      if (byCats.length > 0) return byCats;
+    }
+
+    // Fallback: if flash sale, find flash sale products or sale products
+    if (promotion.type === 'flash_sale') {
+      const flashProds = all.filter((p) => p.flashSaleId || p.isSale);
+      if (flashProds.length > 0) return flashProds;
+    }
+
+    return all.filter((p) => p.isSale).slice(0, 8);
+  }
+
+  public getProductsByPromotionalCategory(promoCatId: string): Product[] {
+    const promoCat = this.hiddenPromotionalCategories.find((c) => c.id === promoCatId);
+    return this.getProducts().filter(
+      (p) =>
+        p.promotionalCategoryIds?.includes(promoCatId) ||
+        p.promotionalCategoryId === promoCatId ||
+        (promoCat?.productIds && promoCat.productIds.includes(p.id))
+    );
+  }
+
+  // ==========================================
+  // COUPON & FREE DELIVERY CALCULATION (Requirements 2 & 10)
+  // ==========================================
+  public validateCoupon(
+    rawCode: string,
+    subtotal: number,
+    items?: (CartItem | { productId: string })[]
+  ): { valid: boolean; discount: number; isFreeDelivery: boolean; promo?: Promotion; message: string } {
+    const code = rawCode.trim().toUpperCase();
+    if (!code) {
+      return { valid: false, discount: 0, isFreeDelivery: false, message: 'Please enter a coupon code.' };
+    }
+
+    // Check promotions
+    const activePromos = this.getPromotions();
+    const promo = activePromos.find((p) => p.code && p.code.trim().toUpperCase() === code);
+
+    if (promo) {
+      // Check expiration
+      if (promo.endDate && new Date(promo.endDate).getTime() < Date.now()) {
+        return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon has expired.' };
+      }
+
+      // Check min order amount
+      if (promo.minOrderAmount && subtotal < promo.minOrderAmount) {
+        return {
+          valid: false,
+          discount: 0,
+          isFreeDelivery: false,
+          message: `Minimum order amount of ৳${promo.minOrderAmount.toLocaleString()} required for this coupon.`
+        };
+      }
+
+      let discount = 0;
+      let isFreeDelivery = promo.type === 'free_delivery' || !!promo.hasFreeDelivery;
+
+      if (promo.type === 'percentage') {
+        discount = Math.round((subtotal * (promo.discountPercent || 0)) / 100);
+      } else if (promo.type === 'fixed') {
+        discount = promo.fixedDiscount || 0;
+      } else if (promo.type === 'flash_sale') {
+        discount = Math.round((subtotal * (promo.discountPercent || 0)) / 100);
+      }
+
+      return {
+        valid: true,
+        discount,
+        isFreeDelivery,
+        promo,
+        message: promo.type === 'free_delivery'
+          ? 'Free Delivery coupon applied!'
+          : `Coupon applied: ৳${discount.toLocaleString()} discount!`
+      };
+    }
+
+    // Check private codes
+    const privateCode = this.privateCodes.find(
+      (c) => c.code.trim().toUpperCase() === code && c.isActive && !c.used
+    );
+    if (privateCode) {
+      const discount = privateCode.specialPrice;
+      return {
+        valid: true,
+        discount,
+        isFreeDelivery: false,
+        message: `Private VIP code applied: ৳${discount.toLocaleString()} discount!`
+      };
+    }
+
+    return { valid: false, discount: 0, isFreeDelivery: false, message: 'Invalid or expired coupon code.' };
+  }
+
+  // Calculate if order qualifies for Free Delivery (individually controlled per product or promotional offer)
+  public isOrderFreeDelivery(
+    items: (CartItem | { productId: string })[],
+    couponCode?: string,
+    subtotal = 0
+  ): boolean {
+    if (couponCode) {
+      const validated = this.validateCoupon(couponCode, subtotal, items);
+      if (validated.valid && validated.isFreeDelivery) {
+        return true;
+      }
+    }
+
+    if (!items || items.length === 0) return false;
+
+    // Check product individual free delivery setting
+    const hasFreeDeliveryProduct = items.some((item) => {
+      const prod = this.getProductById(item.productId);
+      return prod?.isFreeDelivery === true;
+    });
+    if (hasFreeDeliveryProduct) return true;
+
+    // Check active promotional offers with free delivery
+    const activePromos = this.getPromotions().filter(
+      (p) => p.type === 'free_delivery' || p.hasFreeDelivery === true
+    );
+
+    for (const promo of activePromos) {
+      // Check if promo has threshold without specific items
+      if (
+        promo.minOrderAmount !== undefined &&
+        subtotal >= promo.minOrderAmount &&
+        (!promo.productIds || promo.productIds.length === 0) &&
+        !promo.promotionalCategoryId
+      ) {
+        return true;
+      }
+
+      // Check if any item in cart is part of the promo's products
+      if (promo.productIds && promo.productIds.length > 0) {
+        const matches = items.some((item) => promo.productIds?.includes(item.productId));
+        if (matches) return true;
+      }
+
+      // Check if any item belongs to the promotional category
+      if (promo.promotionalCategoryId) {
+        const matchesCat = items.some((item) => {
+          const prod = this.getProductById(item.productId);
+          return (
+            prod?.promotionalCategoryIds?.includes(promo.promotionalCategoryId!) ||
+            prod?.promotionalCategoryId === promo.promotionalCategoryId
+          );
+        });
+        if (matchesCat) return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Calculate if Free Delivery promotion applies (Requirement 23)
+  public isFreeDeliveryActive(subtotal: number, couponCode?: string): boolean {
+    const activePromos = this.getPromotions();
+    const freeDelPromo = activePromos.find((p) => p.type === 'free_delivery');
+    if (!freeDelPromo) return false;
+
+    if (couponCode && freeDelPromo.code && couponCode.trim().toUpperCase() === freeDelPromo.code.toUpperCase()) {
+      return true;
+    }
+
+    if (freeDelPromo.minOrderAmount !== undefined) {
+      return subtotal >= freeDelPromo.minOrderAmount;
+    }
+
+    return true;
+  }
+
+  // ==========================================
+  // INVENTORY MANAGEMENT (Requirement 26)
+  // ==========================================
+  public adjustStock(productId: string, variantId: string | undefined, delta: number): void {
+    const product = this.products.find((p) => p.id === productId);
+    if (product) {
+      product.stock = Math.max(0, product.stock + delta);
+      if (variantId) {
+        const variant = product.variants.find((v) => v.id === variantId);
+        if (variant) {
+          variant.stock = Math.max(0, variant.stock + delta);
+        }
+      }
+      this.persist('aanchol_products', this.products);
+    }
+  }
+
+  public setStock(productId: string, variantId: string | undefined, newStock: number): void {
+    const product = this.products.find((p) => p.id === productId);
+    if (product) {
+      if (variantId) {
+        const variant = product.variants.find((v) => v.id === variantId);
+        if (variant) {
+          variant.stock = Math.max(0, newStock);
+        }
+        product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+      } else {
+        product.stock = Math.max(0, newStock);
+      }
+      this.persist('aanchol_products', this.products);
+    }
+  }
+
+  public getLowStockProducts(threshold = 5): Product[] {
+    return this.products.filter((p) => p.stock > 0 && p.stock <= threshold);
+  }
+
+  public getOutOfStockProducts(): Product[] {
+    return this.products.filter((p) => p.stock === 0);
+  }
+
+  // ==========================================
+  // CUSTOMER AUTH & MOBILE OTP SESSION (Requirement 13)
+  // ==========================================
+  public getActiveCustomerPhone(): string | null {
+    return this.activeCustomerPhone;
+  }
+
+  public getActiveCustomer(): CustomerAccount | null {
+    if (!this.activeCustomerPhone) return null;
+    return this.getCustomerAccount(this.activeCustomerPhone);
+  }
+
+  public setActiveCustomerPhone(phone: string | null): void {
+    this.activeCustomerPhone = phone;
+    if (phone) {
+      this.persist('aanchol_active_phone', phone);
+    } else {
+      try {
+        localStorage.removeItem('aanchol_active_phone');
+      } catch {}
+    }
+  }
+
+  public sendOtp(phone: string): { success: boolean; otp: string; message: string } {
+    const cleanPhone = phone.trim();
+    if (cleanPhone.length < 11) {
+      return { success: false, otp: '', message: 'Invalid mobile phone number.' };
+    }
+    // Simulation OTP for testing/demo purposes: '1234'
+    return {
+      success: true,
+      otp: '1234',
+      message: `OTP sent to ${cleanPhone}. (Use 1234 for testing)`
+    };
+  }
+
+  public loginWithOtp(
+    phone: string,
+    otp: string,
+    name?: string
+  ): { success: boolean; account: CustomerAccount | null; message: string } {
+    const cleanPhone = phone.trim();
+    if (cleanPhone.length < 11) {
+      return { success: false, account: null, message: 'Please enter a valid 11-digit phone number.' };
+    }
+    if (otp !== '1234' && otp.length < 4) {
+      return { success: false, account: null, message: 'Invalid OTP code. Please enter 1234.' };
+    }
+
+    let existing = this.getCustomerAccount(cleanPhone);
+    if (!existing) {
+      // First-time customer: create verified account with 100 welcome loyalty points
+      existing = {
+        phone: cleanPhone,
+        name: name?.trim() || 'Tasnim Rahman',
+        isVerified: true,
+        loyaltyPoints: 100,
+        savedAddresses: [
+          {
+            id: `addr-${Date.now()}`,
+            recipientName: name?.trim() || 'Tasnim Rahman',
+            phone: cleanPhone,
+            division: 'Dhaka',
+            district: 'Dhaka',
+            area: 'Dhanmondi',
+            fullAddress: 'Dhanmondi, Dhaka',
+            isInsideDhaka: true,
+            isDefault: true
+          }
+        ],
+        wishlistProductIds: [],
+        orderIds: []
+      };
+      this.saveCustomerAccount(existing);
+    } else {
+      existing.isVerified = true;
+      if (name && name.trim()) {
+        existing.name = name.trim();
+      }
+      this.saveCustomerAccount(existing);
+    }
+
+    this.activeCustomerPhone = cleanPhone;
+    this.persist('aanchol_active_phone', cleanPhone);
+
+    return {
+      success: true,
+      account: existing,
+      message: 'Mobile number verified successfully!'
+    };
+  }
+
+  public logoutCustomer(): void {
+    this.activeCustomerPhone = null;
+    try {
+      localStorage.removeItem('aanchol_active_phone');
+    } catch {}
   }
 }
 

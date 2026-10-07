@@ -28,9 +28,11 @@ import {
   Play,
   Pause,
   FolderPlus,
-  BookOpen
+  BookOpen,
+  Gift,
+  Copy
 } from 'lucide-react';
-import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle } from '../../types';
+import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion } from '../../types';
 import { store } from '../../services/store';
 import { ProductFormModal } from './ProductFormModal';
 import { PrivateCodesModal } from './PrivateCodesModal';
@@ -93,7 +95,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'products' | 'categories' | 'category_details' | 'flash_sales' | 'popup_banner' | 'orders' | 'private_codes'
+    'overview' | 'products' | 'categories' | 'category_details' | 'flash_sales' | 'popup_banner' | 'promotions' | 'orders' | 'private_codes'
   >('overview');
 
   // Modals & Sub-forms
@@ -113,6 +115,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [showPopupForm, setShowPopupForm] = useState(false);
   const [editingPopup, setEditingPopup] = useState<LandingPopupConfig | null>(null);
 
+  const [showPromoForm, setShowPromoForm] = useState(false);
+  const [editingPromo, setEditingPromo] = useState<Promotion | null>(null);
+
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [showSubcategoryForm, setShowSubcategoryForm] = useState(false);
 
@@ -122,6 +127,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [categories, setCategories] = useState<Category[]>(store.getAllCategoriesAdmin());
   const [flashSales, setFlashSales] = useState<FlashSaleCampaign[]>(store.getAllFlashSalesAdmin());
   const [landingPopups, setLandingPopups] = useState<LandingPopupConfig[]>(store.getAllLandingPopupsAdmin());
+  const [promotions, setPromotions] = useState<Promotion[]>(store.getAllPromotionsAdmin());
 
   // Search queries
   const [productSearch, setProductSearch] = useState('');
@@ -133,6 +139,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setCategories(store.getAllCategoriesAdmin());
     setFlashSales(store.getAllFlashSalesAdmin());
     setLandingPopups(store.getAllLandingPopupsAdmin());
+    setPromotions(store.getAllPromotionsAdmin());
   };
 
   // KPIs
@@ -621,6 +628,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setShowSubcategoryForm(false);
   };
 
+  const handleSavePromotion = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const promoId = editingPromo ? editingPromo.id : `promo-${Date.now()}`;
+
+    const placements: ('popup' | 'banner' | 'product_card' | 'product_detail' | 'checkout' | 'offers_page')[] = [];
+    if (formData.get('place_popup')) placements.push('popup');
+    if (formData.get('place_banner')) placements.push('banner');
+    if (formData.get('place_card')) placements.push('product_card');
+    if (formData.get('place_pdp')) placements.push('product_detail');
+    if (formData.get('place_checkout')) placements.push('checkout');
+    if (formData.get('place_offers')) placements.push('offers_page');
+
+    const promo: Promotion = {
+      id: promoId,
+      titleEn: String(formData.get('titleEn') || ''),
+      titleBn: String(formData.get('titleBn') || ''),
+      subtitleEn: String(formData.get('subtitleEn') || ''),
+      subtitleBn: String(formData.get('subtitleBn') || ''),
+      type: (formData.get('type') as any) || 'percentage',
+      discountPercent: formData.get('discountPercent') ? Number(formData.get('discountPercent')) : undefined,
+      discountAmount: formData.get('discountAmount') ? Number(formData.get('discountAmount')) : undefined,
+      code: formData.get('code') ? String(formData.get('code')).trim().toUpperCase() : undefined,
+      minOrderAmount: formData.get('minOrderAmount') ? Number(formData.get('minOrderAmount')) : undefined,
+      startDate: String(formData.get('startDate') || ''),
+      endDate: String(formData.get('endDate') || ''),
+      isActive: formData.get('isActive') !== null,
+      placements: placements.length > 0 ? placements : ['offers_page', 'banner'],
+      image: String(formData.get('image') || '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg'),
+      ctaTextEn: String(formData.get('ctaTextEn') || 'Shop Special Offer'),
+      ctaTextBn: String(formData.get('ctaTextBn') || 'অফার উপভোগ করুন'),
+      ctaLink: String(formData.get('ctaLink') || 'shop')
+    };
+
+    store.savePromotion(promo);
+    refreshData();
+    setShowPromoForm(false);
+    setEditingPromo(null);
+  };
+
   return (
     <div className="min-h-screen bg-[#F7F5F0] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors">
       
@@ -676,6 +723,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           { id: 'category_details', label: 'Category Details & Blog (Blogger)', icon: BookOpen },
           { id: 'flash_sales', label: `Flash Deals & Timers (${flashSales.length})`, icon: Zap },
           { id: 'popup_banner', label: `Landing Popups (${landingPopups.length})`, icon: Tag },
+          { id: 'promotions', label: `Promotions & Offers (${promotions.length})`, icon: Gift },
           { id: 'orders', label: `Orders & Courier (${orders.length})`, icon: Truck }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -1690,6 +1738,436 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* ========================================================
+            TAB: UNIFIED PROMOTIONS & PRIVILEGES ENGINE (Requirements 4C, 4D, 22)
+            ======================================================== */}
+        {activeTab === 'promotions' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-200 dark:border-stone-800">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-amber-800 dark:text-amber-400" />
+                  <span>Multi-Placement Promotion System</span>
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Configure once, syndicate across Homepage Popup, Top Banners, PDP Callouts, Product Badges, Cart & All Offers.
+                </p>
+              </div>
+
+              {!showPromoForm && (
+                <button
+                  onClick={() => {
+                    setEditingPromo(null);
+                    setShowPromoForm(true);
+                  }}
+                  className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Create Promotion</span>
+                </button>
+              )}
+            </div>
+
+            {/* Form to create/edit Promotion */}
+            {showPromoForm && (
+              <form
+                onSubmit={handleSavePromotion}
+                className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-amber-300 dark:border-stone-700 shadow-xl space-y-6 animate-in fade-in duration-200"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-stone-800">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <h4 className="font-serif font-bold text-base text-stone-900 dark:text-white">
+                      {editingPromo ? 'Edit Promotion Campaign' : 'Create New Multi-Placement Promotion'}
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPromoForm(false);
+                      setEditingPromo(null);
+                    }}
+                    className="text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Promotion Title (English) *
+                    </label>
+                    <input
+                      type="text"
+                      name="titleEn"
+                      required
+                      defaultValue={editingPromo?.titleEn || ''}
+                      placeholder="e.g. Eid Handloom Special — Flat 15% OFF"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Promotion Title (বাংলা) *
+                    </label>
+                    <input
+                      type="text"
+                      name="titleBn"
+                      required
+                      defaultValue={editingPromo?.titleBn || ''}
+                      placeholder="যেমন: ঈদ স্পেশাল উৎসব অফার — ১৫% মূল্যছাড়"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Subtitle / Highlight (English)
+                    </label>
+                    <input
+                      type="text"
+                      name="subtitleEn"
+                      defaultValue={editingPromo?.subtitleEn || ''}
+                      placeholder="e.g. Valid on all pure Dhakai Jamdani and Muslin sarees"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Subtitle / Highlight (বাংলা)
+                    </label>
+                    <input
+                      type="text"
+                      name="subtitleBn"
+                      defaultValue={editingPromo?.subtitleBn || ''}
+                      placeholder="যেমন: সকল জামদানি ও মসলিন শাড়িতে উপভোগ করুন"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Promotion Type
+                    </label>
+                    <select
+                      name="type"
+                      defaultValue={editingPromo?.type || 'percentage'}
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-bold text-stone-900 dark:text-white"
+                    >
+                      <option value="percentage">Percentage Discount (%)</option>
+                      <option value="fixed">Fixed Taka Discount (৳)</option>
+                      <option value="free_delivery">Free Delivery Nationwide</option>
+                      <option value="coupon">Coupon Code Voucher</option>
+                      <option value="flash_sale">Flash Sale Drop</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Discount % (if applicable)
+                    </label>
+                    <input
+                      type="number"
+                      name="discountPercent"
+                      min="0"
+                      max="100"
+                      defaultValue={editingPromo?.discountPercent ?? ''}
+                      placeholder="e.g. 15"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-bold font-mono text-stone-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Discount Taka (৳)
+                    </label>
+                    <input
+                      type="number"
+                      name="discountAmount"
+                      min="0"
+                      defaultValue={editingPromo?.discountAmount ?? ''}
+                      placeholder="e.g. 500"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-bold font-mono text-stone-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Coupon Voucher Code
+                    </label>
+                    <input
+                      type="text"
+                      name="code"
+                      defaultValue={editingPromo?.code || ''}
+                      placeholder="e.g. EID15"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-mono font-bold uppercase text-stone-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Placements Syndicate Checkboxes (Requirement 4C) */}
+                <div className="p-4 bg-amber-50/60 dark:bg-stone-800/60 rounded-2xl border border-amber-200/80 dark:border-stone-700 space-y-2">
+                  <label className="text-xs font-bold text-stone-900 dark:text-white block">
+                    Syndicated Placements (Where should this promotion show?):
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <label className="flex items-center gap-2 cursor-pointer text-stone-800 dark:text-stone-200">
+                      <input
+                        type="checkbox"
+                        name="place_popup"
+                        defaultChecked={editingPromo?.placements.includes('popup') ?? true}
+                        className="rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                      />
+                      <span>Homepage Pop-up</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-stone-800 dark:text-stone-200">
+                      <input
+                        type="checkbox"
+                        name="place_banner"
+                        defaultChecked={editingPromo?.placements.includes('banner') ?? true}
+                        className="rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                      />
+                      <span>Top Strip / Notification Banner</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-stone-800 dark:text-stone-200">
+                      <input
+                        type="checkbox"
+                        name="place_card"
+                        defaultChecked={editingPromo?.placements.includes('product_card') ?? true}
+                        className="rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                      />
+                      <span>Product Card Badge</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-stone-800 dark:text-stone-200">
+                      <input
+                        type="checkbox"
+                        name="place_pdp"
+                        defaultChecked={editingPromo?.placements.includes('product_detail') ?? true}
+                        className="rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                      />
+                      <span>Product Detail Page Callout</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-stone-800 dark:text-stone-200">
+                      <input
+                        type="checkbox"
+                        name="place_checkout"
+                        defaultChecked={editingPromo?.placements.includes('checkout') ?? true}
+                        className="rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                      />
+                      <span>Cart & Checkout Auto-discount</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-stone-800 dark:text-stone-200">
+                      <input
+                        type="checkbox"
+                        name="place_offers"
+                        defaultChecked={editingPromo?.placements.includes('offers_page') ?? true}
+                        className="rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                      />
+                      <span>Dedicated &quot;All Offers&quot; Hub</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      defaultValue={editingPromo?.startDate?.slice(0, 10) || ''}
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      End Date (Auto-Expires)
+                    </label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      defaultValue={editingPromo?.endDate?.slice(0, 10) || ''}
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Min Order Amount (৳)
+                    </label>
+                    <input
+                      type="number"
+                      name="minOrderAmount"
+                      defaultValue={editingPromo?.minOrderAmount ?? ''}
+                      placeholder="e.g. 3000"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Banner / Artwork Image URL
+                    </label>
+                    <input
+                      type="text"
+                      name="image"
+                      defaultValue={editingPromo?.image || '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg'}
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-mono text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 pt-6">
+                    <input
+                      type="checkbox"
+                      id="promo_active_check"
+                      name="isActive"
+                      defaultChecked={editingPromo?.isActive ?? true}
+                      className="w-4 h-4 rounded border-stone-300 text-amber-900 focus:ring-amber-900"
+                    />
+                    <label htmlFor="promo_active_check" className="text-xs font-bold text-stone-800 dark:text-stone-200 cursor-pointer">
+                      Campaign is Active across live store
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPromoForm(false);
+                      setEditingPromo(null);
+                    }}
+                    className="px-4 py-2 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Save className="w-4 h-4 text-amber-300" />
+                    <span>{editingPromo ? 'Update Promotion' : 'Save & Publish Promotion'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* List of Active & Scheduled Promotions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {promotions.map((promo) => (
+                <div
+                  key={promo.id}
+                  className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-4 shadow-2xs space-y-3.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md">
+                          {promo.type.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white mt-1 line-clamp-1">
+                          {promo.titleEn}
+                        </h4>
+                        <span className="text-xs text-stone-500 dark:text-stone-400 block line-clamp-1">
+                          {promo.titleBn}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                          promo.isActive
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'
+                        }`}
+                      >
+                        {promo.isActive ? 'Active' : 'Paused'}
+                      </span>
+                    </div>
+
+                    {/* Voucher or discount highlight */}
+                    <div className="flex items-center gap-2 text-xs">
+                      {promo.discountPercent && (
+                        <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded-lg font-bold">
+                          {promo.discountPercent}% OFF
+                        </span>
+                      )}
+                      {promo.code && (
+                        <span className="px-2 py-0.5 bg-stone-100 dark:bg-stone-800 rounded-lg font-mono font-bold text-stone-800 dark:text-stone-200">
+                          CODE: {promo.code}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Placements Badges */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-wider">
+                        Active Placements ({promo.placements.length})
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {promo.placements.map((p, idx) => (
+                          <span
+                            key={idx}
+                            className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-[10px] font-medium text-stone-600 dark:text-stone-300"
+                          >
+                            {p.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions footer */}
+                  <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        store.togglePromotionActive(promo.id);
+                        refreshData();
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        promo.isActive
+                          ? 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
+                          : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300'
+                      }`}
+                    >
+                      {promo.isActive ? 'Pause' : 'Activate'}
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          setEditingPromo(promo);
+                          setShowPromoForm(true);
+                        }}
+                        className="p-1.5 text-stone-600 dark:text-stone-300 hover:text-amber-900 rounded-lg cursor-pointer"
+                        title="Edit Promotion"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete promotion "${promo.titleEn}"?`)) {
+                            store.deletePromotion(promo.id);
+                            refreshData();
+                          }
+                        }}
+                        className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg cursor-pointer"
+                        title="Delete Promotion"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
             TAB 6: ORDERS & STEADFAST COURIER
             ======================================================== */}
         {activeTab === 'orders' && (
@@ -1762,19 +2240,102 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        <td className="p-3.5">
+                        <td className="p-3.5 space-y-1">
                           <span className="font-serif font-bold text-stone-900 dark:text-white text-sm block">
                             ৳{order.finalTotal.toLocaleString()}
                           </span>
-                          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold uppercase">
-                            Cash on Delivery
-                          </span>
+
+                          {order.paymentMethod === 'bkash' ? (
+                            <div className="space-y-0.5">
+                              <span className="inline-block px-1.5 py-0.5 rounded bg-pink-100 text-pink-900 dark:bg-pink-950 dark:text-pink-300 text-[10px] font-bold">
+                                bKash Payment
+                              </span>
+                              {order.paymentDetails?.transactionId && (
+                                <div className="text-[10px] font-mono text-stone-600 dark:text-stone-300 block">
+                                  TrxID: <span className="font-bold text-pink-700 dark:text-pink-400">{order.paymentDetails.transactionId}</span>
+                                </div>
+                              )}
+                              <div className="pt-0.5 flex items-center gap-1.5">
+                                {order.paymentStatus === 'paid' ? (
+                                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-0.5">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Verified Paid</span>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      store.updatePaymentStatus(order.id, 'paid');
+                                      refreshData();
+                                    }}
+                                    className="px-2 py-0.5 bg-pink-600 hover:bg-pink-700 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
+                                  >
+                                    Verify Payment
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ) : order.paymentMethod === 'nagad' ? (
+                            <div className="space-y-0.5">
+                              <span className="inline-block px-1.5 py-0.5 rounded bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-300 text-[10px] font-bold">
+                                Nagad Payment
+                              </span>
+                              {order.paymentDetails?.transactionId && (
+                                <div className="text-[10px] font-mono text-stone-600 dark:text-stone-300 block">
+                                  TrxID: <span className="font-bold text-orange-700 dark:text-orange-400">{order.paymentDetails.transactionId}</span>
+                                </div>
+                              )}
+                              <div className="pt-0.5 flex items-center gap-1.5">
+                                {order.paymentStatus === 'paid' ? (
+                                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-0.5">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Verified Paid</span>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      store.updatePaymentStatus(order.id, 'paid');
+                                      refreshData();
+                                    }}
+                                    className="px-2 py-0.5 bg-orange-600 hover:bg-orange-700 text-white rounded text-[10px] font-bold cursor-pointer transition-colors"
+                                  >
+                                    Verify Payment
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold uppercase block">
+                              Cash on Delivery
+                            </span>
+                          )}
                         </td>
 
-                        <td className="p-3.5">
-                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300">
-                            {order.orderStatus.replace('_', ' ').toUpperCase()}
-                          </span>
+                        <td className="p-3.5 space-y-1">
+                          <select
+                            value={order.orderStatus}
+                            onChange={(e) => {
+                              store.updateOrderStatus(order.id, e.target.value as OrderStatus);
+                              refreshData();
+                            }}
+                            className={`px-2 py-1 rounded-lg font-bold text-[10px] border cursor-pointer focus:outline-none ${
+                              order.orderStatus === 'delivered'
+                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
+                                : order.orderStatus === 'cancelled'
+                                ? 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950 dark:text-rose-200'
+                                : order.orderStatus === 'courier_shipped' || order.orderStatus === 'out_for_delivery'
+                                ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200'
+                                : 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-200'
+                            }`}
+                          >
+                            <option value="placed">Placed</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="processing">Quality Inspection</option>
+                            <option value="packed">Packed</option>
+                            <option value="courier_shipped">Steadfast Shipped</option>
+                            <option value="out_for_delivery">Out for Delivery</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
                         </td>
 
                         <td className="p-3.5">
