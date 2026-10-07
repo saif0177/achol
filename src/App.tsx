@@ -38,6 +38,7 @@ import { DirectOrderModal } from './components/checkout/DirectOrderModal';
 import { OrderTrackingModal } from './components/tracking/OrderTrackingModal';
 import { CustomerAccountModal } from './components/account/CustomerAccountModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { WishlistModal } from './components/wishlist/WishlistModal';
 
 import {
   Sparkles,
@@ -118,6 +119,7 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSareeGuideOpen, setIsSareeGuideOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
   // Fabrilife-style Express 1-Click Order Modal
   const [isDirectOrderOpen, setIsDirectOrderOpen] = useState(false);
@@ -226,7 +228,9 @@ export default function App() {
           code: product.code,
           nameEn: product.nameEn,
           nameBn: product.nameBn,
-          image: variant.image || product.primaryImage
+          image: variant.image || product.primaryImage,
+          flashSaleTitle: product.flashSaleTitle,
+          originalPrice: product.originalPrice
         }
       ];
     });
@@ -312,7 +316,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-stone-900 selection:bg-amber-900 selection:text-white font-sans">
+    <div className="min-h-screen flex flex-col bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 selection:bg-amber-900 selection:text-white font-sans transition-colors duration-200">
       
       {/* Google Maps Platform Quota Defense Banner */}
       {quotaExceeded && (
@@ -348,10 +352,7 @@ export default function App() {
         cartSubtotal={cartSubtotal}
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenWishlist={() => {
-          setActiveView('shop');
-          setFilters({ ...defaultFilters, onlyInStock: false });
-        }}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
         onOpenAdmin={() => setActiveView('admin')}
         onOpenSearch={() => setIsSearchOpen(true)}
@@ -454,13 +455,16 @@ export default function App() {
             />
 
             {/* 4. Top Selling Handloom Sarees with Noticeable Explore Button (Requirement 4) */}
-            <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-stone-900 text-stone-100 rounded-3xl p-6 sm:p-10 my-6 shadow-xl border border-stone-800">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                 <div>
-                  <span className="text-xs font-semibold tracking-wider uppercase text-amber-900 block mb-1">
+                  <span className="text-xs font-semibold tracking-wider uppercase text-amber-400 block mb-1">
                     {language === 'bn' ? 'সর্বোচ্চ বিক্রিত' : 'Customer Favorites'}
                   </span>
-                  <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
+                  <h2
+                    className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-[#fff6f6]"
+                    style={{ color: '#fff6f6' }}
+                  >
                     {language === 'bn' ? 'জনপ্রিয় ঐতিহ্যবাহী শাড়িসমূহ' : 'Most Cherished Sarees'}
                   </h2>
                 </div>
@@ -747,20 +751,17 @@ export default function App() {
       {/* Floating WhatsApp Contact */}
       <WhatsAppButton language={language} />
 
-      {/* Mobile Sticky Bottom Navigation (Requirement 2 & 8) */}
+      {/* Mobile Sticky Bottom Navigation (5 tabs: Home, Category, Sale, Wishlist, Account) */}
       <MobileBottomNav
         language={language}
         cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenWishlist={() => {
-          setActiveView('shop');
-          setFilters({ ...defaultFilters, onlyInStock: false });
-        }}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
         onOpenFlashSale={() => setActiveView('flash-sale')}
         onNavigateHome={() => setActiveView('home')}
-        onNavigateShop={() => setActiveView('shop')}
+        onNavigateCategory={() => setActiveView('shop')}
         activeView={activeView}
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
@@ -787,6 +788,22 @@ export default function App() {
         onApplyCode={(codeName, discount) => {
           setAppliedDiscount(discount);
           setAppliedCodeName(codeName);
+        }}
+      />
+
+      {/* 1.1 Dedicated Wishlist Modal (Requirement 1: View Loved Sarees Collection & Direct Buy) */}
+      <WishlistModal
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        language={language}
+        wishlistIds={wishlist}
+        onToggleWishlist={handleToggleWishlist}
+        onSelectProduct={handleSelectProduct}
+        onQuickAddToCart={handleAddToCart}
+        onDirectOrder={handleOpenDirectOrder}
+        onExploreShop={() => {
+          setIsWishlistOpen(false);
+          setActiveView('shop');
         }}
       />
 
@@ -824,11 +841,14 @@ export default function App() {
         initialOrderId={trackingOrderId}
       />
 
-      {/* 5. Customer Account Modal with Loyalty Points & Secret Admin Login */}
+      {/* 5. Customer Account Modal with Loyalty Points, Language, Dark/Light Mode & About */}
       <CustomerAccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
         language={language}
+        onLanguageChange={setLanguage}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
         onOpenOrderTracking={(ordId) => {
           setTrackingOrderId(ordId);
           setIsTrackingOpen(true);
@@ -930,6 +950,19 @@ export default function App() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* 10. Interactive Wishlist Toast with Quick View Button */}
+      {wishlistToast && (
+        <WishlistToast
+          toast={wishlistToast}
+          onClose={() => setWishlistToast(null)}
+          language={language}
+          onOpenWishlist={() => {
+            setWishlistToast(null);
+            setIsWishlistOpen(true);
+          }}
+        />
       )}
 
     </div>

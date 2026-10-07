@@ -31,10 +31,13 @@ interface CustomerAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
+  onLanguageChange?: (lang: Language) => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
   onOpenOrderTracking: (orderId: string) => void;
   onSelectProduct: (product: Product) => void;
   onOpenAdmin?: () => void;
-  initialTab?: 'profile' | 'orders' | 'addresses' | 'wishlist' | 'admin';
+  initialTab?: 'profile' | 'orders' | 'addresses' | 'wishlist' | 'about' | 'admin';
   lastPlacedOrder?: Order | null;
 }
 
@@ -42,6 +45,9 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   isOpen,
   onClose,
   language,
+  onLanguageChange,
+  isDarkMode = false,
+  onToggleDarkMode,
   onOpenOrderTracking,
   onSelectProduct,
   onOpenAdmin,
@@ -77,7 +83,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
     }
   );
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'addresses' | 'wishlist' | 'admin'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'addresses' | 'wishlist' | 'about' | 'admin'>(initialTab);
   const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'delivered'>('all');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
@@ -333,11 +339,22 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
             onClick={() => setActiveTab('profile')}
             className={`py-3 px-3 border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'profile'
-                ? 'border-amber-900 text-amber-900 font-bold'
-                : 'border-transparent text-stone-500 hover:text-stone-900'
+                ? 'border-amber-900 dark:border-amber-400 text-amber-900 dark:text-amber-400 font-bold'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-white'
             }`}
           >
-            {language === 'bn' ? 'অ্যাকাউন্ট তথ্য' : 'Account Details'}
+            {language === 'bn' ? 'প্রোফাইল ও সেটিংস' : 'Profile & Settings'}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('about')}
+            className={`py-3 px-3 border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'about'
+                ? 'border-amber-900 dark:border-amber-400 text-amber-900 dark:text-amber-400 font-bold'
+                : 'border-transparent text-stone-500 hover:text-stone-900 dark:hover:text-white'
+            }`}
+          >
+            {language === 'bn' ? 'আঁচল সম্পর্কে' : 'About Aanchol'}
           </button>
 
           {/* Admin Portal Tab (Hidden from casual public buttons, accessible here!) */}
@@ -834,31 +851,144 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
             </div>
           )}
 
-          {/* TAB: PROFILE DETAILS */}
+          {/* TAB: PROFILE & PREFERENCES (Language, Dark/Light Mode, User Info) */}
           {activeTab === 'profile' && (
-            <div className="bg-white p-5 rounded-xl border border-stone-200 space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <span className="font-bold text-stone-500 block">Name</span>
-                  <span className="font-semibold text-stone-900">{account.name}</span>
+            <div className="space-y-4 text-xs">
+              {/* Account Overview Box */}
+              <div className="bg-white dark:bg-stone-800 p-5 rounded-2xl border border-stone-200 dark:border-stone-700 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-700">
+                  <span className="font-bold text-stone-800 dark:text-white">গ্রাহক পরিচিতি (Customer Profile)</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-400 font-bold text-[10px] border border-amber-200 dark:border-amber-800">
+                    Verified Customer
+                  </span>
                 </div>
-                <div>
-                  <span className="font-bold text-stone-500 block">Phone Number</span>
-                  <span className="font-mono font-semibold text-stone-900">{account.phone}</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="font-bold text-stone-500 dark:text-stone-400 block">Name</span>
+                    <span className="font-semibold text-stone-900 dark:text-white text-sm">{account.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-500 dark:text-stone-400 block">Phone Number</span>
+                    <span className="font-mono font-semibold text-stone-900 dark:text-white text-sm">{account.phone}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-stone-100 dark:border-stone-700 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-stone-500 dark:text-stone-400 block">Loyalty Tier</span>
+                    <span className="font-bold text-amber-900 dark:text-amber-400">Aanchol Heritage VIP Member</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-stone-500 dark:text-stone-400 block">Available Balance</span>
+                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      ৳{(account.loyaltyPoints || 350).toLocaleString()} Discount
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-stone-500 block">Loyalty Tier</span>
-                  <span className="font-bold text-amber-900">Aanchol Heritage VIP</span>
+              {/* Language Switcher (Requirement 4: English to Bangla) */}
+              <div className="bg-white dark:bg-stone-800 p-4 rounded-2xl border border-stone-200 dark:border-stone-700 space-y-2 shadow-2xs">
+                <span className="font-bold text-stone-800 dark:text-white block">
+                  {language === 'bn' ? 'ভাষা পরিবর্তন (Language)' : 'Select Website Language'}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onLanguageChange && onLanguageChange('bn')}
+                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      language === 'bn'
+                        ? 'bg-amber-900 text-white border-amber-900 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100'
+                    }`}
+                  >
+                    <span>বাংলা (বাং)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onLanguageChange && onLanguageChange('en')}
+                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      language === 'en'
+                        ? 'bg-amber-900 text-white border-amber-900 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100'
+                    }`}
+                  >
+                    <span>English (EN)</span>
+                  </button>
                 </div>
-                <div className="text-right">
-                  <span className="font-bold text-stone-500 block">Available Discount</span>
-                  <span className="font-mono font-bold text-emerald-700">
-                    ৳{(account.loyaltyPoints || 350).toLocaleString()} OFF
-                  </span>
+              </div>
+
+              {/* Light and Dark Mode Toggle (Requirement 4: light and dark mode) */}
+              <div className="bg-white dark:bg-stone-800 p-4 rounded-2xl border border-stone-200 dark:border-stone-700 space-y-2 shadow-2xs">
+                <span className="font-bold text-stone-800 dark:text-white block">
+                  {language === 'bn' ? 'থিম / মোড নির্বাচন (Theme Mode)' : 'Appearance Mode'}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isDarkMode && onToggleDarkMode) onToggleDarkMode();
+                    }}
+                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      !isDarkMode
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 border-amber-300 dark:border-amber-700 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100'
+                    }`}
+                  >
+                    <span>Light Mode (লাইট)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isDarkMode && onToggleDarkMode) onToggleDarkMode();
+                    }}
+                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      isDarkMode
+                        ? 'bg-stone-900 text-amber-300 border-stone-700 shadow-xs'
+                        : 'bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100'
+                    }`}
+                  >
+                    <span>Dark Mode (ডার্ক)</span>
+                  </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ABOUT AANCHOL (Requirement 4: About) */}
+          {activeTab === 'about' && (
+            <div className="bg-white dark:bg-stone-800 p-5 rounded-2xl border border-stone-200 dark:border-stone-700 space-y-4 text-xs shadow-2xs">
+              <div className="flex items-center gap-2 pb-2 border-b border-stone-100 dark:border-stone-700">
+                <Sparkles className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
+                  {language === 'bn' ? 'আঁচল হেরিটেজ শাড়ি সম্পর্কে' : 'About Aanchol Heritage Sarees'}
+                </h4>
+              </div>
+
+              <p className="text-stone-600 dark:text-stone-300 leading-relaxed">
+                {language === 'bn'
+                  ? 'আঁচল হেরিটেজ শাড়ি বাংলাদেশের শতাব্দীপ্রাচীন তাঁতশিল্প ও শাড়ি ঐতিহ্যের এক বিশ্বস্ত নাম। রূপগঞ্জ ও ডেমরার দক্ষ তাঁতিদের হাতে বোনা খাঁটি ঢাকাই জামদানি, মসলিন, টাঙ্গাইলের সুতি তাঁত ও রাজশাহীর খাঁটি সিল্ক কোনো মধ্যস্বত্বভোগী ছাড়াই আমরা সরাসরি পৌঁছে দিই আপনার দুয়ারে।'
+                  : 'Aanchol Heritage Sarees is Dhaka’s premier handloom sanctuary preserving authentic Bangladeshi weaver traditions. From 80-count fine Dhakai Jamdani to imperial Dhakai Muslin and Rajshahi Silk, every saree is masterfully woven by certified generational artisans.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 space-y-1">
+                  <span className="font-bold text-amber-900 dark:text-amber-300 block">১০০% আসল তাঁতের গ্যারান্টি</span>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-300">
+                    প্রতিটি শাড়িতে ব্যবহৃত হয় খাঁটি সুতি, রেশম ও জরি সুতা।
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 space-y-1">
+                  <span className="font-bold text-amber-900 dark:text-amber-300 block">ক্যাশ অন ডেলিভারি ও পরিদর্শন</span>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-300">
+                    পার্সেল খুলে কাপড় ও কাজ দেখে নিশ্চিত হয়ে মূল্য পরিশোধের সুবিধা।
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-stone-100 dark:border-stone-700 text-stone-500 dark:text-stone-400 text-[11px] space-y-1">
+                <div><strong>শো-রুম ও হাব:</strong> হাউজ ১৪/এ, রোড ২৭, ধানমন্ডি, ঢাকা ১২০৯</div>
+                <div><strong>হটলাইন:</strong> ০৯৬১২-৪৪৪৮৮৮ · <strong>হোয়াটসঅ্যাপ:</strong> +৮৮০ ১৭০০-০০০০০০</div>
               </div>
             </div>
           )}

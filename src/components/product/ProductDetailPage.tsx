@@ -17,7 +17,8 @@ import {
   Info,
   Check,
   RefreshCw,
-  Award
+  Award,
+  ArrowRight
 } from 'lucide-react';
 import { Product, ProductVariant, Language, Review } from '../../types';
 import { translations } from '../../i18n/translations';
@@ -33,6 +34,7 @@ interface ProductDetailPageProps {
   onSelectProduct: (product: Product, selectedVariant?: ProductVariant) => void;
   onOpenAllReviews?: (product: Product) => void;
   onExploreCategory?: (categoryId: string) => void;
+  onNavigateToCategoryBlog?: (categoryId: string) => void;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
@@ -44,7 +46,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onDirectOrder,
   onSelectProduct,
   onOpenAllReviews,
-  onExploreCategory
+  onExploreCategory,
+  onNavigateToCategoryBlog
 }) => {
   const t = translations[language];
 
@@ -78,6 +81,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [isAddedToast, setIsAddedToast] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 50 });
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   // Reviews for this saree
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -125,7 +129,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // Related Sarees (Requirement 6: more sarees in category)
   const relatedSarees = store.getRecommended(product.id, 8);
-  const carouselRef = useRef<HTMLDivElement>(null);
 
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
@@ -330,6 +333,32 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   {product.reviewCount} {language === 'bn' ? 'যাচাইকৃত গ্রাহক রিভিউ' : 'Verified Reviews'}
                 </span>
               </div>
+            </div>
+
+            {/* Requirement 2: Colored background card with saree name, very short details, and More button redirecting to blog */}
+            <div className="bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/10 dark:from-amber-950/40 dark:to-stone-900/40 rounded-2xl p-4 border border-amber-300/80 dark:border-amber-700/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+              <div className="space-y-1 min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 block">
+                  {language === 'bn' ? 'শাড়ি পরিচিতি ও বুনন শিল্প' : 'Saree Heritage Details'}
+                </span>
+                <h4 className="font-serif text-base font-bold text-stone-900 dark:text-white truncate">
+                  {language === 'bn' ? product.nameBn : product.nameEn}
+                </h4>
+                <p className="text-xs text-stone-700 dark:text-stone-300 line-clamp-1 font-medium">
+                  {product.shortHeritageHighlightEn || `${product.sareeType} · ${product.fabric} · Traditional Handloom`}
+                </p>
+              </div>
+
+              {onNavigateToCategoryBlog && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToCategoryBlog(product.categoryId)}
+                  className="px-4 py-2 bg-stone-900 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-center group"
+                >
+                  <span>{language === 'bn' ? 'বিস্তারিত ব্লগ পড়ুন (More)' : 'Read Blog Story (More)'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform text-amber-300" />
+                </button>
+              )}
             </div>
 
             {/* Price & Savings Display */}
@@ -716,14 +745,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </form>
               )}
 
-              {/* Reviews List (Requirement 7: show just 3 reviews on details page) */}
+              {/* Reviews List (Requirement 7: show just 1 review preview on details page, more redirects to specific saree reviews) */}
               <div className="space-y-3">
                 {reviews.length === 0 ? (
                   <p className="text-xs text-stone-500 py-3 italic">
                     {language === 'bn' ? 'এখনো কোনো রিভিউ দেওয়া হয়নি।' : 'No reviews yet for this product.'}
                   </p>
                 ) : (
-                  reviews.slice(0, 3).map((rev) => (
+                  reviews.slice(0, 1).map((rev) => (
                     <div
                       key={rev.id}
                       className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-700/60 space-y-1.5 text-xs"

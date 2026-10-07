@@ -19,6 +19,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   // Active banners only
   const activeBanners = banners.filter((b) => b.isActive);
+  const current = activeBanners[currentIndex] || activeBanners[0];
 
   // Auto-slide every 6 seconds if multiple banners
   useEffect(() => {
@@ -29,15 +30,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     return () => clearInterval(interval);
   }, [activeBanners.length]);
 
-  if (activeBanners.length === 0) {
-    return null; // As requested: If no banner assigned, slot remains empty!
-  }
-
-  const current = activeBanners[currentIndex];
-
   // Countdown timer calculations
   const calculateTimeLeft = () => {
-    if (!current.countdownTarget) return null;
+    if (!current?.countdownTarget) return null;
     const difference = +new Date(current.countdownTarget) - +new Date();
     if (difference <= 0) return null;
 
@@ -52,12 +47,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
   useEffect(() => {
-    if (!current.hasCountdown || !current.countdownTarget) return;
+    if (!current?.hasCountdown || !current?.countdownTarget) return;
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
     return () => clearInterval(timer);
   }, [current]);
+
+  if (activeBanners.length === 0 || !current) {
+    return null; // As requested: If no banner assigned, slot remains empty!
+  }
 
   return (
     <div className="relative w-full overflow-hidden bg-stone-900 border-b border-stone-800">

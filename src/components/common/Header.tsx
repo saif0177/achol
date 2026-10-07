@@ -194,39 +194,17 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Right Action Utilities */}
           <div className="flex items-center gap-1.5 sm:gap-2.5">
             
-            {/* Mobile Actions: Logo, Search, Notification, Account as requested in Requirement 8 */}
+            {/* Mobile Actions: Only Search and Cart on top navigation bar */}
             <button
               onClick={onOpenSearch}
               className="md:hidden p-2 text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
               title="Search"
+              aria-label="Search"
             >
               <Search className="w-5 h-5" />
             </button>
 
-            {/* Mobile Notification Button */}
-            {onOpenNotifications && (
-              <button
-                onClick={onOpenNotifications}
-                className="md:hidden relative p-2 text-stone-700 dark:text-stone-300 hover:text-stone-900 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
-                title="Notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotificationsCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-                )}
-              </button>
-            )}
-
-            {/* Mobile Quick Account / Wishlist Button */}
-            <button
-              onClick={onOpenAccount}
-              className="md:hidden p-2 text-stone-700 dark:text-stone-300 hover:text-stone-900 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
-              title="Account"
-            >
-              <User className="w-5 h-5" />
-            </button>
-
-            {/* Desktop Wishlist / Love Button (Requirement 2 & 9) */}
+            {/* Desktop Wishlist / Love Button */}
             <button
               onClick={onOpenWishlist}
               className="hidden md:flex relative p-2.5 text-stone-700 dark:text-stone-300 hover:text-rose-600 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
@@ -240,10 +218,11 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Desktop Cart Button (Directly runnable on navigation bar as requested in Requirement 3) */}
+            {/* Cart Button (Runs on mobile & desktop with live badge) */}
             <button
               onClick={onOpenCart}
-              className="relative flex items-center gap-2 px-3.5 py-2 bg-stone-900 dark:bg-amber-950 text-stone-50 hover:bg-amber-900 dark:hover:bg-amber-900 border border-stone-800 dark:border-amber-800 rounded-xl transition-all text-xs font-bold shadow-sm cursor-pointer"
+              className="relative flex items-center gap-2 px-3 py-2 sm:px-3.5 bg-stone-900 dark:bg-amber-950 text-stone-50 hover:bg-amber-900 dark:hover:bg-amber-900 border border-stone-800 dark:border-amber-800 rounded-xl transition-all text-xs font-bold shadow-sm cursor-pointer"
+              aria-label="Cart"
             >
               <ShoppingBag className="w-4 h-4 text-amber-300" />
               <div className="hidden sm:flex flex-col text-left leading-tight">

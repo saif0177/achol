@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Star, ShoppingBag, Check, Zap, Truck, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Heart, Star, ShoppingBag, Check, Zap, Truck, ShieldCheck, ArrowRight, Flame } from 'lucide-react';
 import { Product, Language, ProductVariant } from '../../types';
 import { translations } from '../../i18n/translations';
 
@@ -77,7 +77,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <div
         onClick={() => onSelectProduct(product, selectedVariant)}
-        className="group bg-white rounded-2xl border border-stone-200/90 hover:border-amber-900/40 hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex flex-col md:flex-row gap-5 cursor-pointer relative"
+        className="group bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 hover:border-amber-900/40 dark:hover:border-amber-500/40 hover:shadow-md transition-all duration-200 p-4 sm:p-5 flex flex-col md:flex-row gap-5 cursor-pointer relative"
       >
         {/* Left: Thumbnail & Badges */}
         <div className="relative w-full md:w-56 lg:w-64 aspect-[4/5] md:aspect-square rounded-xl overflow-hidden bg-stone-100 shrink-0">
@@ -90,7 +90,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Top badges */}
           <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
-            {product.discountPercent && product.discountPercent > 0 ? (
+            {product.flashSaleTitle || product.flashSaleId ? (
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-gradient-to-r from-rose-700 via-rose-600 to-amber-600 text-white rounded shadow-xs flex items-center gap-1 border border-rose-400/40">
+                <Flame className="w-3 h-3 fill-amber-300 text-amber-300 animate-pulse" />
+                <span>{product.flashSaleTitle || 'Flash Deal'}</span>
+                {product.discountPercent ? <span>-{product.discountPercent}%</span> : null}
+              </span>
+            ) : product.discountPercent && product.discountPercent > 0 ? (
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-rose-700 text-white rounded shadow-xs">
                 -{product.discountPercent}% OFF
               </span>
@@ -102,11 +108,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
 
-          {/* Wishlist Button: hidden by default, smoothly reveals when hovering over the card */}
+          {/* Wishlist Button: always easily accessible and visible */}
           <button
+            type="button"
             onClick={handleWishlistClick}
-            className="absolute top-2.5 right-2.5 p-2 rounded-full bg-white/95 dark:bg-stone-900/95 text-stone-700 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-500 shadow-md transition-all duration-200 transform cursor-pointer opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
+            className={`absolute top-2.5 right-2.5 p-2 rounded-full shadow-md transition-all duration-200 transform cursor-pointer z-10 ${
+              isWishlisted
+                ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 opacity-100 scale-100 ring-2 ring-rose-500/30'
+                : 'bg-white/95 dark:bg-stone-900/95 text-stone-600 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-400 opacity-90 sm:opacity-75 sm:group-hover:opacity-100 scale-100 hover:scale-110'
+            }`}
             title={t.navWishlist}
+            aria-label={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
             <Heart
               className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-rose-600 text-rose-600' : ''}`}
@@ -282,7 +294,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div
       onClick={() => onSelectProduct(product, selectedVariant)}
-      className="group relative flex flex-col bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-amber-900/40 transition-all duration-300 cursor-pointer"
+      className="group relative flex flex-col bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-amber-900/40 dark:hover:border-amber-500/40 transition-all duration-300 cursor-pointer"
     >
       {/* Product Image Area */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-stone-100">
@@ -295,9 +307,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Top Floating Badges & Wishlist */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-          {/* Aesthetic Discount Tag (Requirement 5: clean percent discount badge) */}
-          <div className="flex items-start">
-            {product.discountPercent && product.discountPercent > 0 ? (
+          {/* Aesthetic Discount Tag & Offer Badges */}
+          <div className="flex flex-col gap-1 items-start">
+            {product.flashSaleTitle || product.flashSaleId ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-800 via-rose-700 to-amber-700 text-white rounded-lg shadow-md border border-rose-400/40">
+                <Flame className="w-3.5 h-3.5 fill-amber-300 text-amber-300 animate-pulse" />
+                <span className="truncate max-w-[110px] sm:max-w-none">{product.flashSaleTitle || 'Flash Deal'}</span>
+                {product.discountPercent ? <span>-{product.discountPercent}%</span> : null}
+              </span>
+            ) : product.discountPercent && product.discountPercent > 0 ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-800 to-amber-900 text-amber-50 rounded-lg shadow-sm border border-amber-700/30">
                 <span>-{product.discountPercent}%</span>
                 <span className="text-[9px] font-semibold opacity-90">OFF</span>
@@ -309,11 +327,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             ) : null}
           </div>
 
-          {/* Wishlist Button: hidden by default every time, smoothly appears when hovering over the card */}
+          {/* Wishlist Button: always easily accessible and visible */}
           <button
+            type="button"
             onClick={handleWishlistClick}
-            className="pointer-events-auto p-2 rounded-full bg-white/95 dark:bg-stone-900/95 text-stone-700 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-500 shadow-md transition-all duration-200 transform cursor-pointer opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
+            className={`pointer-events-auto p-2 rounded-full shadow-md transition-all duration-200 transform cursor-pointer z-10 ${
+              isWishlisted
+                ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 opacity-100 scale-100 ring-2 ring-rose-500/30'
+                : 'bg-white/95 dark:bg-stone-900/95 text-stone-600 dark:text-stone-300 hover:text-rose-600 dark:hover:text-rose-400 opacity-90 sm:opacity-75 sm:group-hover:opacity-100 scale-100 hover:scale-110'
+            }`}
             title={t.navWishlist}
+            aria-label={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
             <Heart
               className={`w-3.5 h-3.5 transition-colors ${
@@ -363,7 +387,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Product Name */}
-          <h3 className="font-serif text-sm sm:text-base font-semibold text-stone-900 group-hover:text-amber-900 transition-colors line-clamp-1 leading-snug">
+          <h3 className="font-serif text-sm sm:text-base font-semibold text-stone-900 dark:text-stone-100 group-hover:text-amber-900 dark:group-hover:text-amber-400 transition-colors line-clamp-1 leading-snug">
             {language === 'bn' ? product.nameBn : product.nameEn}
           </h3>
 
@@ -372,7 +396,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <div className="flex items-center text-amber-500">
               <Star className="w-3 h-3 fill-current" />
             </div>
-            <span className="font-semibold text-stone-800">{product.rating}</span>
+            <span className="font-semibold text-stone-800 dark:text-stone-200">{product.rating}</span>
             <span className="text-stone-400">({product.reviewCount})</span>
           </div>
         </div>

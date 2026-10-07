@@ -1,4 +1,4 @@
-import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification } from '../types';
+import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle } from '../types';
 
 const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
@@ -198,7 +198,16 @@ const INITIAL_PRODUCTS: Product[] = [
       }
     ],
     salesCount: 42,
-    viewsCount: 1420
+    viewsCount: 1420,
+    flashSaleId: 'fs-eid-special',
+    flashSaleDiscount: 15,
+    flashSaleTitle: 'Royal Heritage Flash Sale — Flat 15% OFF',
+    shortHeritageHighlightEn: '80-Count Fine Jamdani with Panna Hajar geometric motifs, hand-woven along Shitalakshya river.',
+    shortHeritageHighlightBn: '৮০ কাউন্ট মিহি সুতায় শীতলক্ষ্যার তীরে বোনা পান্না-হাজার নকশাযুক্ত ঐতিহ্যবাহী ঢাকাই জামদানি।',
+    artisanVillage: 'Noapara, Rupganj, Narayanganj',
+    weavingDurationDays: 45,
+    heritageArticleEn: 'This heirloom piece is crafted through the supplementary-weft technique without printed graphs. Master weaver Al-Amin and his assistant worked 45 consecutive days in Rupganj. Over 1,200 individual Kandari needle movements form the intricate floral pallu, reflecting 400 years of Mughal patronage.',
+    heritageArticleBn: 'এই অনবদ্য শাড়িটি রূপগঞ্জের নোয়াপাড়ায় প্রবীণ তাঁতি আল-আমিন ও তাঁর সহকারীর ৪৫ দিনের একনিষ্ঠ পরিশ্রমে তৈরি। কান্দারির সুক্ষ্ম সুই দিয়ে ১,২০০ বারেরও বেশি সুতার গাঁথুনিতে ফুটে উঠেছে মোঘল আমলের ঐতিহ্যবাহী রাজকীয় পান্না-হাজার নকশা।'
   },
   {
     id: 'p-dm204',
@@ -258,7 +267,16 @@ const INITIAL_PRODUCTS: Product[] = [
       }
     ],
     salesCount: 18,
-    viewsCount: 980
+    viewsCount: 980,
+    flashSaleId: 'fs-eid-special',
+    flashSaleDiscount: 15,
+    flashSaleTitle: 'Royal Heritage Flash Sale — Flat 15% OFF',
+    shortHeritageHighlightEn: 'Feather-light 100-count true Muslin recreated from Phuti Karpas cotton with certified loom seal.',
+    shortHeritageHighlightBn: 'বাতাসের মতো হালকা ১০০ কাউন্টের খাঁটি ফুটি কার্পাস তুলায় বোনা রাজকীয় ঢাকাই মসলিন শাড়ি।',
+    artisanVillage: 'Demra, Dhaka',
+    weavingDurationDays: 60,
+    heritageArticleEn: 'Recreating the legendary "Woven Air" of Bengal, this saree weighs barely 320 grams. Spun during dawn hours when humidity keeps fragile gossamer threads from snapping, it honors Bengal’s proudest historic textile revival.',
+    heritageArticleBn: 'বাংলার কিংবদন্তি "বাতাসে বোনা কাপড়" ঢাকাই মসলিনের গৌরবোজ্জ্বল পুনর্জন্ম। মাত্র ৩২০ গ্রাম ওজনের এই শাড়ির প্রতিটি সুতা ভোরের আর্দ্র বাতাসে অতিসূক্ষ্মভাবে কাটা হয়েছে।'
   },
   {
     id: 'p-tt401',
@@ -327,7 +345,16 @@ const INITIAL_PRODUCTS: Product[] = [
       }
     ],
     salesCount: 89,
-    viewsCount: 2150
+    viewsCount: 2150,
+    flashSaleId: 'fs-handloom-festival',
+    flashSaleDiscount: 20,
+    flashSaleTitle: 'Artisan Tangail Taat Handloom Festive Banner',
+    shortHeritageHighlightEn: 'Breathable Tangail pitloom weave featuring iconic peacock border and combed cotton.',
+    shortHeritageHighlightBn: 'টাঙ্গাইলের ঐতিহ্যবাহী পিটলুমে বোনা আরামদায়ক কম্বড সুতির ময়ূরকণ্ঠী নকশী পাড় শাড়ি।',
+    artisanVillage: 'Bajitpur, Tangail',
+    weavingDurationDays: 7,
+    heritageArticleEn: 'Hand-woven by the generational Taati community of Bajitpur, Tangail. Celebrated for soft breathable texture, dense jacquard border, and natural cotton comfort.',
+    heritageArticleBn: 'টাঙ্গাইলের বাজিতপুরের ঐতিহ্যবাহী তাঁতিদের হাতে বোনা খাঁটি সুতি শাড়ি। হালকা, টেকসই এবং গরমে পড়ার জন্য অসাধারণ আরামদায়ক।'
   },
   {
     id: 'p-sk302',
@@ -340,53 +367,52 @@ const INITIAL_PRODUCTS: Product[] = [
     categoryId: 'rajshahi-silk',
     subcategoryId: 'silk-mulberry',
     sareeType: 'Rajshahi Silk',
-    fabric: 'Certified 100% Pure Mulberry Silk Sericulture',
-    fabricBn: 'রাজশাহীর ১০০% খাঁটি তুঁত সিল্কের রেশম সুতা',
-    occasion: 'Weddings, Receptions & Evening Banquets',
-    occasionBn: 'বিয়ে বাড়ি, রিসেপশন ও জমকালো নৈশভোজ',
+    fabric: '100% Pure Mulberry Silk with Silk Mark Assurance',
+    fabricBn: '১০০% খাঁটি মালবেরি রেশম সিল্ক (সিল্ক মার্ক প্রত্যয়িত)',
+    occasion: 'Weddings, Formal Cultural Events & Receptions',
+    occasionBn: 'বিয়ে, জমকালো পারিবারিক অনুষ্ঠান ও বিশেষ উৎসব',
     suitableAgeRange: '25-35',
-    descriptionEn: 'Naturally soft Mulberry silk with a brilliant mirror-like drape. Styled with intricate hand-woven floral jaal on the anchol and contrast temple border.',
-    descriptionBn: 'রাজশাহীর সেরা রেশম সুতায় তৈরি এই শাড়িটিতে রয়েছে অসাধারণ মসৃণতা ও উজ্জ্বল দীপ্তি। জমকালো অ্যান্টিক জরির আঁচল আপনাকে অনুষ্ঠানের মূল আকর্ষণে পরিণত করবে।',
-    careInstructionsEn: 'Dry clean recommended. Iron on low silk setting from the reverse side.',
-    careInstructionsBn: 'ড্রাই ক্লিন করা শ্রেয়। উল্টোপিঠ থেকে মৃদু তাপে ইস্ত্রি করুন।',
-    length: '5.5 meters (12 Haat) with matching Blouse Piece',
+    descriptionEn: 'Sourced from the historic sericulture belt of Rajshahi along the Padma basin. Woven with pure Mulberry silk yarns and accented with intricate antique gold zari on the anchol.',
+    descriptionBn: 'রাজশাহীর পদ্মার তীরবর্তী রেশমপল্লীর ঐতিহ্যবাহী খাঁটি তুঁত রেশম সুতায় বোনা। শাড়ির আঁচলে রয়েছে নিখুঁত অ্যান্টিক সোনালি জরির অপূর্ব অলংকরণ।',
+    careInstructionsEn: 'Dry clean only. Store wrapped in cotton cloth.',
+    careInstructionsBn: 'শুধুমাত্র ড্রাই ওয়াশ করুন। সূতির কাপড়ে মুড়িয়ে ছায়াযুক্ত স্থানে রাখুন।',
+    length: '5.5 meters (12 Haat) with running Blouse Piece',
     hasBlousePiece: true,
-    stock: 9,
+    stock: 14,
     isFeatured: true,
-    isNewArrival: true,
-    isSale: false,
+    isNewArrival: false,
+    isSale: true,
     isActive: true,
     rating: 4.9,
-    reviewCount: 26,
-    keywords: ['silk', 'rajshahi', 'emerald', 'green', 'mulberry', 'resham', 'wedding', 'সিল্ক', 'রাজশাহী', 'সবুজ'],
+    reviewCount: 31,
+    keywords: ['silk', 'rajshahi', 'mulberry', 'emerald', 'green', 'zari', 'সিল্ক', 'রাজশাহী', 'রেশম'],
     primaryImage: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
     images: [
       '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg'
     ],
     variants: [
       {
-        id: 'v-sk302-green',
-        colorNameEn: 'Deep Emerald Green',
+        id: 'v-sk302-emerald',
+        colorNameEn: 'Regal Emerald Green',
         colorNameBn: 'গাঢ় পান্না সবুজ',
         colorHex: '#047857',
         colorFamily: 'green',
         image: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
-        stock: 5,
-        sku: 'SK-302-GRN'
-      },
-      {
-        id: 'v-sk302-navy',
-        colorNameEn: 'Sapphire Royal Blue',
-        colorNameBn: 'নীলমণি নীল',
-        colorHex: '#1D4ED8',
-        colorFamily: 'blue',
-        image: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
-        stock: 4,
-        sku: 'SK-302-BLU'
+        stock: 6,
+        sku: 'SK-302-EME'
       }
     ],
-    salesCount: 31,
-    viewsCount: 1100
+    salesCount: 36,
+    viewsCount: 1650,
+    flashSaleId: 'fs-eid-special',
+    flashSaleDiscount: 15,
+    flashSaleTitle: 'Royal Heritage Flash Sale — Flat 15% OFF',
+    shortHeritageHighlightEn: '100% Pure Mulberry Silk with rich Swarnachari zari border from the Padma sericulture basin.',
+    shortHeritageHighlightBn: 'পদ্মার তীরবর্তী রেশমপল্লীর খাঁটি তুঁত রেশম ও স্বর্ণচরী জরি পাড়ের আলো ঝলমলে রাজশাহী সিল্ক।',
+    artisanVillage: 'Bholahat, Rajshahi',
+    weavingDurationDays: 21,
+    heritageArticleEn: 'Originating from sericulture along the Padma riverbanks in Bholahat, this silk is derived from pure mulberry leaves. The resulting triangular prism fiber structure produces a regal natural sheen that refracts light softly.',
+    heritageArticleBn: 'পদ্মার অববাহিকায় তুঁত রেশম পোকার গুটি থেকে সুতা কেটে তৈরি হয় ঐতিহ্যবাহী উজ্জ্বল ও দীর্ঘস্থায়ী রাজশাহী সিল্ক। সিল্ক মার্কের বিশ্বস্ততার সাথে এটি বাঙালি নারীর প্রথম পছন্দ।'
   },
   {
     id: 'p-kt505',
@@ -828,6 +854,117 @@ const INITIAL_FLASH_SALES: FlashSaleCampaign[] = [
   }
 ];
 
+export const INITIAL_CATEGORY_ARTICLES: CategoryArticle[] = [
+  {
+    id: 'art-dhakai-jamdani',
+    categoryId: 'dhakai-jamdani',
+    titleEn: 'The Immortal Art of Dhakai Jamdani: Weaving Whispers Along the Shitalakshya',
+    titleBn: 'শীতলক্ষ্যার তীরে ঢাকাই জামদানির বুনন উপাখ্যান ও মোঘল ঐতিহ্যের মহিমা',
+    slug: 'dhakai-jamdani-heritage-story',
+    summaryEn: 'Declared a UNESCO Intangible Cultural Heritage, Dhakai Jamdani represents the pinnacle of supplementary-weft geometric weaving crafted from memory.',
+    summaryBn: 'ইউনেস্কোর বিশ্ব সাংস্কৃতিক ঐতিহ্য হিসেবে স্বীকৃতি পাওয়া ঢাকাই জামদানি হলো বিশ্বের অন্যতম সেরা অলংকরণ বুনন শিল্প যা কোনো লিখিত গ্রাফ ছাড়াই মনের স্মৃতি থেকে বোনা হয়।',
+    contentEn: `Dhakai Jamdani is not merely a saree; it is a canvas of breathing history nurtured for centuries along the banks of the Shitalakshya river in Rupganj, Narayanganj. Unlike modern automated jacquard looms, the Jamdani weaver holds no graph paper—every intricate motif is drawn purely from memory, passed down from father to son across four hundred years.
+
+During the Mughal zenith under Emperor Jahangir, royal karkhanas produced ethereal fabrics celebrated as "Ab-i-Rawan" (Running Water) and "Shabnam" (Morning Dew) so translucent that imperial courtiers marvelled at their sheer divinity. The magic lies in the supplementary weft technique: while the basic warp holds the fabric, master craftsmen work with fine bamboo needle-like spools (Kandari) to interlace gold zari or fine cotton threads into poetic motifs.
+
+Iconic traditional Jamdani motifs include:
+• Panna Hajar (Thousand Emeralds): Dense floral clusters radiating across the body.
+• Tercha: Diagonal floral vine sprays creating rhythmic movement.
+• Jal / Dubli Jal: Continuous delicate lattice net reminiscent of morning mist.
+• Korola & Kalki: Classic paisley and bitter-gourd blossoms adorning the pallu.
+
+Today in Rupganj and Demra, Aanchol directly partners with master weaver families. Each 80-count to 100-count saree requires between 20 to 65 days of synchronized dedication by two weavers. Owning an authentic Dhakai Jamdani is preserving a piece of Bengal’s living soul.`,
+    contentBn: `ঢাকাই জামদানি কেবল একটি পোশাক নয়, এটি শীতলক্ষ্যার তীরের শতাব্দীর জীবন্ত ইতিহাস। নারায়ণগঞ্জের রূপগঞ্জ ও ডেমরায় বংশপরম্পরায় গড়ে ওঠা তাঁতিদের স্মৃতি থেকেই জন্ম নেয় এই অনুপম অলংকরণ। কোনো লিখিত গ্রাফ বা আধুনিক যন্ত্র ছাড়া কেবল হাতের কারুকার্যে এই শাড়ি বোনা হয়।
+
+মুঘল সম্রাট জাহাঙ্গীরের আমলে এই কাপড়ের নাম ছিল "আব-ই-রওয়ান" (প্রবহমান জল) এবং "শব-নম" (ভোরের শিশির)। বংশপরম্পরায় চলে আসা কান্দারির নিখুঁত স্পর্শে তৈরি হয় পান্না-হাজার, তেরছা, জলছাপ, করলা ও কলকা নকশা।
+
+ঐতিহ্যবাহী জামদানির বিখ্যাত নকশাসমূহ:
+• পান্না হাজার: শাড়ির জমিন জুড়ে হাজার হাজার ক্ষুদ্র ফুলের চমৎকার বিন্যাস।
+• তেরছা: কোনাকুনি লতা ও পাতার নান্দনিক নকশা।
+• জাল বুনন: কুয়াশার মতো সূক্ষ্ম জালের মায়াবী বিস্তার।
+• কলকা ও করলা: আঁচল ও পাড়ে ঐতিহ্যবাহী রাজকীয় অলংকরণ।
+
+আঁচল সরাসরি রূপগঞ্জের জাতীয় পুরস্কারপ্রাপ্ত কারিগর পরিবারের সাথে কাজ করে। একটি ৮০ থেকে ১০০ কাউন্টের জামদানি বুনতে দুই জন তাঁতির ২০ থেকে ৬৫ দিন একটানা শ্রম লাগে। খাঁটি ঢাকাই জামদানি পরিধান করা মানেই বাংলার আত্মাকে ধারণ করা।`,
+    featuredImage: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+    author: 'Aanchol Heritage Textile Research Wing',
+    publishedAt: '2026-10-01',
+    readTime: '4 min read',
+    tags: ['UNESCO Heritage', 'Rupganj Weavers', '80 Count Cotton', 'Mughal Jamdani', 'Artisan Handloom'],
+    historicalEra: '16th Century Mughal Bengal to Present',
+    artisanHub: 'Rupganj & Demra, Narayanganj'
+  },
+  {
+    id: 'art-dhakai-muslin',
+    categoryId: 'dhakai-muslin',
+    titleEn: 'Woven Air: The Miracle Revival of Phuti Karpas and Royal Dhakai Muslin',
+    titleBn: 'বাতাসে বোনা মায়াজাল: ফুটি কার্পাস ও বাংলার রাজকীয় ঢাকাই মসলিনের পুনর্জন্ম',
+    slug: 'dhakai-muslin-revival-story',
+    summaryEn: 'Celebrated as fabric so gossamer a 50-meter length could pass through a signet ring, Dhakai Muslin has returned to Bengal looms through scientific research.',
+    summaryBn: 'আংটির ভেতর দিয়ে গলে যাওয়া যে কিংবদন্তি ঢাকাই মসলিন হারিয়ে গিয়েছিল, তা আজ বাংলার তাঁতে নতুন করে ফিরে এসেছে।',
+    contentEn: `For over two centuries, the world believed the legendary Dhakai Muslin had vanished forever into the annals of colonial history. Spun from the elusive Phuti Karpas cotton (Gossypium arboreum var. neglecta) that bloomed exclusively along the Meghna river basin, this miraculous fabric weighed mere grams and earned names like "Baft Hawa" (Woven Air).
+
+Through groundbreaking genetic research and revived hand-spinning techniques in Bangladesh, master artisans have successfully restored the 100-count to 300-count true Dhakai Muslin. Spun during dawn hours when humidity keeps the ultra-fine fiber from snapping, each thread is hand-drawn with thumb and forefinger lubricated with natural dew.
+
+Aanchol’s Royal Muslin series celebrates this triumphant revival. Each saree is delivered with a certified heritage seal, honoring the weavers who restored Bengal’s proudest textile jewel to the modern era.`,
+    contentBn: `বাংলার হারিয়ে যাওয়া গর্বের গৌরবোজ্জ্বল পুনর্জন্ম ঢাকাই মসলিন। ফুটি কার্পাস তুলার অতিসূক্ষ্ম সুতায় বোনা এই শাড়ি এত হালকা যে গায়ে দিলে মনে হয় এক টুকরো বাতাস। 
+
+বাংলাদেশের বিজ্ঞানী ও তাঁতিদের নিরলস গবেষণায় এই অতিপ্রাচীন ঐতিহ্য পুনরায় জীবন্ত হয়ে উঠেছে। ভোরের প্রথম আলোয় যখন বাতাসে আর্দ্রতা বেশি থাকে, তখন অভিজ্ঞ সুতা কাটুনীদের আঙুলের ছোঁয়ায় তৈরি হয় ১০০ থেকে ৩০০ কাউন্টের মিহি সুতা।
+
+আঁচলের প্রতিটি মসলিন শাড়ি শতভাগ খাঁটি ও তাঁত সার্টিফিকেশনসহ সরবরাহ করা হয়, যা ভবিষ্যৎ প্রজন্মের কাছে বাংলার সর্বশ্রেষ্ঠ ঐতিহ্যের স্মারক।`,
+    featuredImage: '/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg',
+    author: 'Farhana Chowdhury, Handloom Curator',
+    publishedAt: '2026-09-25',
+    readTime: '5 min read',
+    tags: ['Phuti Karpas', 'Royal Muslin', 'Woven Air', 'Meghna Basin', 'Heritage Revival'],
+    historicalEra: 'Ancient Bengal & Modern Scientific Revival',
+    artisanHub: 'Demra & Rupganj Hub'
+  },
+  {
+    id: 'art-tangail-taat',
+    categoryId: 'tangail-taat',
+    titleEn: 'Rhythms of Bajitpur: How Tangail Taatis Crafted the Everyday Breath of Bengal',
+    titleBn: 'বাজিতপুরের খটখট শব্দ: টাঙ্গাইল তাঁতের খাঁটি সুতি ও নকশী পাড়ের ইতিহাস',
+    slug: 'tangail-taat-artisan-heritage',
+    summaryEn: 'Famed for soft combed cotton, striking border motifs, and comfortable drape, Tangail Taat is Bengal’s most beloved daily elegance.',
+    summaryBn: 'টাঙ্গাইলের ঐতিহ্যবাহী বসাক তাঁতিদের পিটলুমে বোনা আরামদায়ক সুতি ও নকশী পাড়ের শাড়ি বাঙালি নারীর চিরন্তন পছন্দের পোশাক।',
+    contentEn: `In the villages of Bajitpur, Pathrail, and Karatia in Tangail, the rhythmic clatter of wooden fly-shuttle pit looms begins before sunrise. The Basak weaving community has practiced this craft for generations, perfecting the balance between high tensile combed cotton and airy, breathable comfort.
+
+Unlike heavy silks, Tangail Taat is designed for the tropical climate of Bengal. Master weavers introduce exquisite borders—known locally as Nakshi Par, Bel Par, and Peacock motifs—while maintaining a feather-light body that drapes effortlessly throughout long festive days or professional settings.`,
+    contentBn: `টাঙ্গাইলের পাথরাইল, বাজিতপুর ও করটিয়ার গ্রামগুলোতে ভোর হতেই শুরু হয় কাঠের তাঁতের খটখট মধুর শব্দ। প্রজন্মের পর প্রজন্ম ধরে বসাক তাঁতিরা নিখুঁত দক্ষতায় বুনে চলেছেন এই আরামদায়ক সুতি শাড়ি।
+
+গরমের দিনে স্বস্তি দিতে এবং যেকোনো ঘরোয়া বা অফিশিয়াল অনুষ্ঠানে আভিজাত্য ফুটিয়ে তুলতে টাঙ্গাইল তাঁতের জুড়ি নেই। এর ময়ূরকণ্ঠী পাড়, বেল পাড় ও নকশী পাড় বাংলার নিজস্ব সংস্কৃতির মূর্ত প্রতীক।`,
+    featuredImage: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+    author: 'Subrata Basak, Master Weaver Collective',
+    publishedAt: '2026-09-18',
+    readTime: '3 min read',
+    tags: ['Tangail Taat', 'Bajitpur Looms', 'Combed Cotton', 'Nakshi Border', 'Daily Elegance'],
+    historicalEra: '19th Century Taati Guilds to Present',
+    artisanHub: 'Pathrail & Bajitpur, Tangail'
+  },
+  {
+    id: 'art-rajshahi-silk',
+    categoryId: 'rajshahi-silk',
+    titleEn: 'Padma River’s Golden Thread: The Splendor of Rajshahi Mulberry & Swarnachari Silk',
+    titleBn: 'পদ্মার তীরবর্তী রেশমপল্লী: খাঁটি রাজশাহী সিল্ক ও স্বর্ণচরীর উজ্জ্বল ইতিহাস',
+    slug: 'rajshahi-pure-silk-tradition',
+    summaryEn: 'From mulberry silkworm cocoon to ceremonial handloom, Rajshahi’s sericulture produces ultra-lustrous silks revered across the nation.',
+    summaryBn: 'পদ্মার অববাহিকায় তুঁত রেশম পোকার গুটি থেকে সুতা কেটে তৈরি হয় ঐতিহ্যবাহী উজ্জ্বল ও দীর্ঘস্থায়ী রাজশাহী সিল্ক।',
+    contentEn: `Rajshahi Silk is famously known as the Queen of Fabrics in Bangladesh. Originating from sericulture along the Padma riverbanks in Bholahat and Mirganj, this silk is derived from the Bombyx mori silkworm nurtured on pure mulberry leaves.
+
+The resulting silk filament possesses a triangular prism-like structure that refracts light at different angles, producing a regal natural sheen. Aanchol’s Rajshahi Silk collection includes both understated monochrome weaves and lavish Swarnachari motifs depicting royal folk court scenes in golden zari.`,
+    contentBn: `বাংলাদেশের পোশাকশিল্পে রাজশাহী সিল্ককে বলা হয় রানীর পোশাক। পদ্মার তীরবর্তী ভোলাহাট ও রেশমপল্লীর তুঁত গাছের পাতায় লালিত রেশম পোকার গুটি থেকে আহরিত হয় এই খাঁটি রেশম সুতা।
+
+এর প্রাকৃতিক ঔজ্জ্বল্য ও দীর্ঘস্থায়িত্ব যেকোনো বিয়ে, উৎসব বা বিশেষ সন্ধ্যার জন্য অতুলনীয়। আঁচলের রাজশাহী সিল্ক শাড়িতে রয়েছে খাঁটি সিল্ক মার্কের নিশ্চয়তা।`,
+    featuredImage: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
+    author: 'Aanchol Sericulture Advisory',
+    publishedAt: '2026-09-10',
+    readTime: '4 min read',
+    tags: ['Mulberry Silk', 'Rajshahi Sericulture', 'Swarnachari', 'Padma Basin', 'Royal Lustre'],
+    historicalEra: 'Sericulture Heritage of Greater Bengal',
+    artisanHub: 'Bholahat & Rajshahi Town'
+  }
+];
+
 class StoreService {
   private products: Product[] = [];
   private categories: Category[] = [];
@@ -840,6 +977,7 @@ class StoreService {
   private landingPopups: LandingPopupConfig[] = INITIAL_LANDING_POPUPS;
   private landingPopup: LandingPopupConfig = INITIAL_LANDING_POPUP;
   private notifications: AppNotification[] = [];
+  private categoryArticles: CategoryArticle[] = INITIAL_CATEGORY_ARTICLES;
 
   constructor() {
     this.init();
@@ -911,6 +1049,8 @@ class StoreService {
         };
         this.customerAccounts.set('01712345678', demoAccount);
       }
+      const storedArticles = localStorage.getItem('aanchol_category_articles');
+      this.categoryArticles = storedArticles ? JSON.parse(storedArticles) : INITIAL_CATEGORY_ARTICLES;
     } catch {
       this.products = INITIAL_PRODUCTS;
       this.categories = INITIAL_CATEGORIES;
@@ -921,6 +1061,7 @@ class StoreService {
       this.landingPopup = INITIAL_LANDING_POPUP;
       this.flashSales = INITIAL_FLASH_SALES;
       this.notifications = INITIAL_NOTIFICATIONS;
+      this.categoryArticles = INITIAL_CATEGORY_ARTICLES;
     }
   }
 
@@ -950,12 +1091,58 @@ class StoreService {
   }
 
   public saveProduct(product: Product): void {
+    if (product.flashSaleId) {
+      const campaign = this.flashSales.find((s) => s.id === product.flashSaleId);
+      if (campaign) {
+        product.flashSaleDiscount = campaign.discountPercent;
+        product.flashSaleTitle = campaign.titleEn;
+        product.isSale = true;
+        if (!product.originalPrice || product.originalPrice <= product.price) {
+          product.originalPrice = product.price;
+        }
+        product.price = Math.round(product.originalPrice * (1 - campaign.discountPercent / 100));
+        product.discountPercent = campaign.discountPercent;
+      }
+    } else {
+      product.flashSaleDiscount = undefined;
+      product.flashSaleTitle = undefined;
+    }
+
     const idx = this.products.findIndex((p) => p.id === product.id);
     if (idx >= 0) {
       this.products[idx] = product;
     } else {
       this.products.unshift(product);
     }
+    this.persist('aanchol_products', this.products);
+  }
+
+  public getProductsForFlashSale(flashSaleId: string): Product[] {
+    return this.products.filter((p) => p.flashSaleId === flashSaleId && p.isActive);
+  }
+
+  public assignProductsToFlashSale(flashSaleId: string, productIds: string[]): void {
+    const campaign = this.flashSales.find((s) => s.id === flashSaleId);
+    const discount = campaign ? campaign.discountPercent : 0;
+    const title = campaign ? campaign.titleEn : '';
+
+    this.products.forEach((p) => {
+      if (productIds.includes(p.id)) {
+        p.flashSaleId = flashSaleId;
+        p.flashSaleDiscount = discount;
+        p.flashSaleTitle = title;
+        p.isSale = true;
+        if (!p.originalPrice || p.originalPrice <= p.price) {
+          p.originalPrice = p.price;
+        }
+        p.price = Math.round(p.originalPrice * (1 - discount / 100));
+        p.discountPercent = discount;
+      } else if (p.flashSaleId === flashSaleId) {
+        p.flashSaleId = undefined;
+        p.flashSaleDiscount = undefined;
+        p.flashSaleTitle = undefined;
+      }
+    });
     this.persist('aanchol_products', this.products);
   }
 
@@ -979,6 +1166,30 @@ class StoreService {
       this.categories[idx] = category;
     } else {
       this.categories.push(category);
+      // Auto-create a starter blogger-style article for the new category if not already present
+      const existingArticle = this.categoryArticles.find((a) => a.categoryId === category.id);
+      if (!existingArticle) {
+        const newArt: CategoryArticle = {
+          id: `art-${category.id}-${Date.now()}`,
+          categoryId: category.id,
+          titleEn: `${category.nameEn}: The Living Handloom Heritage & Master Artisan Lore`,
+          titleBn: `${category.nameBn}: ঐতিহ্যবাহী বুননশিল্প ও কারিগর ইতিহাস`,
+          slug: `${category.slug || category.id}-heritage-story`,
+          summaryEn: category.descriptionEn,
+          summaryBn: category.descriptionBn,
+          contentEn: `${category.nameEn} represents one of Bengal’s timeless handloom expressions. Each weave embodies generational artistry preserved across decades.\n\nWoven with utmost devotion, our master weavers bring forward authentic motifs, premium thread counts, and enduring grace suited for royal festivities and modern wardrobes alike.`,
+          contentBn: `${category.nameBn} বাংলার ঐতিহ্যবাহী তাঁত সংস্কৃতির এক অনবদ্য নিদর্শন। প্রতিটি সুতায় জড়িয়ে রয়েছে শতাব্দীপ্রাচীন কারিগরদের ভালোবাসা ও অক্লান্ত পরিশ্রম।\n\nআঁচল সরাসরি তাঁতিদের সাথে যুক্ত হয়ে খাঁটি মান ও শ্রেষ্ঠত্বের নিশ্চয়তা প্রদান করে।`,
+          featuredImage: category.image || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
+          author: 'Aanchol Handloom Research Desk',
+          publishedAt: new Date().toISOString().split('T')[0],
+          readTime: '3 min read',
+          tags: [category.nameEn, 'Artisan Weaves', 'Bangladeshi Handloom', 'Heritage Collection'],
+          historicalEra: 'Generational Bengal Heritage',
+          artisanHub: category.originHub || 'Dhaka Division'
+        };
+        this.categoryArticles.push(newArt);
+        this.persist('aanchol_category_articles', this.categoryArticles);
+      }
     }
     this.persist('aanchol_categories', this.categories);
   }
@@ -1524,6 +1735,10 @@ class StoreService {
   }
 
   // REVIEWS
+  public getAllReviews(): Review[] {
+    return this.reviews;
+  }
+
   public getReviewsForProduct(productId: string): Review[] {
     return this.reviews.filter((r) => r.productId === productId);
   }
@@ -1541,6 +1756,62 @@ class StoreService {
       prod.reviewCount = prodReviews.length;
       this.persist('aanchol_products', this.products);
     }
+  }
+
+  // CUSTOMER ACCOUNT MANAGEMENT
+  public updateCustomerAccount(phone: string, updates: Partial<CustomerAccount>): CustomerAccount | null {
+    const cleanPhone = phone.trim();
+    const existing = this.customerAccounts.get(cleanPhone);
+    if (!existing) return null;
+    const updated: CustomerAccount = { ...existing, ...updates };
+    this.saveCustomerAccount(updated);
+    return updated;
+  }
+
+  public deleteCustomerAccount(phone: string): boolean {
+    const cleanPhone = phone.trim();
+    if (this.customerAccounts.has(cleanPhone)) {
+      this.customerAccounts.delete(cleanPhone);
+      const obj: Record<string, CustomerAccount> = {};
+      this.customerAccounts.forEach((val, key) => {
+        obj[key] = val;
+      });
+      this.persist('aanchol_accounts', obj);
+      return true;
+    }
+    return false;
+  }
+
+  // CATEGORY ARTICLES (BLOGGER WEBSITE STYLE)
+  public getCategoryArticles(): CategoryArticle[] {
+    return this.categoryArticles;
+  }
+
+  public getCategoryArticle(identifier: string): CategoryArticle | undefined {
+    return this.categoryArticles.find((a) => a.id === identifier || a.categoryId === identifier || a.slug === identifier);
+  }
+
+  public getCategoryArticleByCategoryId(categoryId: string): CategoryArticle | undefined {
+    return this.categoryArticles.find((a) => a.categoryId === categoryId);
+  }
+
+  public getCategoryArticleById(id: string): CategoryArticle | undefined {
+    return this.categoryArticles.find((a) => a.id === id);
+  }
+
+  public saveCategoryArticle(article: CategoryArticle): void {
+    const idx = this.categoryArticles.findIndex((a) => a.id === article.id);
+    if (idx >= 0) {
+      this.categoryArticles[idx] = article;
+    } else {
+      this.categoryArticles.unshift(article);
+    }
+    this.persist('aanchol_category_articles', this.categoryArticles);
+  }
+
+  public deleteCategoryArticle(id: string): void {
+    this.categoryArticles = this.categoryArticles.filter((a) => a.id !== id);
+    this.persist('aanchol_category_articles', this.categoryArticles);
   }
 
   // NOTIFICATIONS

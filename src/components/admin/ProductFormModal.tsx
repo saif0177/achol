@@ -17,7 +17,8 @@ import {
   Download,
   Eye,
   CheckCircle2,
-  Star
+  Star,
+  Flame
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Product, ProductVariant, Category, Language } from '../../types';
@@ -40,8 +41,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   language,
   onSaved
 }) => {
-  if (!isOpen) return null;
-
   // Preset curated authentic images
   const sampleImages = [
     { label: 'Crimson Dhakai Jamdani', url: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg' },
@@ -89,6 +88,35 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [isFeatured, setIsFeatured] = useState(productToEdit?.isFeatured ?? true);
   const [isSale, setIsSale] = useState(productToEdit?.isSale ?? true);
   const [isNewArrival, setIsNewArrival] = useState(productToEdit?.isNewArrival ?? false);
+
+  // Requirement 4: Flash Sale Offer selection & automatic price calculation
+  const [flashSaleId, setFlashSaleId] = useState(productToEdit?.flashSaleId || '');
+  const [flashSaleTitle, setFlashSaleTitle] = useState(productToEdit?.flashSaleTitle || '');
+  const [flashSaleDiscount, setFlashSaleDiscount] = useState(productToEdit?.flashSaleDiscount || 0);
+  const flashSaleCampaigns = store.getFlashSales();
+
+  const handleSelectOfferCampaign = (campaignId: string) => {
+    setFlashSaleId(campaignId);
+    if (!campaignId) {
+      setFlashSaleTitle('');
+      setFlashSaleDiscount(0);
+      return;
+    }
+    const camp = flashSaleCampaigns.find((c) => c.id === campaignId);
+    if (camp) {
+      setFlashSaleTitle(camp.titleEn);
+      setFlashSaleDiscount(camp.discountPercent);
+      setDiscountPercent(camp.discountPercent);
+      setIsSale(true);
+      // Automatically calculate discounted price on the saree
+      const base = originalPrice && originalPrice > 0 ? originalPrice : (price > 0 ? price : 10000);
+      if (!originalPrice || originalPrice <= price) {
+        setOriginalPrice(base);
+      }
+      const calculatedSalePrice = Math.round(base * (1 - camp.discountPercent / 100));
+      setPrice(calculatedSalePrice);
+    }
+  };
 
   // Images list
   const [images, setImages] = useState<string[]>(
@@ -165,6 +193,42 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       })
     );
   }, [code]);
+
+  // Sync form state when productToEdit changes
+  useEffect(() => {
+    if (productToEdit) {
+      setNameEn(productToEdit.nameEn || '');
+      setNameBn(productToEdit.nameBn || '');
+      setCode(productToEdit.code || '');
+      setPrice(productToEdit.price || 0);
+      setOriginalPrice(productToEdit.originalPrice || 0);
+      setDiscountPercent(productToEdit.discountPercent || 0);
+      setCategoryId(productToEdit.categoryId || categories[0]?.id || 'dhakai-jamdani');
+      setSubcategoryId(productToEdit.subcategoryId || '');
+      setSareeType(productToEdit.sareeType || 'Dhakai Jamdani');
+      setFabric(productToEdit.fabric || '');
+      setFabricBn(productToEdit.fabricBn || '');
+      setOccasion(productToEdit.occasion || '');
+      setOccasionBn(productToEdit.occasionBn || '');
+      setSuitableAgeRange(productToEdit.suitableAgeRange || '25-35');
+      setLength(productToEdit.length || '');
+      setHasBlousePiece(productToEdit.hasBlousePiece ?? true);
+      setDescriptionEn(productToEdit.descriptionEn || '');
+      setDescriptionBn(productToEdit.descriptionBn || '');
+      setCareInstructionsEn(productToEdit.careInstructionsEn || '');
+      setCareInstructionsBn(productToEdit.careInstructionsBn || '');
+      setIsFeatured(productToEdit.isFeatured ?? true);
+      setIsSale(productToEdit.isSale ?? true);
+      setIsNewArrival(productToEdit.isNewArrival ?? false);
+      setFlashSaleId(productToEdit.flashSaleId || '');
+      setFlashSaleTitle(productToEdit.flashSaleTitle || '');
+      setFlashSaleDiscount(productToEdit.flashSaleDiscount || 0);
+      setImages(productToEdit.images || [sampleImages[0].url]);
+      setPrimaryImage(productToEdit.primaryImage || sampleImages[0].url);
+      setVariants(productToEdit.variants || []);
+      setCurrentStep(1);
+    }
+  }, [productToEdit]);
 
   // Image Upload File Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, variantIndex?: number) => {
@@ -277,6 +341,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       isNewArrival,
       isSale,
       isActive: true,
+      flashSaleId: flashSaleId || undefined,
+      flashSaleTitle: flashSaleTitle || undefined,
+      flashSaleDiscount: flashSaleDiscount || undefined,
       rating: productToEdit ? productToEdit.rating : 5.0,
       reviewCount: productToEdit ? productToEdit.reviewCount : 12,
       keywords: [code, nameEn, nameBn, sareeType, fabric, 'handloom', 'saree'],
@@ -291,6 +358,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     onSaved();
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
@@ -505,6 +574,36 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   Step 2: Pricing, Discounts & Automated Stock
                 </h3>
                 <p className="text-stone-500 text-[11px]">Configure selling rates and watch auto-calculated stock</p>
+              </div>
+
+              {/* Requirement 4: Flash Sale Offer Campaign Selector with Auto-discount calculation */}
+              <div className="bg-gradient-to-r from-rose-900/10 via-amber-900/10 to-rose-900/5 p-4 rounded-2xl border border-rose-300 dark:border-rose-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-rose-950 dark:text-rose-200 text-xs flex items-center gap-1.5 uppercase tracking-wider">
+                    <Flame className="w-4 h-4 text-rose-600 fill-rose-600 animate-pulse" />
+                    <span>Assign Flash Sale / Special Offer Campaign (অফার নির্বাচন)</span>
+                  </label>
+                  {flashSaleId && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-600 text-white rounded-md uppercase">
+                      Auto-discount Applied (-{flashSaleDiscount}%)
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={flashSaleId}
+                  onChange={(e) => handleSelectOfferCampaign(e.target.value)}
+                  className="w-full p-2.5 bg-white border border-rose-300 rounded-xl font-semibold text-xs text-stone-900 cursor-pointer shadow-xs focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="">No Active Flash Sale Offer (Standard Pricing)</option>
+                  {flashSaleCampaigns.map((camp) => (
+                    <option key={camp.id} value={camp.id}>
+                      🔥 {camp.titleEn} ({camp.titleBn}) — {camp.discountPercent}% OFF
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-stone-600 leading-tight">
+                  Selecting an offer campaign automatically calculates and applies the discount rate to this saree, sets the sale price, and displays the offer badge directly on the website product card.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

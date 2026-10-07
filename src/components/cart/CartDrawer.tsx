@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   Tag,
   Check,
-  AlertCircle
+  AlertCircle,
+  Flame
 } from 'lucide-react';
 import { CartItem, Language } from '../../types';
 import { translations } from '../../i18n/translations';
@@ -137,6 +138,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <h4 className="text-xs font-semibold text-stone-900 truncate">
                       {language === 'bn' ? item.nameBn : item.nameEn}
                     </h4>
+
+                    {item.flashSaleTitle && (
+                      <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                        <Flame className="w-3 h-3 text-rose-600 animate-pulse" />
+                        <span>{item.flashSaleTitle}</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-1.5 text-[11px] text-stone-500">
                       <span

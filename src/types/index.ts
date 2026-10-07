@@ -60,6 +60,34 @@ export interface Product {
   variants: ProductVariant[];
   salesCount: number;
   viewsCount: number;
+  flashSaleId?: string;
+  flashSaleDiscount?: number;
+  flashSaleTitle?: string;
+  shortHeritageHighlightEn?: string;
+  shortHeritageHighlightBn?: string;
+  heritageArticleEn?: string;
+  heritageArticleBn?: string;
+  artisanVillage?: string;
+  weavingDurationDays?: number;
+}
+
+export interface CategoryArticle {
+  id: string;
+  categoryId: string;
+  titleEn: string;
+  titleBn: string;
+  slug: string;
+  summaryEn: string;
+  summaryBn: string;
+  contentEn: string;
+  contentBn: string;
+  featuredImage: string;
+  author: string;
+  publishedAt: string;
+  readTime: string;
+  tags: string[];
+  historicalEra?: string;
+  artisanHub?: string;
 }
 
 export interface Category {
@@ -160,6 +188,8 @@ export interface CartItem {
   nameEn: string;
   nameBn: string;
   image: string;
+  flashSaleTitle?: string;
+  originalPrice?: number;
 }
 
 export interface Address {

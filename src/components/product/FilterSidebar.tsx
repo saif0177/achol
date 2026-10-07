@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FilterState, Category, Language } from '../../types';
 import { translations } from '../../i18n/translations';
 import {
@@ -6,7 +6,9 @@ import {
   X,
   Sliders,
   Palette,
-  Layers
+  Layers,
+  Filter,
+  Check
 } from 'lucide-react';
 
 interface FilterSidebarProps {
@@ -28,18 +30,37 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 }) => {
   const t = translations[language];
 
+  // Local staging filter state
+  const [localFilters, setLocalFilters] = useState<FilterState>(filters);
+  const [isAppliedFeedback, setIsAppliedFeedback] = useState(false);
+
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
   const [selectedHue, setSelectedHue] = useState<number>(0);
   const [currentAge, setCurrentAge] = useState<number>(
-    filters.ageRange === '18-25'
+    localFilters.ageRange === '18-25'
       ? 22
-      : filters.ageRange === '25-35'
+      : localFilters.ageRange === '25-35'
       ? 28
-      : filters.ageRange === '35-50'
+      : localFilters.ageRange === '35-50'
       ? 42
-      : filters.ageRange === '50+'
+      : localFilters.ageRange === '50+'
       ? 55
       : 30
   );
+
+  const handleApplyFilters = () => {
+    onFilterChange(localFilters);
+    setIsAppliedFeedback(true);
+    setTimeout(() => setIsAppliedFeedback(false), 2000);
+    if (onCloseMobile) onCloseMobile();
+  };
+
+  const updateLocal = (patch: Partial<FilterState>) => {
+    setLocalFilters((prev) => ({ ...prev, ...patch }));
+  };
 
   const sareeTypes = [
     'Dhakai Jamdani',
@@ -126,8 +147,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     const val = Number(e.target.value);
     setSelectedHue(val);
     const matched = findClosestColorFamily(val);
-    onFilterChange({
-      ...filters,
+    updateLocal({
       colorFamily: matched.id,
       targetColorHex: `hsl(${val}, 85%, 50%)`
     });
@@ -149,15 +169,14 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       mappedRange = '50+';
     }
 
-    onFilterChange({
-      ...filters,
+    updateLocal({
       ageRange: mappedRange,
       minAge: age
     });
   };
 
   // Get active category for subcategories
-  const selectedCategory = categories.find((c) => c.id === filters.categoryId);
+  const selectedCategory = categories.find((c) => c.id === localFilters.categoryId);
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200/90 p-5 space-y-6 shadow-xs">
@@ -169,7 +188,10 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={onResetFilters}
+            onClick={() => {
+              onResetFilters();
+              setLocalFilters(filters);
+            }}
             className="flex items-center gap-1 text-xs text-stone-500 hover:text-amber-900 transition-colors cursor-pointer"
             title="Reset Filters"
           >
@@ -187,6 +209,31 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
       </div>
 
+      {/* Prominent Apply Filters Button at Top */}
+      <div>
+        <button
+          type="button"
+          onClick={handleApplyFilters}
+          className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
+            isAppliedFeedback
+              ? 'bg-emerald-700 text-white shadow-emerald-700/20'
+              : 'bg-stone-900 hover:bg-amber-900 text-white'
+          }`}
+        >
+          {isAppliedFeedback ? (
+            <>
+              <Check className="w-4 h-4 text-white animate-bounce" />
+              <span>{language === 'bn' ? 'ফিল্টার প্রয়োগ হয়েছে!' : 'Filters Applied!'}</span>
+            </>
+          ) : (
+            <>
+              <Filter className="w-4 h-4 text-amber-300" />
+              <span>{language === 'bn' ? 'ফিল্টার প্রয়োগ করুন (Apply)' : 'Apply Filters'}</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* 1. Category Filter */}
       <div className="space-y-2">
         <label className="text-xs font-semibold uppercase tracking-wider text-stone-700 block">
@@ -194,9 +241,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </label>
         <div className="space-y-1 text-xs">
           <button
-            onClick={() => onFilterChange({ ...filters, categoryId: '', subcategoryId: undefined })}
-            className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between ${
-              !filters.categoryId
+            onClick={() => updateLocal({ categoryId: '', subcategoryId: undefined })}
+            className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
+              !localFilters.categoryId
                 ? 'bg-amber-900/10 text-amber-900 font-bold'
                 : 'text-stone-600 hover:bg-stone-50'
             }`}
@@ -206,9 +253,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           {categories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => onFilterChange({ ...filters, categoryId: cat.id, subcategoryId: undefined })}
-              className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between ${
-                filters.categoryId === cat.id
+              onClick={() => updateLocal({ categoryId: cat.id, subcategoryId: undefined })}
+              className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
+                localFilters.categoryId === cat.id
                   ? 'bg-amber-900/10 text-amber-900 font-bold'
                   : 'text-stone-600 hover:bg-stone-50'
               }`}
@@ -228,9 +275,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           </div>
           <div className="space-y-1 text-xs pl-2">
             <button
-              onClick={() => onFilterChange({ ...filters, subcategoryId: undefined })}
-              className={`w-full text-left px-2 py-1 rounded-md transition-colors ${
-                !filters.subcategoryId ? 'font-bold text-amber-900' : 'text-stone-500 hover:text-stone-800'
+              onClick={() => updateLocal({ subcategoryId: undefined })}
+              className={`w-full text-left px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                !localFilters.subcategoryId ? 'font-bold text-amber-900' : 'text-stone-500 hover:text-stone-800'
               }`}
             >
               • {language === 'bn' ? 'সব সাব-ক্যাটাগরি' : 'All Sub-categories'}
@@ -238,9 +285,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             {selectedCategory.subcategories.map((sub) => (
               <button
                 key={sub.id}
-                onClick={() => onFilterChange({ ...filters, subcategoryId: sub.id })}
-                className={`w-full text-left px-2 py-1 rounded-md transition-colors ${
-                  filters.subcategoryId === sub.id
+                onClick={() => updateLocal({ subcategoryId: sub.id })}
+                className={`w-full text-left px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                  localFilters.subcategoryId === sub.id
                     ? 'font-bold text-amber-900 bg-amber-50'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
@@ -259,24 +306,24 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             <Palette className="w-3.5 h-3.5 text-amber-800" />
             <span>{language === 'bn' ? 'কালার স্পেকট্রাম নির্বাচন' : 'Color Spectrum'}</span>
           </label>
-          {filters.colorFamily && (
+          {localFilters.colorFamily && (
             <div className="flex items-center gap-2">
               <span className="font-bold text-amber-900 text-xs capitalize flex items-center gap-1">
                 <span
                   className="w-2.5 h-2.5 rounded-full inline-block border border-stone-300"
                   style={{
                     backgroundColor:
-                      standardColorFamilies.find((c) => c.id === filters.colorFamily)?.hex || '#DC2626'
+                      standardColorFamilies.find((c) => c.id === localFilters.colorFamily)?.hex || '#DC2626'
                   }}
                 />
                 <span>
-                  {standardColorFamilies.find((c) => c.id === filters.colorFamily)?.[
+                  {standardColorFamilies.find((c) => c.id === localFilters.colorFamily)?.[
                     language === 'bn' ? 'nameBn' : 'nameEn'
-                  ] || filters.colorFamily}
+                  ] || localFilters.colorFamily}
                 </span>
               </span>
               <button
-                onClick={() => onFilterChange({ ...filters, colorFamily: '', targetColorHex: undefined })}
+                onClick={() => updateLocal({ colorFamily: '', targetColorHex: undefined })}
                 className="text-[10px] text-stone-400 hover:text-amber-900 font-semibold cursor-pointer"
               >
                 {language === 'bn' ? 'রিমুভ' : 'Clear'}
@@ -287,11 +334,13 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
         {/* Chromatic Spectrum Bar */}
         <div className="space-y-1.5">
-          <div className="relative h-4 w-full rounded-full overflow-hidden shadow-inner cursor-pointer"
-               style={{
-                 background:
-                   'linear-gradient(to right, #ff0000 0%, #ff7f00 15%, #ffff00 30%, #00ff00 45%, #00ffff 60%, #0000ff 75%, #8b00ff 90%, #ff0000 100%)'
-               }}>
+          <div
+            className="relative h-4 w-full rounded-full overflow-hidden shadow-inner cursor-pointer"
+            style={{
+              background:
+                'linear-gradient(to right, #ff0000 0%, #ff7f00 15%, #ffff00 30%, #00ff00 45%, #00ffff 60%, #0000ff 75%, #8b00ff 90%, #ff0000 100%)'
+            }}
+          >
             <input
               type="range"
               min="0"
@@ -359,9 +408,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </label>
         <div className="space-y-1.5 text-xs">
           <button
-            onClick={() => onFilterChange({ ...filters, sareeType: '' })}
-            className={`w-full text-left px-2.5 py-1 rounded-lg transition-colors ${
-              !filters.sareeType ? 'font-bold text-amber-900 bg-amber-50' : 'text-stone-600 hover:bg-stone-50'
+            onClick={() => updateLocal({ sareeType: '' })}
+            className={`w-full text-left px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+              !localFilters.sareeType ? 'font-bold text-amber-900 bg-amber-50' : 'text-stone-600 hover:bg-stone-50'
             }`}
           >
             {language === 'bn' ? 'সকল শাড়ি' : 'All Saree Types'}
@@ -369,9 +418,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           {sareeTypes.map((type) => (
             <button
               key={type}
-              onClick={() => onFilterChange({ ...filters, sareeType: type })}
-              className={`w-full text-left px-2.5 py-1 rounded-lg transition-colors ${
-                filters.sareeType === type
+              onClick={() => updateLocal({ sareeType: type })}
+              className={`w-full text-left px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                localFilters.sareeType === type
                   ? 'font-bold text-amber-900 bg-amber-50'
                   : 'text-stone-600 hover:bg-stone-50'
               }`}
@@ -389,7 +438,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             {t.priceRange}
           </label>
           <span className="font-mono text-xs font-bold text-amber-900">
-            ৳{filters.minPrice.toLocaleString()} - ৳{filters.maxPrice.toLocaleString()}
+            ৳{localFilters.minPrice.toLocaleString()} - ৳{localFilters.maxPrice.toLocaleString()}
           </span>
         </div>
         <div className="space-y-2">
@@ -398,8 +447,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             min="2000"
             max="50000"
             step="1000"
-            value={filters.maxPrice}
-            onChange={(e) => onFilterChange({ ...filters, maxPrice: Number(e.target.value) })}
+            value={localFilters.maxPrice}
+            onChange={(e) => updateLocal({ maxPrice: Number(e.target.value) })}
             className="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-900"
           />
         </div>
@@ -410,8 +459,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         <label className="flex items-center gap-2 cursor-pointer text-stone-700">
           <input
             type="checkbox"
-            checked={filters.onlyInStock}
-            onChange={(e) => onFilterChange({ ...filters, onlyInStock: e.target.checked })}
+            checked={localFilters.onlyInStock}
+            onChange={(e) => updateLocal({ onlyInStock: e.target.checked })}
             className="rounded border-stone-300 text-amber-900 focus:ring-amber-900 cursor-pointer"
           />
           <span>{t.inStockOnly}</span>
@@ -420,12 +469,40 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         <label className="flex items-center gap-2 cursor-pointer text-stone-700">
           <input
             type="checkbox"
-            checked={filters.onlyOnSale}
-            onChange={(e) => onFilterChange({ ...filters, onlyOnSale: e.target.checked })}
+            checked={localFilters.onlyOnSale}
+            onChange={(e) => updateLocal({ onlyOnSale: e.target.checked })}
             className="rounded border-stone-300 text-amber-900 focus:ring-amber-900 cursor-pointer"
           />
           <span className="text-rose-700 font-semibold">{t.onSaleOnly}</span>
         </label>
+      </div>
+
+      {/* Bottom Sticky Action Bar */}
+      <div className="pt-4 border-t border-stone-200/90 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleApplyFilters}
+          className={`flex-1 py-2.5 px-4 font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
+            isAppliedFeedback
+              ? 'bg-emerald-700 text-white'
+              : 'bg-stone-900 hover:bg-amber-900 text-white'
+          }`}
+        >
+          <Check className="w-4 h-4 text-emerald-400" />
+          <span>{isAppliedFeedback ? (language === 'bn' ? 'প্রয়োগ হয়েছে!' : 'Applied!') : (language === 'bn' ? 'ফিল্টার প্রয়োগ করুন' : 'Apply Filters')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onResetFilters();
+            setLocalFilters(filters);
+          }}
+          className="py-2.5 px-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+          title={language === 'bn' ? 'রিসেট' : 'Reset'}
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>{language === 'bn' ? 'মুছুন' : 'Reset'}</span>
+        </button>
       </div>
     </div>
   );

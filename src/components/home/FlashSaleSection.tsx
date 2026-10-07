@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Clock, ArrowRight, Zap, Sparkles, Tag, Users, ExternalLink } from 'lucide-react';
+import { Flame, Clock, ArrowRight, Zap, Sparkles, Tag, Users, ExternalLink, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Product, ProductVariant, Language, FlashSaleCampaign } from '../../types';
 import { store } from '../../services/store';
 import { ProductCard } from '../product/ProductCard';
@@ -40,6 +40,10 @@ export const FlashSaleSection: React.FC<FlashSaleSectionProps> = ({
   // Active campaigns from store
   const [campaigns, setCampaigns] = useState<FlashSaleCampaign[]>(store.getFlashSales());
 
+  // Carousel & Offer Filter State (Requirement 3: auto-sliding banner with short bottom navigation bar to filter specific sale)
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [selectedOfferId, setSelectedOfferId] = useState<string>('all');
+
   useEffect(() => {
     setCampaigns(store.getFlashSales());
 
@@ -62,11 +66,30 @@ export const FlashSaleSection: React.FC<FlashSaleSectionProps> = ({
     };
   }, []);
 
+  // Auto-slide every 5 seconds across active flash sale banners
+  useEffect(() => {
+    if (campaigns.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveSlideIndex((prev) => (prev + 1) % campaigns.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [campaigns.length]);
+
   const handleBannerClick = (campaign: FlashSaleCampaign) => {
     if (campaign.targetLink && onNavigateTarget) {
       onNavigateTarget(campaign.targetLink);
     } else {
-      onViewAllFlash();
+      setSelectedOfferId(campaign.id);
+    }
+  };
+
+  const handleSelectOffer = (offerId: string) => {
+    setSelectedOfferId(offerId);
+    if (offerId !== 'all') {
+      const idx = campaigns.findIndex((c) => c.id === offerId);
+      if (idx >= 0) {
+        setActiveSlideIndex(idx);
+      }
     }
   };
 
@@ -81,6 +104,15 @@ export const FlashSaleSection: React.FC<FlashSaleSectionProps> = ({
   };
 
   if (products.length === 0 && campaigns.length === 0) return null;
+
+  // Filter products for the selected flash sale offer
+  const filteredProducts = selectedOfferId === 'all'
+    ? products
+    : products.filter((p) => p.flashSaleId === selectedOfferId);
+
+  const displayList = filteredProducts.length > 0 ? filteredProducts : products;
+  const currentCamp = campaigns[activeSlideIndex] || campaigns[0];
+  const currentRem = currentCamp ? getCampaignRemainingTime(currentCamp.endTime) : { hours: 24, minutes: 0, seconds: 0 };
 
   return (
     <section className="py-14 sm:py-16 relative overflow-hidden bg-gradient-to-br from-stone-950 via-[#1c0f0a] to-[#2c0b11] text-white border-y border-amber-900/40 shadow-2xl">
@@ -180,139 +212,203 @@ export const FlashSaleSection: React.FC<FlashSaleSectionProps> = ({
 
         </div>
 
-        {/* CUSTOM PROMOTIONAL DEAL BANNERS (Requirement 1 & 2: Different small banners, image-only Photoshop graphics, individual timers & buttons) */}
-        {campaigns.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5" />
-                <span>{language === 'bn' ? 'লাইভ অফার ও ক্যাম্পেইন ব্যানার' : 'Live Deal & Promotional Banners'}</span>
-              </span>
+        {/* SLIDING PROMOTIONAL DEAL BANNER (Requirement 3: auto-sliding with different sales, image-only support, custom timers) */}
+        {campaigns.length > 0 && currentCamp && (
+          <div className="space-y-3">
+            <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 bg-stone-900/90 shadow-2xl group min-h-[220px] sm:min-h-[260px] flex items-center">
+              {/* Sliding Background Banner */}
+              <img
+                src={currentCamp.bannerImage || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
+                alt={currentCamp.titleEn}
+                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-102"
+              />
+
+              {currentCamp.displayMode === 'image_only' ? (
+                // Image-only banner overlay
+                <div
+                  onClick={() => handleBannerClick(currentCamp)}
+                  className="absolute inset-0 cursor-pointer flex flex-col justify-between p-4 sm:p-6"
+                >
+                  <div className="flex justify-end">
+                    {currentCamp.hasTimer && (
+                      <div className="bg-stone-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-amber-400/40 text-white flex items-center gap-2 shadow-lg">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="font-mono text-xs font-bold text-amber-300">
+                          {String(currentRem.hours).padStart(2, '0')}:{String(currentRem.minutes).padStart(2, '0')}:{String(currentRem.seconds).padStart(2, '0')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {currentCamp.showButton && (
+                    <div className="flex justify-end">
+                      <span className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold rounded-xl shadow-lg inline-flex items-center gap-1.5">
+                        <span>{language === 'bn' ? currentCamp.buttonTextBn || 'দেখুন' : currentCamp.buttonTextEn || 'Shop'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Rich Text + Visual Gradient Overlay
+                <div
+                  onClick={() => handleBannerClick(currentCamp)}
+                  className="relative z-10 w-full p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-pointer bg-gradient-to-r from-stone-950/95 via-stone-950/80 to-transparent"
+                >
+                  <div className="space-y-3 max-w-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-lg uppercase tracking-wider shadow-sm">
+                        {currentCamp.discountPercent}% OFF
+                      </span>
+                      {currentCamp.badgeTextEn && (
+                        <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 text-xs font-semibold rounded-md border border-amber-400/30">
+                          {language === 'bn' ? currentCamp.badgeTextBn || currentCamp.badgeTextEn : currentCamp.badgeTextEn}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white group-hover:text-amber-200 transition-colors">
+                      {language === 'bn' ? currentCamp.titleBn : currentCamp.titleEn}
+                    </h3>
+                    {currentCamp.subtitleEn && (
+                      <p className="text-xs sm:text-sm text-stone-300 line-clamp-2">
+                        {language === 'bn' ? currentCamp.subtitleBn || currentCamp.subtitleEn : currentCamp.subtitleEn}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 shrink-0">
+                    {currentCamp.hasTimer && (
+                      <div className="bg-black/70 backdrop-blur-md px-3.5 py-2 rounded-xl border border-amber-400/30 text-amber-300 font-mono text-xs font-bold flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
+                        <span>
+                          {String(currentRem.hours).padStart(2, '0')}h {String(currentRem.minutes).padStart(2, '0')}m {String(currentRem.seconds).padStart(2, '0')}s
+                        </span>
+                      </div>
+                    )}
+                    {currentCamp.showButton !== false && (
+                      <span className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 text-xs sm:text-sm font-bold rounded-xl shadow-lg inline-flex items-center gap-2 group-hover:scale-105 transition-transform">
+                        <span>{language === 'bn' ? currentCamp.buttonTextBn || 'অফার দেখুন' : currentCamp.buttonTextEn || 'Shop Offer Sarees'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Slider Next/Prev Arrows */}
+              {campaigns.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveSlideIndex((prev) => (prev - 1 + campaigns.length) % campaigns.length);
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-20"
+                    aria-label="Previous Sale"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveSlideIndex((prev) => (prev + 1) % campaigns.length);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-20"
+                    aria-label="Next Sale"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {campaigns.map((camp) => {
-                const rem = getCampaignRemainingTime(camp.endTime);
+            {/* SHORT, COMPACT OFFER NAVIGATION BAR (Requirement 3: selecting different different offer and if we click we get only that sale offer product) */}
+            <div className="bg-stone-900/90 backdrop-blur-md p-2 rounded-2xl border border-amber-500/25 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shadow-lg">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 pl-2 hidden sm:inline">
+                  {language === 'bn' ? 'অফার সিলেক্ট করুন:' : 'Filter Sale:'}
+                </span>
 
-                // Option A: Pure Graphic Image Banner (Requirement 2: "just image only not any text or something... upload image like from Photoshop")
-                if (camp.displayMode === 'image_only') {
-                  return (
-                    <div
-                      key={camp.id}
-                      onClick={() => handleBannerClick(camp)}
-                      className="group relative rounded-2xl overflow-hidden border border-white/20 shadow-xl cursor-pointer hover:border-amber-400/50 transition-all transform hover:-translate-y-1"
-                    >
-                      <img
-                        src={camp.bannerImage || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
-                        alt={camp.titleEn}
-                        className="w-full h-44 sm:h-52 object-cover object-center group-hover:scale-102 transition-transform duration-500"
-                      />
+                <button
+                  type="button"
+                  onClick={() => handleSelectOffer('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    selectedOfferId === 'all'
+                      ? 'bg-amber-500 text-stone-950 shadow-md ring-2 ring-amber-400/50'
+                      : 'bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700'
+                  }`}
+                >
+                  <Flame className="w-3.5 h-3.5 text-rose-500" />
+                  <span>{language === 'bn' ? 'সব ডিল (সকল শাড়ি)' : 'All Flash Deals'}</span>
+                </button>
 
-                      {/* Optional Timer on Image-Only Banner */}
-                      {camp.hasTimer && (
-                        <div className="absolute top-3 right-3 bg-stone-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-amber-400/30 text-white flex items-center gap-2 shadow-lg">
-                          <Clock className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="font-mono text-xs font-bold text-amber-300">
-                            {String(rem.hours).padStart(2, '0')}:{String(rem.minutes).padStart(2, '0')}:{String(rem.seconds).padStart(2, '0')}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Optional Button on Graphic Banner if enabled */}
-                      {camp.showButton && (
-                        <div className="absolute bottom-3 right-3">
-                          <span className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-bold rounded-xl shadow-md inline-flex items-center gap-1">
-                            <span>{language === 'bn' ? camp.buttonTextBn || 'দেখুন' : camp.buttonTextEn || 'Shop'}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                // Option B: Styled Campaign Banner with Rich Text, Timer & Action Button
-                return (
-                  <div
+                {campaigns.map((camp) => (
+                  <button
                     key={camp.id}
-                    onClick={() => handleBannerClick(camp)}
-                    className="group relative rounded-2xl overflow-hidden border border-amber-500/30 bg-stone-900/90 shadow-xl cursor-pointer hover:border-amber-400 transition-all transform hover:-translate-y-1 flex flex-col justify-between p-5 min-h-[180px]"
+                    type="button"
+                    onClick={() => handleSelectOffer(camp.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                      selectedOfferId === camp.id
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 shadow-md ring-2 ring-amber-300'
+                        : 'bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700'
+                    }`}
                   >
-                    {/* Background photo with gradient overlay */}
-                    <img
-                      src={camp.bannerImage || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
-                      alt={camp.titleEn}
-                      className="absolute inset-0 w-full h-full object-cover object-center opacity-30 group-hover:opacity-40 transition-opacity"
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span>{language === 'bn' ? camp.titleBn : camp.titleEn}</span>
+                    <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[10px] rounded-md font-mono font-bold">
+                      -{camp.discountPercent}%
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Slider Dots */}
+              {campaigns.length > 1 && (
+                <div className="flex items-center gap-1.5 shrink-0 pr-2">
+                  {campaigns.map((c, i) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setActiveSlideIndex(i)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                        activeSlideIndex === i ? 'w-5 bg-amber-400' : 'w-1.5 bg-stone-600'
+                      }`}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-stone-950 via-stone-950/80 to-transparent pointer-events-none" />
-
-                    {/* Top row */}
-                    <div className="relative z-10 flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 bg-rose-600 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-xs">
-                          {camp.discountPercent}% OFF
-                        </span>
-                        {camp.badgeTextEn && (
-                          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-semibold rounded-md border border-amber-400/30">
-                            {language === 'bn' ? camp.badgeTextBn || camp.badgeTextEn : camp.badgeTextEn}
-                          </span>
-                        )}
-                      </div>
-
-                      {camp.hasTimer && (
-                        <div className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-400/20 text-amber-300 text-[11px] font-mono font-bold flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                          <span>
-                            {String(rem.hours).padStart(2, '0')}:{String(rem.minutes).padStart(2, '0')}:{String(rem.seconds).padStart(2, '0')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Middle details */}
-                    <div className="relative z-10 space-y-1 my-3">
-                      <h3 className="font-serif text-lg sm:text-xl font-bold text-white group-hover:text-amber-200 transition-colors">
-                        {language === 'bn' ? camp.titleBn : camp.titleEn}
-                      </h3>
-                      {camp.subtitleEn && (
-                        <p className="text-xs text-stone-300 line-clamp-2">
-                          {language === 'bn' ? camp.subtitleBn || camp.subtitleEn : camp.subtitleEn}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Bottom CTA */}
-                    <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10">
-                      <span className="text-xs text-stone-400 font-medium flex items-center gap-1">
-                        <span>{language === 'bn' ? 'আঁচল এক্সক্লুসিভ' : 'Aanchol Exclusive'}</span>
-                      </span>
-
-                      {camp.showButton !== false && (
-                        <span className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 text-xs font-bold rounded-xl shadow-md inline-flex items-center gap-1.5 group-hover:scale-105 transition-transform">
-                          <span>{language === 'bn' ? camp.buttonTextBn || 'অফার দেখুন' : camp.buttonTextEn || 'Claim Deal'}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* 4-Item Grid with Stock Urgency & Aesthetic Cards */}
-        {products.length > 0 && (
+        {/* Saree Grid: Shows ONLY the products belonging to the selected flash sale */}
+        {displayList.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-widest text-stone-400 font-bold flex items-center gap-1.5">
+              <span className="text-xs uppercase tracking-widest text-amber-300 font-bold flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-rose-500" />
-                <span>{language === 'bn' ? 'টপ ফ্ল্যাশ সেল শাড়ি' : 'Featured Flash Sale Sarees'}</span>
+                <span>
+                  {selectedOfferId === 'all'
+                    ? (language === 'bn' ? 'টপ ফ্ল্যাশ সেল শাড়ি' : 'Featured Flash Sale Sarees')
+                    : (language === 'bn'
+                        ? `${campaigns.find((c) => c.id === selectedOfferId)?.titleBn || 'নির্বাচিত অফার'} (${displayList.length}টি শাড়ি)`
+                        : `${campaigns.find((c) => c.id === selectedOfferId)?.titleEn || 'Selected Offer'} (${displayList.length} Sarees)`)}
+                </span>
               </span>
+              {selectedOfferId !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedOfferId('all')}
+                  className="text-xs text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                >
+                  {language === 'bn' ? 'সব অফার শাড়ি দেখুন' : 'View All Deals'}
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              {products.slice(0, 4).map((p, idx) => (
+              {displayList.slice(0, 8).map((p, idx) => (
                 <div key={p.id} className="flex flex-col group">
                   <div className="rounded-2xl overflow-hidden shadow-md">
                     <ProductCard
@@ -326,7 +422,7 @@ export const FlashSaleSection: React.FC<FlashSaleSectionProps> = ({
                     />
                   </div>
 
-                  {/* Fabrilife Stock Urgency Meter */}
+                  {/* Stock Urgency Meter */}
                   <div className="mt-2.5 px-1 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] text-stone-300 font-medium">
                       <span className="text-amber-300 font-bold flex items-center gap-1">
@@ -334,13 +430,13 @@ export const FlashSaleSection: React.FC<FlashSaleSectionProps> = ({
                         <span>{language === 'bn' ? `মাত্র ${p.stock}টি বাকি আছে` : `Only ${p.stock} left in stock`}</span>
                       </span>
                       <span className="text-stone-400 font-mono text-[10px]">
-                        {72 + idx * 7}% Claimed
+                        {72 + (idx % 4) * 7}% Claimed
                       </span>
                     </div>
                     <div className="w-full h-2 bg-stone-800 rounded-full overflow-hidden p-0.5 border border-stone-700/60">
                       <div
                         className="h-full bg-gradient-to-r from-amber-500 via-rose-500 to-amber-400 rounded-full transition-all duration-500"
-                        style={{ width: `${72 + idx * 7}%` }}
+                        style={{ width: `${72 + (idx % 4) * 7}%` }}
                       />
                     </div>
                   </div>
