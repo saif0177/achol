@@ -73,8 +73,8 @@ export const PhotoReviewsGallery: React.FC<PhotoReviewsGalleryProps> = ({
       name: 'Sadia Akhter',
       location: 'Gulshan 2, Dhaka',
       saree: 'Rajshahi Pure Mulberry Silk (SK-302)',
-      commentEn: 'Direct WhatsApp video preview made color confirmation so easy. Prompt home delivery with Cash on Delivery.',
-      commentBn: 'ভিডিও কলে আসল শাড়িটি সরাসরি দেখে নিতে পেরেছি। অত্যন্ত দ্রুত ডেলিভারি পেয়েছি।',
+      commentEn: 'Direct support made color confirmation so easy. Prompt home delivery with Cash on Delivery.',
+      commentBn: 'কাস্টমার সহায়তায় শাড়িটির সঠিক বিবরণ পেয়েছি। অত্যন্ত দ্রুত ডেলিভারি পেয়েছি।',
       rating: 5,
       date: 'Verified Buyer'
     }

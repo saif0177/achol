@@ -88,6 +88,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [isFeatured, setIsFeatured] = useState(productToEdit?.isFeatured ?? true);
   const [isSale, setIsSale] = useState(productToEdit?.isSale ?? true);
   const [isNewArrival, setIsNewArrival] = useState(productToEdit?.isNewArrival ?? false);
+  const [isFreeDelivery, setIsFreeDelivery] = useState<boolean>(productToEdit?.isFreeDelivery ?? false);
+  const [promotionalCategoryIds, setPromotionalCategoryIds] = useState<string[]>(
+    productToEdit?.promotionalCategoryIds || (productToEdit?.promotionalCategoryId ? [productToEdit.promotionalCategoryId] : [])
+  );
+  const hiddenPromotionalCategories = store.getHiddenPromotionalCategories();
 
   // Requirement 4: Flash Sale Offer selection & automatic price calculation
   const [flashSaleId, setFlashSaleId] = useState(productToEdit?.flashSaleId || '');
@@ -220,6 +225,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setIsFeatured(productToEdit.isFeatured ?? true);
       setIsSale(productToEdit.isSale ?? true);
       setIsNewArrival(productToEdit.isNewArrival ?? false);
+      setIsFreeDelivery(productToEdit.isFreeDelivery ?? false);
+      setPromotionalCategoryIds(
+        productToEdit.promotionalCategoryIds || (productToEdit.promotionalCategoryId ? [productToEdit.promotionalCategoryId] : [])
+      );
       setFlashSaleId(productToEdit.flashSaleId || '');
       setFlashSaleTitle(productToEdit.flashSaleTitle || '');
       setFlashSaleDiscount(productToEdit.flashSaleDiscount || 0);
@@ -340,6 +349,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       isFeatured,
       isNewArrival,
       isSale,
+      isFreeDelivery,
+      promotionalCategoryId: promotionalCategoryIds[0] || undefined,
+      promotionalCategoryIds,
       isActive: true,
       flashSaleId: flashSaleId || undefined,
       flashSaleTitle: flashSaleTitle || undefined,
@@ -692,6 +704,82 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   <span className="font-bold text-stone-800">New Arrival Tag</span>
                 </label>
               </div>
+
+              {/* Requirement 2: Free Delivery Control - clear selectable option "Free Delivery: Yes / No" */}
+              <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/80 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-stone-900 block">
+                      Free Delivery: Yes / No
+                    </label>
+                    <p className="text-[11px] text-stone-500">
+                      Individually control free shipping for this saree. When set to &quot;No&quot;, regular delivery fee applies at checkout.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center bg-white border border-stone-300 rounded-xl p-1 shadow-2xs shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsFreeDelivery(true)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        isFreeDelivery
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      ✓ Yes (Free Delivery)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFreeDelivery(false)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        !isFreeDelivery
+                          ? 'bg-stone-900 text-white shadow-xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      ✕ No (Standard Fee)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Requirement 2 & 11: Promotional / Offer Category assignment */}
+              {hiddenPromotionalCategories.length > 0 && (
+                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                  <label className="text-xs font-bold text-stone-900 block">
+                    Promotional &amp; Offer Categories (Campaign Assignment)
+                  </label>
+                  <p className="text-[11px] text-stone-500">
+                    Select promotional campaigns or offers this saree belongs to. Sarees can belong to multiple promotional categories without catalog duplication.
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {hiddenPromotionalCategories.map((promoCat) => {
+                      const isSelected = promotionalCategoryIds.includes(promoCat.id);
+                      return (
+                        <button
+                          key={promoCat.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setPromotionalCategoryIds(promotionalCategoryIds.filter((id) => id !== promoCat.id));
+                            } else {
+                              setPromotionalCategoryIds([...promotionalCategoryIds, promoCat.id]);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-900 border-amber-950 text-white shadow-xs'
+                              : 'bg-white border-stone-300 text-stone-700 hover:bg-stone-100'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : '+ '}
+                          {promoCat.nameEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

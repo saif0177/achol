@@ -173,6 +173,30 @@ export const CategoryArticlePage: React.FC<CategoryArticlePageProps> = ({
           ))}
         </div>
 
+        {/* Multi-Image Gallery (Requirement 4: Support multiple images in blog/category content) */}
+        {article.images && article.images.length > 0 && (
+          <div className="space-y-3 pt-6 border-t border-stone-200 dark:border-stone-800">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5 font-sans">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'তাঁত ও বুনন চিত্রশালা' : 'Loom & Artisan Gallery'}</span>
+            </h4>
+            <div className={`grid gap-4 ${article.images.length === 1 ? 'grid-cols-1' : article.images.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
+              {article.images.map((imgUrl, i) => (
+                <div key={i} className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-md group aspect-[4/3] bg-stone-100 dark:bg-stone-900">
+                  <img
+                    src={imgUrl}
+                    alt={`${article.titleEn} gallery ${i + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute bottom-2 left-2 right-2 px-2 py-1 bg-stone-950/70 backdrop-blur-xs rounded-lg text-white text-[10px] truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                    {language === 'bn' ? `ছবি ${i + 1}` : `Photo ${i + 1}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Craftsmanship Highlights Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-stone-200 dark:border-stone-800">
           <div className="p-4 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs space-y-2">

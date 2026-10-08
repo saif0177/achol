@@ -918,39 +918,28 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                 </div>
               </div>
 
-              {/* Light and Dark Mode Toggle (Requirement 4: light and dark mode) */}
+              {/* Single Theme Mode Toggle (Requirement 4: ONLY ONE theme toggle button) */}
               <div className="bg-white dark:bg-stone-800 p-4 rounded-2xl border border-stone-200 dark:border-stone-700 space-y-2 shadow-2xs">
                 <span className="font-bold text-stone-800 dark:text-white block">
                   {language === 'bn' ? 'থিম / মোড নির্বাচন (Theme Mode)' : 'Appearance Mode'}
                 </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isDarkMode && onToggleDarkMode) onToggleDarkMode();
-                    }}
-                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      !isDarkMode
-                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 border-amber-300 dark:border-amber-700 shadow-xs'
-                        : 'bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100'
-                    }`}
-                  >
-                    <span>Light Mode (লাইট)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!isDarkMode && onToggleDarkMode) onToggleDarkMode();
-                    }}
-                    className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                      isDarkMode
-                        ? 'bg-stone-900 text-amber-300 border-stone-700 shadow-xs'
-                        : 'bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100'
-                    }`}
-                  >
-                    <span>Dark Mode (ডার্ক)</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleDarkMode && onToggleDarkMode()}
+                  className="w-full py-2.5 px-4 rounded-xl font-bold flex items-center justify-between border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-750 text-stone-800 dark:text-stone-200 transition-all cursor-pointer shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    {isDarkMode ? (
+                      <span className="p-1 rounded-lg bg-amber-500/20 text-amber-400">🌙</span>
+                    ) : (
+                      <span className="p-1 rounded-lg bg-amber-500/20 text-amber-600">☀️</span>
+                    )}
+                    <span>{isDarkMode ? (language === 'bn' ? 'ডার্ক মোড সক্রিয়' : 'Dark Mode Active') : (language === 'bn' ? 'লাইট মোড সক্রিয়' : 'Light Mode Active')}</span>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 font-semibold border border-amber-300 dark:border-amber-700">
+                    {isDarkMode ? (language === 'bn' ? 'লাইটে পরিবর্তন করুন' : 'Switch to Light') : (language === 'bn' ? 'ডার্কে পরিবর্তন করুন' : 'Switch to Dark')}
+                  </span>
+                </button>
               </div>
             </div>
           )}

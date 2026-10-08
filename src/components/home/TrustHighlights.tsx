@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Truck, Video, Award } from 'lucide-react';
+import { ShieldCheck, Truck, MessageCircle, Award } from 'lucide-react';
 import { Language } from '../../types';
 import { translations } from '../../i18n/translations';
 
@@ -27,7 +27,7 @@ export const TrustHighlights: React.FC<TrustHighlightsProps> = ({ language }) =>
       desc: t.trustDeliveryDesc
     },
     {
-      icon: Video,
+      icon: MessageCircle,
       title: t.trustWhatsAppTitle,
       desc: t.trustWhatsAppDesc
     }

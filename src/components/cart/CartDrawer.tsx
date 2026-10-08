@@ -47,7 +47,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   if (!isOpen) return null;
 
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryCharge = items.length > 0 ? (subtotal >= 10000 ? 0 : 70) : 0;
+  const isFreeDelivery = store.isOrderFreeDelivery(items, appliedCodeName, subtotal);
+  const deliveryCharge = items.length > 0 ? (isFreeDelivery ? 0 : 70) : 0;
   const finalTotal = Math.max(0, subtotal - appliedDiscount + deliveryCharge);
 
   const handleApplyCoupon = (e: React.FormEvent) => {
@@ -57,14 +58,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
     if (!couponInput.trim()) return;
 
-    const res = store.validatePrivateCode(couponInput, items);
+    const res = store.validateCoupon(couponInput, subtotal, items);
     if (res.valid) {
-      onApplyCode(couponInput.trim().toUpperCase(), res.discountAmount);
+      onApplyCode(couponInput.trim().toUpperCase(), res.discount);
       setCouponSuccess(res.message);
       setCouponInput('');
     } else {
       setCouponError(res.message);
     }
+  };
+
+  const handleRemoveCoupon = () => {
+    onApplyCode('', 0);
+    setCouponSuccess('');
+    setCouponError('');
   };
 
   return (
@@ -239,9 +246,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
 
               {appliedDiscount > 0 && (
-                <div className="flex justify-between text-emerald-700 font-medium">
-                  <span>{t.negotiatedDiscount} ({appliedCodeName})</span>
-                  <span className="font-mono">-৳{appliedDiscount.toLocaleString()}</span>
+                <div className="flex items-center justify-between text-emerald-700 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-lg">
+                  <div className="flex items-center gap-1.5">
+                    <span>{language === 'bn' ? 'কুপন ছাড়' : 'Coupon Discount'} ({appliedCodeName})</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-stone-400 hover:text-rose-600 text-[10px] underline ml-1 cursor-pointer"
+                    >
+                      {language === 'bn' ? 'মুছুন' : 'Remove'}
+                    </button>
+                  </div>
+                  <span className="font-mono font-bold">-৳{appliedDiscount.toLocaleString()}</span>
                 </div>
               )}
 

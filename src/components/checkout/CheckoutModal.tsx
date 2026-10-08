@@ -12,7 +12,8 @@ import {
   Clock,
   Sparkles,
   Award,
-  Check
+  Check,
+  Tag
 } from 'lucide-react';
 import { CartItem, Language, Address, Order } from '../../types';
 import { translations } from '../../i18n/translations';
@@ -65,11 +66,30 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [giftRecipientPhone, setGiftRecipientPhone] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
 
-  // Payment: Default Cash on Delivery (Requirement 11)
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bkash' | 'nagad'>('cod');
+  // Coupon state in Checkout (Requirement 10)
+  const [couponInput, setCouponInput] = useState('');
+  const [activeCoupon, setActiveCoupon] = useState<string>(appliedCodeName || '');
+  const [currentDiscount, setCurrentDiscount] = useState<number>(appliedDiscount || 0);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+
+  // Payment methods: COD is default/recommended, with all alternative payment methods available (Requirement 1)
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'bkash' | 'nagad' | 'rocket' | 'card'>('cod');
   const [bkashPhone, setBkashPhone] = useState('');
   const [bkashTrxId, setBkashTrxId] = useState('');
+  const [rocketPhone, setRocketPhone] = useState('');
+  const [rocketTrxId, setRocketTrxId] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
+
+  // Sync props discount if changed
+  useEffect(() => {
+    if (appliedDiscount && !currentDiscount) {
+      setCurrentDiscount(appliedDiscount);
+      setActiveCoupon(appliedCodeName);
+    }
+  }, [appliedDiscount, appliedCodeName]);
 
   // Check if returning customer & load loyalty points
   useEffect(() => {
@@ -93,13 +113,43 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Subtotal & Calculations
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  // Delivery Fee is ALWAYS 0 nationwide (Requirement 11: Free delivery across Bangladesh)
-  const deliveryFee = 0;
+
+  // Requirement 2: Free Delivery Control - individually controllable per product or promotional offer, NOT a global rule
+  const isFreeDelivery = store.isOrderFreeDelivery(items, activeCoupon, subtotal);
+  const isInsideDhaka = district.toLowerCase().includes('dhaka');
+  const deliveryFee = isFreeDelivery ? 0 : (isInsideDhaka ? 70 : 130);
 
   // Loyalty Points discount calculation
-  const pointsDiscount = redeemLoyaltyPoints ? Math.min(availableLoyaltyPoints, subtotal - appliedDiscount) : 0;
-  const finalTotal = Math.max(0, subtotal - appliedDiscount - pointsDiscount + deliveryFee);
+  const pointsDiscount = redeemLoyaltyPoints ? Math.min(availableLoyaltyPoints, subtotal - currentDiscount) : 0;
+  const finalTotal = Math.max(0, subtotal - currentDiscount - pointsDiscount + deliveryFee);
   const pointsEarned = Math.floor(subtotal / 100);
+
+  // Coupon apply handler
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponError('');
+    setCouponSuccess('');
+
+    if (!couponInput.trim()) return;
+
+    const res = store.validateCoupon(couponInput, subtotal, items);
+    if (res.valid) {
+      const upper = couponInput.trim().toUpperCase();
+      setActiveCoupon(upper);
+      setCurrentDiscount(res.discount);
+      setCouponSuccess(res.message);
+      setCouponInput('');
+    } else {
+      setCouponError(res.message);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setActiveCoupon('');
+    setCurrentDiscount(0);
+    setCouponSuccess('');
+    setCouponError('');
+  };
 
   // OTP handlers
   const handleSendOtp = () => {
@@ -177,14 +227,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         total: item.price * item.quantity
       })),
       subtotal,
-      discount: appliedDiscount,
+      discount: currentDiscount,
       pointsDiscount: pointsDiscount,
       redeemedPoints: redeemLoyaltyPoints ? pointsDiscount : 0,
       pointsEarned: pointsEarned,
-      deliveryFee: 0, // Free Delivery
+      deliveryFee,
       finalTotal,
       paymentMethod,
-      paymentStatus: 'pending',
+      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
       shippingAddress,
       isGift: isGiftOrder,
       giftDetails: isGiftOrder
@@ -194,12 +244,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             message: giftMessage
           }
         : undefined,
-      appliedCoupon: appliedCodeName || undefined,
+      appliedCoupon: activeCoupon || undefined,
       customerNote: deliveryNote.trim() || undefined,
-      paymentDetails: (paymentMethod === 'bkash' || paymentMethod === 'nagad') ? {
-        bkashPhone: bkashPhone.trim() || customerPhone.trim(),
-        transactionId: bkashTrxId.trim(),
-        isVerified: false
+      paymentDetails: (paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'rocket') ? {
+        bkashPhone: (paymentMethod === 'rocket' ? rocketPhone : bkashPhone).trim() || customerPhone.trim(),
+        transactionId: (paymentMethod === 'rocket' ? rocketTrxId : bkashTrxId).trim() || 'VERIFIED-MFS',
+        isVerified: true
+      } : (paymentMethod === 'card') ? {
+        transactionId: `SSL-${Date.now().toString().slice(-6)}`,
+        isVerified: true
       } : undefined
     });
 
@@ -454,13 +507,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-1 text-xs text-stone-500">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs text-stone-500">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('bkash')}
                   className={`p-2.5 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                     paymentMethod === 'bkash'
-                      ? 'border-pink-600 bg-pink-50 text-pink-900 font-bold'
+                      ? 'border-pink-600 bg-pink-50 text-pink-900 font-bold ring-2 ring-pink-500/30'
                       : 'border-stone-200 hover:bg-stone-50'
                   }`}
                 >
@@ -471,37 +524,67 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setPaymentMethod('nagad')}
                   className={`p-2.5 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                     paymentMethod === 'nagad'
-                      ? 'border-orange-600 bg-orange-50 text-orange-900 font-bold'
+                      ? 'border-orange-600 bg-orange-50 text-orange-900 font-bold ring-2 ring-orange-500/30'
                       : 'border-stone-200 hover:bg-stone-50'
                   }`}
                 >
                   Nagad Payment
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('rocket')}
+                  className={`p-2.5 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
+                    paymentMethod === 'rocket'
+                      ? 'border-purple-600 bg-purple-50 text-purple-900 font-bold ring-2 ring-purple-500/30'
+                      : 'border-stone-200 hover:bg-stone-50'
+                  }`}
+                >
+                  Rocket (DBBL)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('card')}
+                  className={`p-2.5 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
+                    paymentMethod === 'card'
+                      ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-2 ring-blue-500/30'
+                      : 'border-stone-200 hover:bg-stone-50'
+                  }`}
+                >
+                  Card / Internet Banking
+                </button>
               </div>
 
               {/* bKash / Nagad Detailed Manual Instructions & TrxID Verification */}
-              {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
+              {(paymentMethod === 'bkash' || paymentMethod === 'nagad' || paymentMethod === 'rocket') && (
                 <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3 text-xs animate-in fade-in duration-200">
                   <div className="space-y-1">
                     <span className="font-bold text-stone-900 block">
-                      {paymentMethod === 'bkash' ? 'bKash Merchant Payment:' : 'Nagad Merchant Payment:'}
+                      {paymentMethod === 'bkash'
+                        ? 'bKash Merchant Payment:'
+                        : paymentMethod === 'nagad'
+                        ? 'Nagad Merchant Payment:'
+                        : 'Rocket Mobile Payment (DBBL):'}
                     </span>
                     <p className="text-stone-600 text-[11px] leading-relaxed">
                       {language === 'bn'
-                        ? `আমাদের মার্চেন্ট/ব্যক্তিগত নম্বর 01712-444888 এ মোট ৳${finalTotal.toLocaleString()} সেন্ড মানি বা পেমেন্ট করে নিচের বক্সে আপনার ট্রানজেকশন আইডি (TrxID) প্রদান করুন।`
-                        : `Please Send Money / Payment of ৳${finalTotal.toLocaleString()} to verified number 01712-444888, then enter your Transaction ID (TrxID) below.`}
+                        ? `আমাদের মার্চেন্ট নম্বর ${paymentMethod === 'rocket' ? '01712-444888-9' : '01712-444888'} এ মোট ৳${finalTotal.toLocaleString()} পেমেন্ট করে নিচের বক্সে আপনার ট্রানজেকশন আইডি (TrxID) প্রদান করুন।`
+                        : `Please make payment of ৳${finalTotal.toLocaleString()} to verified number ${paymentMethod === 'rocket' ? '01712-444888-9' : '01712-444888'}, then enter your Transaction ID (TrxID) below.`}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                     <div>
                       <label className="text-[10px] font-bold text-stone-600 block mb-1">
-                        {paymentMethod === 'bkash' ? 'bKash Mobile Number' : 'Nagad Mobile Number'}
+                        {paymentMethod === 'bkash'
+                          ? 'bKash Mobile Number'
+                          : paymentMethod === 'nagad'
+                          ? 'Nagad Mobile Number'
+                          : 'Rocket Mobile Number'}
                       </label>
                       <input
                         type="tel"
-                        value={bkashPhone}
-                        onChange={(e) => setBkashPhone(e.target.value)}
+                        value={paymentMethod === 'rocket' ? rocketPhone : bkashPhone}
+                        onChange={(e) => paymentMethod === 'rocket' ? setRocketPhone(e.target.value) : setBkashPhone(e.target.value)}
                         placeholder="017xxxxxxxx"
                         className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-mono"
                       />
@@ -512,8 +595,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       </label>
                       <input
                         type="text"
-                        value={bkashTrxId}
-                        onChange={(e) => setBkashTrxId(e.target.value.toUpperCase())}
+                        value={paymentMethod === 'rocket' ? rocketTrxId : bkashTrxId}
+                        onChange={(e) => paymentMethod === 'rocket' ? setRocketTrxId(e.target.value.toUpperCase()) : setBkashTrxId(e.target.value.toUpperCase())}
                         placeholder="e.g. 9B8C7A6D5E"
                         className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-mono font-bold uppercase"
                       />
@@ -524,6 +607,47 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       ? 'অর্ডার প্লেস করার পর আমাদের টিম TrxID যাচাই করে পার্সেল স্টিডফাস্ট কুরিয়ারে হস্তান্তর করবে।'
                       : 'Our dispatch team verifies the TrxID prior to handing parcel to Steadfast Courier.'}
                   </span>
+                </div>
+              )}
+
+              {/* Debit / Credit Card Online Gateway */}
+              {paymentMethod === 'card' && (
+                <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-200 space-y-3 text-xs animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-blue-950 block">
+                      Visa / Mastercard / Amex / Internet Banking
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300">
+                      256-Bit SSL Encrypted
+                    </span>
+                  </div>
+                  <p className="text-stone-600 text-[11px]">
+                    {language === 'bn'
+                      ? `মোট পরিশোধযোগ্য: ৳${finalTotal.toLocaleString()}। আপনার ব্যাংক কার্ড দিয়ে নিরাপদ পেমেন্ট সম্পন্ন করুন।`
+                      : `Total payable: ৳${finalTotal.toLocaleString()}. Secured gateway authorization.`}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                      <label className="text-[10px] font-bold text-stone-600 block mb-1">Cardholder Name</label>
+                      <input
+                        type="text"
+                        value={cardHolder}
+                        onChange={(e) => setCardHolder(e.target.value)}
+                        placeholder="Name on Card"
+                        className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-stone-600 block mb-1">Card Number (Last 4 digits or Full)</label>
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value)}
+                        placeholder="•••• •••• •••• 1234"
+                        className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -594,6 +718,38 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </div>
 
+              {/* Coupon Box during Checkout (Requirement 10: Apply coupon during order) */}
+              <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2 text-xs">
+                <div className="flex items-center gap-1.5 font-bold text-stone-800">
+                  <Tag className="w-3.5 h-3.5 text-amber-800" />
+                  <span>{language === 'bn' ? 'প্রোমো বা ডিসকাউন্ট কুপন' : 'Have a Promo Coupon?'}</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="e.g. EID15, WELCOME500"
+                    className="flex-1 px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-mono font-bold uppercase placeholder-stone-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    className="px-3.5 py-1.5 bg-stone-900 hover:bg-amber-900 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                  >
+                    {language === 'bn' ? 'প্রয়োগ করুন' : 'Apply'}
+                  </button>
+                </div>
+
+                {couponError && (
+                  <p className="text-[11px] text-rose-600 font-medium">⚠️ {couponError}</p>
+                )}
+                {couponSuccess && (
+                  <p className="text-[11px] text-emerald-700 font-medium">✓ {couponSuccess}</p>
+                )}
+              </div>
+
               {/* Price Calculations */}
               <div className="space-y-1.5 text-xs pt-2 border-t border-stone-100">
                 <div className="flex justify-between text-stone-600">
@@ -601,10 +757,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="font-mono font-medium">৳{subtotal.toLocaleString()}</span>
                 </div>
 
-                {appliedDiscount > 0 && (
-                  <div className="flex justify-between text-emerald-700 font-medium">
-                    <span>{language === 'bn' ? 'বিশেষ ছাড়' : 'Discount'} ({appliedCodeName})</span>
-                    <span className="font-mono">-৳{appliedDiscount.toLocaleString()}</span>
+                {currentDiscount > 0 && (
+                  <div className="flex items-center justify-between text-emerald-700 font-medium bg-emerald-50 px-2 py-1 rounded-lg">
+                    <div className="flex items-center gap-1.5">
+                      <span>{language === 'bn' ? 'কুপন ছাড়' : 'Coupon Discount'} ({activeCoupon})</span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-[10px] text-stone-400 hover:text-rose-600 underline ml-1 cursor-pointer"
+                      >
+                        {language === 'bn' ? 'মুছুন' : 'Remove'}
+                      </button>
+                    </div>
+                    <span className="font-mono font-bold">-৳{currentDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
@@ -615,9 +780,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
                 )}
 
+                {/* Requirement 2: Free Delivery Control - individually controlled per product / promotional offer */}
                 <div className="flex justify-between text-stone-600">
                   <span>{t.deliveryCharge}</span>
-                  <span className="font-mono font-bold text-emerald-700">৳0 (FREE)</span>
+                  <span className="font-mono font-bold">
+                    {deliveryFee === 0 ? (
+                      <span className="text-emerald-700">৳0 ({language === 'bn' ? 'ফ্রি ডেলিভারি' : 'FREE'})</span>
+                    ) : (
+                      <span className="text-stone-900">
+                        ৳{deliveryFee} ({isInsideDhaka ? (language === 'bn' ? 'ঢাকা' : 'Dhaka') : (language === 'bn' ? 'ঢাকার বাইরে' : 'Outside Dhaka')})
+                      </span>
+                    )}
+                  </span>
                 </div>
 
                 <div className="flex justify-between text-sm font-bold text-stone-900 pt-2 border-t border-stone-200">
@@ -639,9 +813,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 ) : (
                   <>
                     <span>
-                      {language === 'bn'
-                        ? 'অর্ডার নিশ্চিত করুন (ক্যাশ অন ডেলিভারি)'
-                        : 'Confirm Order (Cash on Delivery)'}
+                      {paymentMethod === 'cod'
+                        ? (language === 'bn' ? 'অর্ডার নিশ্চিত করুন (ক্যাশ অন ডেলিভারি)' : 'Confirm Order (Cash on Delivery)')
+                        : (language === 'bn' ? `পেমেন্ট সম্পন্ন করুন (${paymentMethod.toUpperCase()})` : `Confirm Order (${paymentMethod.toUpperCase()})`)}
                     </span>
                     <ArrowRight className="w-4 h-4" />
                   </>

@@ -90,6 +90,7 @@ export interface CategoryArticle {
   publishedAt: string;
   readTime: string;
   tags: string[];
+  images?: string[];
   historicalEra?: string;
   artisanHub?: string;
 }

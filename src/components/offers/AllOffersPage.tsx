@@ -11,7 +11,8 @@ import {
   Zap,
   Percent,
   Gift,
-  ShieldCheck
+  ShieldCheck,
+  Flame
 } from 'lucide-react';
 import { Promotion, Language } from '../../types';
 import { store } from '../../services/store';
@@ -20,12 +21,14 @@ interface AllOffersPageProps {
   language: Language;
   onBack: () => void;
   onShopOffer: (offer: Promotion) => void;
+  onOpenFlashSale?: () => void;
 }
 
 export const AllOffersPage: React.FC<AllOffersPageProps> = ({
   language,
   onBack,
-  onShopOffer
+  onShopOffer,
+  onOpenFlashSale
 }) => {
   const promotions = store.getPromotions();
   const [filterType, setFilterType] = useState<string>('all');
@@ -91,6 +94,42 @@ export const AllOffersPage: React.FC<AllOffersPageProps> = ({
             />
           </div>
         </div>
+
+        {/* Direct Access Callout to Dedicated For Sale Page */}
+        {onOpenFlashSale && (
+          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#1f0714] via-[#2c0b20] to-[#180528] border-2 border-amber-400/40 p-5 sm:p-7 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 bg-gradient-to-r from-rose-600 via-red-500 to-amber-500 text-white text-xs font-black rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 fill-amber-300 text-amber-300 animate-pulse" />
+                  <span>{language === 'bn' ? 'স্পেশাল ফর সেল পেজ' : 'SPECIAL FOR SALE PAGE'}</span>
+                </span>
+                <span className="text-xs text-amber-300 font-bold">
+                  {language === 'bn' ? '• সরাসরি লাইভ ডিল কালেকশন' : '• Live Flash Deal Collection'}
+                </span>
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl font-bold text-white">
+                {language === 'bn'
+                  ? 'সকল আকর্ষণীয় ফর সেল শাড়ি আলাদা পেজে দেখুন'
+                  : 'Browse All Sarees For Sale on Dedicated Page'}
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-300 max-w-xl">
+                {language === 'bn'
+                  ? 'কাউন্টডাউন টাইমার ও আকর্ষণীয় ছাড়ে বাছাইকৃত শাড়িসমূহ আলাদা পেজে সহজে অর্ডার করুন।'
+                  : 'Live countdown timers and deepest discounts on handloom Jamdani & Silk sarees.'}
+              </p>
+            </div>
+
+            <button
+              onClick={onOpenFlashSale}
+              className="px-6 py-4 bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600 hover:from-amber-300 hover:via-rose-400 hover:to-purple-500 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-2.5 group cursor-pointer shrink-0 self-stretch sm:self-auto transform hover:-translate-y-0.5"
+            >
+              <Sparkles className="w-4 h-4 text-amber-200" />
+              <span>{language === 'bn' ? 'ফর সেল পেজ দেখুন' : 'Go to For Sale Page'}</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform" />
+            </button>
+          </div>
+        )}
 
         {/* Filter Tabs */}
         <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-stone-200 dark:border-stone-800">
@@ -257,7 +296,13 @@ export const AllOffersPage: React.FC<AllOffersPageProps> = ({
                 {/* Footer Action */}
                 <div className="p-5 sm:p-6 pt-0">
                   <button
-                    onClick={() => onShopOffer(promo)}
+                    onClick={() => {
+                      if (promo.type === 'flash_sale' && onOpenFlashSale) {
+                        onOpenFlashSale();
+                      } else {
+                        onShopOffer(promo);
+                      }
+                    }}
                     className="w-full py-3 px-5 bg-stone-900 hover:bg-amber-900 dark:bg-amber-950 dark:hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer"
                   >
                     <span>

@@ -209,31 +209,6 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
       </div>
 
-      {/* Prominent Apply Filters Button at Top */}
-      <div>
-        <button
-          type="button"
-          onClick={handleApplyFilters}
-          className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
-            isAppliedFeedback
-              ? 'bg-emerald-700 text-white shadow-emerald-700/20'
-              : 'bg-stone-900 hover:bg-amber-900 text-white'
-          }`}
-        >
-          {isAppliedFeedback ? (
-            <>
-              <Check className="w-4 h-4 text-white animate-bounce" />
-              <span>{language === 'bn' ? 'ফিল্টার প্রয়োগ হয়েছে!' : 'Filters Applied!'}</span>
-            </>
-          ) : (
-            <>
-              <Filter className="w-4 h-4 text-amber-300" />
-              <span>{language === 'bn' ? 'ফিল্টার প্রয়োগ করুন (Apply)' : 'Apply Filters'}</span>
-            </>
-          )}
-        </button>
-      </div>
-
       {/* 1. Category Filter */}
       <div className="space-y-2">
         <label className="text-xs font-semibold uppercase tracking-wider text-stone-700 block">

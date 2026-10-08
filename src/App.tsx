@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Language, Product, ProductVariant, CartItem, FilterState, Order } from './types';
+import { Language, Product, ProductVariant, CartItem, FilterState, Order, Category, Promotion } from './types';
 import { translations } from './i18n/translations';
 import { store } from './services/store';
 
@@ -29,8 +29,10 @@ import { SareeGuideModal } from './components/product/SareeGuideModal';
 
 // Category & Flash Sale Pages
 import { CategoryHeritageHeader } from './components/category/CategoryHeritageHeader';
+import { CategoryArticlePage } from './components/category/CategoryArticlePage';
 import { FlashSalePage } from './components/flash-sale/FlashSalePage';
 import { AllOffersPage } from './components/offers/AllOffersPage';
+import { OfferDetailPage } from './components/offers/OfferDetailPage';
 
 // Cart & Checkout Components
 import { CartDrawer } from './components/cart/CartDrawer';
@@ -66,8 +68,14 @@ export default function App() {
     return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
   }, []);
 
-  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'admin'
-  const [activeView, setActiveView] = useState<'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'admin'>('home');
+  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
+  const [activeView, setActiveView] = useState<
+    'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
+  >('home');
+
+  // Selected Offer & Category for Dedicated Article Views
+  const [selectedOffer, setSelectedOffer] = useState<Promotion | null>(null);
+  const [selectedCategoryForArticle, setSelectedCategoryForArticle] = useState<Category | null>(null);
 
   // Cart State (saved to localStorage)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -426,18 +434,58 @@ export default function App() {
             onDirectOrder={handleOpenDirectOrder}
             wishlist={wishlist}
             onToggleWishlist={handleToggleWishlist}
+            onNavigateToOffers={() => setActiveView('offers')}
           />
         )}
 
         {/* ========================================================
-            VIEW: DEDICATED ALL OFFERS & PRIVILEGES PAGE (Requirement 4C, 22)
+            VIEW: DEDICATED ALL OFFERS & PRIVILEGES PAGE (Requirement 3, 11, 13)
             ======================================================== */}
         {activeView === 'offers' && (
           <AllOffersPage
             language={language}
             onBack={() => setActiveView('home')}
-            onShopOffer={(_offer) => {
-              setFilters({ ...defaultFilters, onlyOnSale: true });
+            onOpenFlashSale={() => setActiveView('flash-sale')}
+            onShopOffer={(offer) => {
+              if (offer.type === 'flash_sale') {
+                setActiveView('flash-sale');
+              } else {
+                setSelectedOffer(offer);
+                setActiveView('offer-detail');
+              }
+            }}
+          />
+        )}
+
+        {/* ========================================================
+            VIEW: DEDICATED OFFER DETAIL PAGE (Requirement 11, 13)
+            ======================================================== */}
+        {activeView === 'offer-detail' && selectedOffer && (
+          <OfferDetailPage
+            offer={selectedOffer}
+            language={language}
+            onBack={() => setActiveView('offers')}
+            onSelectProduct={handleSelectProduct}
+            onQuickAddToCart={handleAddToCart}
+            onDirectOrder={handleOpenDirectOrder}
+            wishlist={wishlist}
+            onToggleWishlist={handleToggleWishlist}
+            onApplyCouponToCart={(code) => {
+              setAppliedCodeName(code);
+            }}
+          />
+        )}
+
+        {/* ========================================================
+            VIEW: DEDICATED CATEGORY ARTICLE PAGE (Requirement 6 & Admin 4)
+            ======================================================== */}
+        {activeView === 'category-article' && selectedCategoryForArticle && (
+          <CategoryArticlePage
+            category={selectedCategoryForArticle}
+            language={language}
+            onBack={() => setActiveView('shop')}
+            onShopCategory={(catId) => {
+              setFilters({ ...defaultFilters, categoryId: catId });
               setActiveView('shop');
             }}
           />
@@ -452,7 +500,19 @@ export default function App() {
             <HeroBanner
               banners={heroBanners}
               language={language}
-              onCtaClick={() => setActiveView('shop')}
+              onCtaClick={(destination) => {
+                const promo = store.getPromotions().find(
+                  (p) => p.id === destination || p.code === destination
+                );
+                if (promo) {
+                  setSelectedOffer(promo);
+                  setActiveView('offer-detail');
+                } else if (destination === 'offers') {
+                  setActiveView('offers');
+                } else {
+                  setActiveView('shop');
+                }
+              }}
             />
 
             {/* 2. Category Circles (Fabrilife circular navigation) */}
@@ -463,7 +523,7 @@ export default function App() {
               activeCategoryId={filters.categoryId}
             />
 
-            {/* 3. Flash Sale Section with High Aesthetic & Urgency (Requirement 1) */}
+            {/* 3. Flash Sale Section with High Aesthetic & Urgency (Requirement 1, 3, 11, 12) */}
             <FlashSaleSection
               products={specialOffers}
               language={language}
@@ -473,6 +533,9 @@ export default function App() {
               onQuickAddToCart={handleAddToCart}
               onDirectOrder={handleOpenDirectOrder}
               onViewAllFlash={() => setActiveView('flash-sale')}
+              onSelectOffer={() => {
+                setActiveView('flash-sale');
+              }}
             />
 
             {/* 4. Top Selling Handloom Sarees with Noticeable Explore Button (Requirement 4) */}
@@ -611,7 +674,7 @@ export default function App() {
               )}
             </div>
 
-            {/* Category Specialized Heritage Section with Tabs & Subcategories (Requirement 5 & 7) */}
+            {/* Category Specialized Heritage Section with Tabs & Subcategories (Requirement 5, 6 & 7) */}
             {activeCategory && (
               <CategoryHeritageHeader
                 category={activeCategory}
@@ -620,6 +683,10 @@ export default function App() {
                 onSelectSubcategory={(subcatId) =>
                   setFilters({ ...filters, subcategoryId: subcatId || undefined })
                 }
+                onOpenDetails={() => {
+                  setSelectedCategoryForArticle(activeCategory);
+                  setActiveView('category-article');
+                }}
               />
             )}
 
@@ -772,7 +839,7 @@ export default function App() {
       {/* Floating WhatsApp Contact */}
       <WhatsAppButton language={language} />
 
-      {/* Mobile Sticky Bottom Navigation (5 tabs: Home, Category, Sale, Wishlist, Account) */}
+      {/* Mobile Sticky Bottom Navigation (5 tabs: Home, Category, Offers, Wishlist, Account) */}
       <MobileBottomNav
         language={language}
         cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
@@ -780,7 +847,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
-        onOpenFlashSale={() => setActiveView('flash-sale')}
+        onOpenOffers={() => setActiveView('offers')}
         onNavigateHome={() => setActiveView('home')}
         onNavigateCategory={() => setActiveView('shop')}
         activeView={activeView}

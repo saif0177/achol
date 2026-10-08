@@ -9,7 +9,8 @@ interface MobileBottomNavProps {
   wishlistCount: number;
   onNavigateHome: () => void;
   onNavigateCategory: () => void;
-  onOpenFlashSale: () => void;
+  onOpenOffers?: () => void;
+  onOpenFlashSale?: () => void;
   onOpenCart: () => void;
   onOpenWishlist: () => void;
   onOpenAccount: () => void;
@@ -24,11 +25,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   wishlistCount,
   onNavigateHome,
   onNavigateCategory,
+  onOpenOffers,
   onOpenFlashSale,
   onOpenWishlist,
   onOpenAccount,
   onOpenMenu
 }) => {
+  const handleOpenOffers = onOpenOffers || onOpenFlashSale || (() => {});
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 px-2 py-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] transition-colors">
       <div className="grid grid-cols-5 items-center text-center text-[10px] font-medium text-stone-600 dark:text-stone-300">
@@ -59,17 +62,17 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <span className="truncate">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</span>
         </button>
 
-        {/* 3. Sale / Flash Deals */}
+        {/* 3. Unified Offers (Flash Deals, Discounts, Free Shipping) */}
         <button
-          onClick={onOpenFlashSale}
+          onClick={handleOpenOffers}
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-colors cursor-pointer ${
-            activeView === 'flash-sale'
+            activeView === 'offers' || activeView === 'offer-detail' || activeView === 'flash-sale'
               ? 'text-rose-600 dark:text-rose-400 font-bold'
               : 'text-rose-700 dark:text-rose-400 hover:text-rose-600'
           }`}
         >
           <Zap className="w-4 h-4 fill-current text-rose-600 animate-pulse" />
-          <span className="font-bold truncate">{language === 'bn' ? 'সেল / অফার' : 'Sale'}</span>
+          <span className="font-bold truncate">{language === 'bn' ? 'অফার' : 'Offers'}</span>
         </button>
 
         {/* 4. Wishlist (Loved Collection) */}

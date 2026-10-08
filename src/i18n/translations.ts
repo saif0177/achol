@@ -181,8 +181,8 @@ export const translations = {
     trustHandloomDesc: 'Directly sourced from heritage weavers of Demra, Tangail & Rajshahi.',
     trustDeliveryTitle: 'Fast Steadfast Delivery',
     trustDeliveryDesc: 'Next-day delivery in Dhaka, safe express delivery across all 64 districts.',
-    trustWhatsAppTitle: 'Personal Styling Support',
-    trustWhatsAppDesc: 'Direct WhatsApp video preview & customized private pricing available.'
+    trustWhatsAppTitle: 'Dedicated Artisan Support',
+    trustWhatsAppDesc: 'Direct messaging assistance and custom sizing inquiry.'
   },
 
   bn: {
@@ -365,8 +365,8 @@ export const translations = {
     trustHandloomDesc: 'ডেমরা, রূপগঞ্জ, টাঙ্গাইল ও রাজশাহীর ঐতিহ্যবাহী তাঁতিদের সরাসরি তৈরি।',
     trustDeliveryTitle: 'দ্রুত স্টিডফাস্ট কুরিয়ার',
     trustDeliveryDesc: 'ঢাকায় ২৪ ঘণ্টার মধ্যে এবং সারাদেশে ৬৪ জেলায় নিরাপদ হোম ডেলিভারি।',
-    trustWhatsAppTitle: 'সরাসরি ভিডিও ও সহায়তা',
-    trustWhatsAppDesc: 'হোয়াটসঅ্যাপে ভিডিও কলে শাড়ির কাজ দেখে নেওয়ার বিশেষ সুযোগ।'
+    trustWhatsAppTitle: 'সরাসরি পরামর্শ ও সহায়তা',
+    trustWhatsAppDesc: 'শাড়ির যত্ন, মাপ বা তথ্যের জন্য সরাসরি মেসেজে দ্রুত সহায়তা।'
   }
 };
 
