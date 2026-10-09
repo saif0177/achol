@@ -1,4 +1,4 @@
-import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle, Promotion, HiddenPromotionalCategory } from '../types';
+import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig } from '../types';
 
 const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
@@ -536,6 +536,348 @@ const INITIAL_PRODUCTS: Product[] = [
     ],
     salesCount: 22,
     viewsCount: 890
+  },
+  {
+    id: 'p-mk601',
+    code: 'MK-601',
+    nameEn: 'Mirpur Benarasi Katan (Royal Crimson & Meena Border)',
+    nameBn: 'মিরপুর বেনারসি কাতান (রক্তিম লাল ও মীনাকারি পাড়)',
+    price: 18500,
+    originalPrice: 22000,
+    discountPercent: 16,
+    categoryId: 'dhakai-jamdani',
+    subcategoryId: 'jamdani-80-count',
+    sareeType: 'Mirpur Katan',
+    fabric: 'Pure Mulberry Silk with Antique Gold Zari',
+    fabricBn: 'খাঁটি তুঁত রেশম ও অ্যান্টিক সোনালি জরি',
+    occasion: 'Weddings, Receptions & Grand Celebrations',
+    occasionBn: 'বিয়ে, বৌভাত ও রাজকীয় উৎসব',
+    suitableAgeRange: '25-35',
+    descriptionEn: 'Woven with dense floral jaal work on rich crimson red silk, framed by delicate meenakari floral borders.',
+    descriptionBn: 'মিরপুরের প্রবীণ কারিগরদের নিপুণ বুননে তৈরি। জমিন জুড়ে ঘন জাফরানি জাল নকশা এবং রাজকীয় মীনাকারি সোনালি পাড়।',
+    careInstructionsEn: 'Dry clean only. Roll in cotton muslin wrap.',
+    careInstructionsBn: 'শুধুমাত্র ড্রাই ওয়াশ করুন।',
+    length: '5.5 meters with running Blouse Piece',
+    hasBlousePiece: true,
+    stock: 8,
+    isFeatured: true,
+    isNewArrival: true,
+    isSale: true,
+    isActive: true,
+    rating: 4.9,
+    reviewCount: 28,
+    keywords: ['katan', 'benarasi', 'red', 'wedding', 'bridal', 'কাতান', 'বেনারসি', 'লাল'],
+    primaryImage: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+    images: ['/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg'],
+    variants: [
+      {
+        id: 'v-mk601-red',
+        colorNameEn: 'Crimson Red',
+        colorNameBn: 'টকটকে রক্তিম লাল',
+        colorHex: '#991B1B',
+        colorFamily: 'red',
+        image: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+        stock: 5,
+        sku: 'MK-601-RED'
+      },
+      {
+        id: 'v-mk601-maroon',
+        colorNameEn: 'Royal Maroon',
+        colorNameBn: 'মরুন',
+        colorHex: '#831843',
+        colorFamily: 'red',
+        image: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
+        stock: 3,
+        sku: 'MK-601-MRN'
+      }
+    ],
+    salesCount: 31,
+    viewsCount: 1140
+  },
+  {
+    id: 'p-pb702',
+    code: 'PB-702',
+    nameEn: 'Pabna Fine Handloom Taat Saree (Pastel Mint & Ganga-Jamuna Border)',
+    nameBn: 'পাবনা মিহি সুতি তাঁত শাড়ি (মিন্ট সবুজ ও গঙ্গা-যমুনা পাড়)',
+    price: 3450,
+    originalPrice: 4200,
+    discountPercent: 18,
+    categoryId: 'tangail-taat',
+    subcategoryId: 'taat-cotton',
+    sareeType: 'Tangail Taat',
+    fabric: '100-Count Combed Soft Cotton',
+    fabricBn: '১০০ কাউন্ট মিহি চিরুনি সুতি সুতা',
+    occasion: 'Daily Elegance, Office Wear & Summer Gatherings',
+    occasionBn: 'প্রতিদিনের পরিধান, অফিস ও গ্রীষ্মের আড্ডা',
+    suitableAgeRange: 'All Ages',
+    descriptionEn: 'Breathable, featherlight 100-count cotton woven on traditional pit looms in Pabna with contrasting Ganga-Jamuna borders.',
+    descriptionBn: 'পাবনার ঐতিহ্যবাহী পিট-লুমে বোনা ১০০ কাউন্টের অত্যন্ত নরম ও আরামদায়ক সুতি শাড়ি। দুই পাশে দুই রঙের অনন্য গঙ্গা-যমুনা পাড়।',
+    careInstructionsEn: 'Gentle hand wash in cold water with mild shampoo.',
+    careInstructionsBn: 'ঠান্ডা পানিতে মৃদু শ্যাম্পু দিয়ে ধুয়ে ছায়ায় শুকান।',
+    length: '5.5 meters',
+    hasBlousePiece: false,
+    stock: 14,
+    isFeatured: false,
+    isNewArrival: true,
+    isSale: true,
+    isActive: true,
+    rating: 4.8,
+    reviewCount: 33,
+    keywords: ['cotton', 'taat', 'pabna', 'summer', 'mint', 'green', 'তাঁত', 'সুতি'],
+    primaryImage: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+    images: ['/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg'],
+    variants: [
+      {
+        id: 'v-pb702-mint',
+        colorNameEn: 'Mint Green',
+        colorNameBn: 'পুদিনা সবুজ',
+        colorHex: '#059669',
+        colorFamily: 'green',
+        image: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+        stock: 8,
+        sku: 'PB-702-MNT'
+      },
+      {
+        id: 'v-pb702-yellow',
+        colorNameEn: 'Basanti Yellow',
+        colorNameBn: 'বাসন্তী হলুদ',
+        colorHex: '#D97706',
+        colorFamily: 'yellow',
+        image: '/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg',
+        stock: 6,
+        sku: 'PB-702-YLW'
+      }
+    ],
+    salesCount: 47,
+    viewsCount: 1530
+  },
+  {
+    id: 'p-sk308',
+    code: 'SK-308',
+    nameEn: 'Rajshahi Pure Silk Butidar Saree (Teal Peacock Shade)',
+    nameBn: 'রাজশাহী খাঁটি সিল্ক বুটিদার শাড়ি (ময়ূরকণ্ঠী টিল শেড)',
+    price: 14500,
+    originalPrice: 17500,
+    discountPercent: 17,
+    categoryId: 'rajshahi-silk',
+    subcategoryId: 'silk-pure',
+    sareeType: 'Rajshahi Silk',
+    fabric: '100% Certified Mulberry Silk',
+    fabricBn: '১০০% সার্টিফাইড রেশম সিল্ক',
+    occasion: 'Evening Festivities, Receptions & Formal Banquets',
+    occasionBn: 'সান্ধ্যকালীন উৎসব ও সংবর্ধনা',
+    suitableAgeRange: '25-35',
+    descriptionEn: 'Lustrous mulberry silk handwoven by Rajshahi sericulture artisans with delicate zari peacock feather motifs.',
+    descriptionBn: 'রাজশাহীর রেশম পলুপল্লীর দক্ষ তাঁতিদের বুনন। চমৎকার ময়ূরকণ্ঠী রঙের ওপর সূক্ষ্ম সোনালি বুটির মোহনীয় ছোঁয়া।',
+    careInstructionsEn: 'Dry clean only.',
+    careInstructionsBn: 'শুধুমাত্র ড্রাই ওয়াশ।',
+    length: '5.5 meters with Blouse Piece',
+    hasBlousePiece: true,
+    stock: 6,
+    isFeatured: true,
+    isNewArrival: false,
+    isSale: true,
+    isActive: true,
+    rating: 4.9,
+    reviewCount: 22,
+    keywords: ['silk', 'rajshahi', 'teal', 'blue', 'zari', 'সিল্ক', 'রাজশাহী'],
+    primaryImage: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
+    images: ['/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg'],
+    variants: [
+      {
+        id: 'v-sk308-teal',
+        colorNameEn: 'Teal Blue-Green',
+        colorNameBn: 'ময়ূরকণ্ঠী টিল',
+        colorHex: '#0D9488',
+        colorFamily: 'blue',
+        image: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
+        stock: 3,
+        sku: 'SK-308-TEL'
+      },
+      {
+        id: 'v-sk308-purple',
+        colorNameEn: 'Royal Plum Purple',
+        colorNameBn: 'জাম রঙা পার্পল',
+        colorHex: '#7E22CE',
+        colorFamily: 'purple',
+        image: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+        stock: 3,
+        sku: 'SK-308-PLM'
+      }
+    ],
+    salesCount: 26,
+    viewsCount: 970
+  },
+  {
+    id: 'p-dm208',
+    code: 'DM-208',
+    nameEn: 'Shorno Jamdani Muslin Saree (Golden Zari Heirloom)',
+    nameBn: 'স্বর্ণ জামদানি মসলিন শাড়ি (খাঁটি স্বর্ণালী জরি নকশা)',
+    price: 28500,
+    originalPrice: 32000,
+    discountPercent: 11,
+    categoryId: 'dhakai-muslin',
+    subcategoryId: 'muslin-pure',
+    sareeType: 'Dhakai Muslin',
+    fabric: 'Superfine Phuti Karpas & Resham Zari',
+    fabricBn: 'শতভাগ খাঁটি ফুটি কার্পাস তুলা ও রেশম সোনালি জরি',
+    occasion: 'Weddings & High VIP Gatherings',
+    occasionBn: 'রাজকীয় বিয়ে ও বিশেষ উৎসব',
+    suitableAgeRange: '35-50',
+    descriptionEn: 'Woven over 60 days in Sonargaon, this golden muslin drape shines like molten sunlight with timeless Terchi and Jal floral work.',
+    descriptionBn: 'সোনারগাঁয়ের প্রবীণ কারিগরদের ৬০ দিনের নিরলস পরিশ্রমে বোনা স্বর্ণালী মসলিন জামদানি।',
+    careInstructionsEn: 'Professional dry clean only. Wrap in unbleached cotton.',
+    careInstructionsBn: 'শুধুমাত্র অভিজ্ঞ ড্রাই ক্লিনারের সাহায্য নিন।',
+    length: '5.5 meters',
+    hasBlousePiece: false,
+    stock: 5,
+    isFeatured: true,
+    isNewArrival: true,
+    isSale: true,
+    isActive: true,
+    rating: 5.0,
+    reviewCount: 18,
+    keywords: ['muslin', 'gold', 'zari', 'luxury', 'heirloom', 'সোনারগাঁ', 'মসলিন'],
+    primaryImage: '/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg',
+    images: ['/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg'],
+    variants: [
+      {
+        id: 'v-dm208-gold',
+        colorNameEn: 'Ivory Gold',
+        colorNameBn: 'স্বর্ণালী আইভরি',
+        colorHex: '#D97706',
+        colorFamily: 'gold',
+        image: '/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg',
+        stock: 3,
+        sku: 'DM-208-GLD'
+      },
+      {
+        id: 'v-dm208-beige',
+        colorNameEn: 'Warm Cream Beige',
+        colorNameBn: 'ক্রিম বেইজ',
+        colorHex: '#D97706',
+        colorFamily: 'gold',
+        image: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
+        stock: 2,
+        sku: 'DM-208-BGE'
+      }
+    ],
+    salesCount: 15,
+    viewsCount: 840
+  },
+  {
+    id: 'p-tt410',
+    code: 'TT-410',
+    nameEn: 'Tangail Jacquard Soft Silk Saree (Meenakari Border)',
+    nameBn: 'টাঙ্গাইল জ্যাকার্ড সফট সিল্ক শাড়ি (মীনাকারি পাড়)',
+    price: 6800,
+    originalPrice: 8500,
+    discountPercent: 20,
+    categoryId: 'tangail-taat',
+    subcategoryId: 'taat-resham',
+    sareeType: 'Tangail Taat',
+    fabric: 'Soft Resham Silk & Cotton Blend',
+    fabricBn: 'নরম রেশম সিল্ক ও সুতি সুতার সংমিশ্রণ',
+    occasion: 'Festivals, Puja, Pohela Boishakh & Family Evenings',
+    occasionBn: 'উৎসব, পূজা, পহেলা বৈশাখ ও পারিবারিক মিলনমেলা',
+    suitableAgeRange: 'All Ages',
+    descriptionEn: 'Light as a feather with a rich drape. Woven in Pathrail, Tangail using intricate Jacquard loom techniques.',
+    descriptionBn: 'পাথরাইল টাঙ্গাইলের নিপুণ তাঁতিদের জ্যাকার্ড লুমে বোনা সফট সিল্ক শাড়ি। উজ্জ্বল রঙ ও আরামদায়ক বুনন।',
+    careInstructionsEn: 'Dry clean recommended.',
+    careInstructionsBn: 'ড্রাই ওয়াশ করার পরামর্শ দেয়া হচ্ছে।',
+    length: '5.5 meters with Blouse Piece',
+    hasBlousePiece: true,
+    stock: 10,
+    isFeatured: false,
+    isNewArrival: true,
+    isSale: true,
+    isActive: true,
+    rating: 4.8,
+    reviewCount: 25,
+    keywords: ['tangail', 'silk', 'jacquard', 'festive', 'টাঙ্গাইল', 'সিল্ক'],
+    primaryImage: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+    images: ['/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg'],
+    variants: [
+      {
+        id: 'v-tt410-blue',
+        colorNameEn: 'Royal Indigo Blue',
+        colorNameBn: 'ইন্ডিগো নীল',
+        colorHex: '#1E3A8A',
+        colorFamily: 'blue',
+        image: '/src/assets/images/product_tangail_taat_cotton_1791268738764.jpg',
+        stock: 5,
+        sku: 'TT-410-BLU'
+      },
+      {
+        id: 'v-tt410-red',
+        colorNameEn: 'Vermilion Red',
+        colorNameBn: 'সিঁদুরে লাল',
+        colorHex: '#991B1B',
+        colorFamily: 'red',
+        image: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+        stock: 5,
+        sku: 'TT-410-RED'
+      }
+    ],
+    salesCount: 39,
+    viewsCount: 1290
+  },
+  {
+    id: 'p-nj105',
+    code: 'JM-105',
+    nameEn: 'Nilambari Jamdani Saree (Deep Midnight Navy with Silver Peacock Motif)',
+    nameBn: 'নীলাম্বরী ঢাকাই জামদানি (গভীর রাতুল নীল ও রুপালী ময়ূর নকশা)',
+    price: 16200,
+    originalPrice: 19000,
+    discountPercent: 15,
+    categoryId: 'dhakai-jamdani',
+    subcategoryId: 'jamdani-80-count',
+    sareeType: 'Dhakai Jamdani',
+    fabric: '80-Count Fine Egyptian Cotton & Silver Resham',
+    fabricBn: '৮০ কাউন্ট মিহি সুতি এবং রুপালী রেশম সুতা',
+    occasion: 'Weddings, Formal Cultural Events & Evening Receptions',
+    occasionBn: 'বিয়ে, সাংস্কৃতিক অনুষ্ঠান ও সান্ধ্য উৎসব',
+    suitableAgeRange: '25-35',
+    descriptionEn: 'The legendary Nilambari weave capturing the hue of midnight skies, adorned with intricate silver zari floral kalkas.',
+    descriptionBn: 'আবহমান বাংলার ঐতিহ্যবাহী নীলাম্বরী জামদানি। গভীর নীল জমিনে চাঁদের আলোর মতো জ্বলজ্বলে রুপালী জরি ও রেশমের কাজ।',
+    careInstructionsEn: 'Dry clean only.',
+    careInstructionsBn: 'শুধুমাত্র ড্রাই ওয়াশ করুন।',
+    length: '5.5 meters with Blouse Piece',
+    hasBlousePiece: true,
+    stock: 9,
+    isFeatured: true,
+    isNewArrival: true,
+    isSale: true,
+    isActive: true,
+    rating: 4.9,
+    reviewCount: 31,
+    keywords: ['nilambari', 'jamdani', 'blue', 'navy', 'rupganj', 'নীলাম্বরী', 'জামদানি', 'নীল'],
+    primaryImage: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+    images: ['/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg'],
+    variants: [
+      {
+        id: 'v-nj105-navy',
+        colorNameEn: 'Midnight Nilambari Navy',
+        colorNameBn: 'নীলাম্বরী গাঢ় নীল',
+        colorHex: '#1E3A8A',
+        colorFamily: 'blue',
+        image: '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg',
+        stock: 5,
+        sku: 'JM-105-NVY'
+      },
+      {
+        id: 'v-nj105-black',
+        colorNameEn: 'Night Raven Black',
+        colorNameBn: 'কুচকুচে কালো',
+        colorHex: '#18181B',
+        colorFamily: 'black',
+        image: '/src/assets/images/product_rajshahi_silk_emerald_1791268751191.jpg',
+        stock: 4,
+        sku: 'JM-105-BLK'
+      }
+    ],
+    salesCount: 35,
+    viewsCount: 1390
   }
 ];
 
@@ -814,6 +1156,32 @@ const INITIAL_LANDING_POPUPS: LandingPopupConfig[] = [
     hasTimer: false
   }
 ];
+
+const INITIAL_TOP_ANNOUNCEMENTS: TopAnnouncementBarConfig = {
+  isEnabled: true,
+  rotationSpeedSeconds: 4,
+  hotline: '09612-444888',
+  announcements: [
+    {
+      id: 'ann-1',
+      textBn: '🔥 ঈদ ধামাকা: ৩টি শাড়ির অর্ডারে ফ্রি হোম ডেলিভারি + ৫% ছাড় | কোড: AANCHOL500',
+      textEn: '🔥 Special Offer: Free Delivery on 3 sarees + Extra 5% Off | Code: AANCHOL500',
+      isActive: true
+    },
+    {
+      id: 'ann-2',
+      textBn: '📞 শাড়ির মাপ বা যে কোনো তথ্যের জন্য হটলাইনে যোগাযোগ করুন: 09612-444888 (সকাল ১০টা - রাত ১০টা)',
+      textEn: '📞 Saree Inquiries & Customer Care Hotline: 09612-444888 (10 AM - 10 PM)',
+      isActive: true
+    },
+    {
+      id: 'ann-3',
+      textBn: '🚚 সারাদেশে ক্যাশ অন ডেলিভারি · পার্সেল খুলে দেখে মূল্য পরিশোধের সুবিধা',
+      textEn: '🚚 Cash on Delivery Nationwide · Inspect saree before payment',
+      isActive: true
+    }
+  ]
+};
 
 const INITIAL_LANDING_POPUP: LandingPopupConfig = INITIAL_LANDING_POPUPS[0];
 
@@ -1123,6 +1491,7 @@ class StoreService {
   private categoryArticles: CategoryArticle[] = INITIAL_CATEGORY_ARTICLES;
   private promotions: Promotion[] = INITIAL_PROMOTIONS;
   private hiddenPromotionalCategories: HiddenPromotionalCategory[] = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
+  private topAnnouncementConfig: TopAnnouncementBarConfig = INITIAL_TOP_ANNOUNCEMENTS;
   private activeCustomerPhone: string | null = null;
 
   constructor() {
@@ -1132,7 +1501,14 @@ class StoreService {
   private init() {
     try {
       const storedProducts = localStorage.getItem('aanchol_products');
-      this.products = storedProducts ? JSON.parse(storedProducts) : INITIAL_PRODUCTS;
+      if (storedProducts) {
+        const parsed: Product[] = JSON.parse(storedProducts);
+        const existingIds = new Set(parsed.map((p) => p.id));
+        const missing = INITIAL_PRODUCTS.filter((p) => !existingIds.has(p.id));
+        this.products = [...parsed, ...missing];
+      } else {
+        this.products = INITIAL_PRODUCTS;
+      }
 
       const storedHiddenCategories = localStorage.getItem('aanchol_hidden_promotional_categories');
       this.hiddenPromotionalCategories = storedHiddenCategories ? JSON.parse(storedHiddenCategories) : INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
@@ -1204,6 +1580,9 @@ class StoreService {
       const storedPromotions = localStorage.getItem('aanchol_promotions');
       this.promotions = storedPromotions ? JSON.parse(storedPromotions) : INITIAL_PROMOTIONS;
 
+      const storedAnnouncements = localStorage.getItem('aanchol_top_announcements');
+      this.topAnnouncementConfig = storedAnnouncements ? JSON.parse(storedAnnouncements) : INITIAL_TOP_ANNOUNCEMENTS;
+
       const storedActivePhone = localStorage.getItem('aanchol_active_phone');
       this.activeCustomerPhone = storedActivePhone || '01712345678';
     } catch {
@@ -1219,6 +1598,7 @@ class StoreService {
       this.categoryArticles = INITIAL_CATEGORY_ARTICLES;
       this.promotions = INITIAL_PROMOTIONS;
       this.hiddenPromotionalCategories = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
+      this.topAnnouncementConfig = INITIAL_TOP_ANNOUNCEMENTS;
       this.activeCustomerPhone = '01712345678';
     }
   }
@@ -1511,6 +1891,49 @@ class StoreService {
   public deleteBanner(id: string): void {
     this.banners = this.banners.filter((b) => b.id !== id);
     this.persist('aanchol_banners', this.banners);
+  }
+
+  // TOP ANNOUNCEMENT BAR TICKER
+  public getTopAnnouncementConfig(): TopAnnouncementBarConfig {
+    return this.topAnnouncementConfig;
+  }
+
+  public saveTopAnnouncementConfig(config: TopAnnouncementBarConfig): void {
+    this.topAnnouncementConfig = config;
+    this.persist('aanchol_top_announcements', this.topAnnouncementConfig);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('aanchol_announcements_updated'));
+    }
+  }
+
+  public addAnnouncement(item: Omit<TopAnnouncement, 'id'>): void {
+    const newAnn: TopAnnouncement = {
+      ...item,
+      id: `ann-${Date.now()}`
+    };
+    this.topAnnouncementConfig.announcements.unshift(newAnn);
+    this.saveTopAnnouncementConfig(this.topAnnouncementConfig);
+  }
+
+  public updateAnnouncement(ann: TopAnnouncement): void {
+    const idx = this.topAnnouncementConfig.announcements.findIndex((a) => a.id === ann.id);
+    if (idx >= 0) {
+      this.topAnnouncementConfig.announcements[idx] = ann;
+      this.saveTopAnnouncementConfig(this.topAnnouncementConfig);
+    }
+  }
+
+  public deleteAnnouncement(id: string): void {
+    this.topAnnouncementConfig.announcements = this.topAnnouncementConfig.announcements.filter((a) => a.id !== id);
+    this.saveTopAnnouncementConfig(this.topAnnouncementConfig);
+  }
+
+  public toggleAnnouncement(id: string): void {
+    const ann = this.topAnnouncementConfig.announcements.find((a) => a.id === id);
+    if (ann) {
+      ann.isActive = !ann.isActive;
+      this.saveTopAnnouncementConfig(this.topAnnouncementConfig);
+    }
   }
 
   // INTELLIGENT SEARCH & FUZZY MATCHING (Requirement 6)

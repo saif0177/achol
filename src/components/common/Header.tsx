@@ -132,30 +132,30 @@ export const Header: React.FC<HeaderProps> = ({
     { en: 'Bridal Katan', bn: 'বিয়ের কাতান' }
   ];
 
-  // Rotating top announcement ticker messages
-  const announcements = [
-    {
-      bn: '🔥 ঈদ ধামাকা: ৩টি শাড়ির অর্ডারে ফ্রি হোম ডেলিভারি + ৫% ছাড় | কোড: AANCHOL500',
-      en: '🔥 Special Offer: Free Delivery on 3 sarees + Extra 5% Off | Code: AANCHOL500'
-    },
-    {
-      bn: '📞 শাড়ির মাপ বা যে কোনো তথ্যের জন্য হটলাইনে যোগাযোগ করুন: 09612-444888 (সকাল ১০টা - রাত ১০টা)',
-      en: '📞 Saree Inquiries & Customer Care Hotline: +880 1700-000000 (10 AM - 10 PM)'
-    },
-    {
-      bn: '🚚 সারাদেশে ক্যাশ অন ডেলিভারি · পার্সেল খুলে দেখে মূল্য পরিশোধের সুবিধা',
-      en: '🚚 Cash on Delivery Nationwide · Inspect saree before payment'
-    }
-  ];
+  // Dynamic top announcement ticker messages from store
+  const [announcementConfig, setAnnouncementConfig] = useState(() => store.getTopAnnouncementConfig());
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      setAnnouncementConfig(store.getTopAnnouncementConfig());
+    };
+    window.addEventListener('aanchol_announcements_updated', handleUpdate);
+    return () => window.removeEventListener('aanchol_announcements_updated', handleUpdate);
+  }, []);
+
+  const activeAnnouncements = announcementConfig.announcements.filter((a) => a.isActive);
   const [announcementIndex, setAnnouncementIndex] = useState(0);
 
   useEffect(() => {
+    if (activeAnnouncements.length <= 1) return;
+    const intervalMs = Math.max(2, announcementConfig.rotationSpeedSeconds || 4) * 1000;
     const timer = setInterval(() => {
-      setAnnouncementIndex((prev) => (prev + 1) % announcements.length);
-    }, 4500);
+      setAnnouncementIndex((prev) => (prev + 1) % activeAnnouncements.length);
+    }, intervalMs);
     return () => clearInterval(timer);
-  }, [announcements.length]);
+  }, [activeAnnouncements.length, announcementConfig.rotationSpeedSeconds]);
+
+  const currentAnnouncement = activeAnnouncements[announcementIndex] || activeAnnouncements[0];
 
   // Close desktop menu on outside click
   useEffect(() => {
@@ -171,24 +171,24 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       {/* 1. Top Announcement Marquee Ticker */}
-      <div className="bg-stone-900 text-stone-200 text-xs py-1.5 px-4 text-center border-b border-stone-800 tracking-wide flex items-center justify-between">
+      <div className={`bg-stone-900 text-stone-200 text-xs py-1.5 px-4 text-center border-b border-stone-800 tracking-wide flex items-center justify-between ${!announcementConfig.isEnabled ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between text-[11px] sm:text-xs">
           <div className="flex items-center gap-2 mx-auto sm:mx-0 overflow-hidden">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
             <span className="font-medium truncate transition-opacity duration-300">
-              {language === 'bn'
-                ? announcements[announcementIndex].bn
-                : announcements[announcementIndex].en}
+              {currentAnnouncement
+                ? (language === 'bn' ? currentAnnouncement.textBn : currentAnnouncement.textEn)
+                : (language === 'bn' ? 'আঁচল হেরিটেজ শাড়ি - খাঁটি ঢাকাই জামদানি ও সিল্ক' : 'Aanchol Heritage Sarees Dhaka - Authentic Dhakai Jamdani & Pure Silk')}
             </span>
           </div>
 
           <div className="hidden sm:flex items-center gap-4 text-stone-400 shrink-0">
             <a
-              href="tel:09612444888"
+              href={`tel:${(announcementConfig.hotline || '09612444888').replace(/[^0-9+]/g, '')}`}
               className="flex items-center gap-1 hover:text-white transition-colors"
             >
               <Phone className="w-3 h-3 text-amber-400" />
-              <span>Hotline: 09612-444888</span>
+              <span>Hotline: {announcementConfig.hotline || '09612-444888'}</span>
             </a>
             <span>·</span>
             <button
@@ -427,26 +427,19 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Single Unified Theme Toggle Button (Requirement 4: ONE theme button, no separate buttons) */}
-            {onToggleDarkMode && (
+            {/* Notification Button (Moved from Menu to beside Cart) */}
+            {onOpenNotifications && (
               <button
-                onClick={onToggleDarkMode}
-                className="p-2 sm:p-2.5 text-stone-700 dark:text-stone-300 hover:text-amber-900 dark:hover:text-amber-400 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
-                title={
-                  isDarkMode
-                    ? language === 'bn'
-                      ? 'লাইট মোডে পরিবর্তন করুন'
-                      : 'Switch to Light Mode'
-                    : language === 'bn'
-                    ? 'ডার্ক মোডে পরিবর্তন করুন'
-                    : 'Switch to Dark Mode'
-                }
-                aria-label="Toggle Theme"
+                onClick={onOpenNotifications}
+                className="relative p-2 sm:p-2.5 text-stone-700 dark:text-stone-300 hover:text-amber-900 dark:hover:text-amber-400 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+                title={language === 'bn' ? 'বিজ্ঞপ্তি ও আপডেট' : 'Notifications & Updates'}
+                aria-label="Notifications"
               >
-                {isDarkMode ? (
-                  <Sun className="w-5 h-5 text-amber-400" />
-                ) : (
-                  <Moon className="w-5 h-5 text-stone-700 dark:text-stone-300" />
+                <Bell className="w-5 h-5" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[17px] h-4 px-1 rounded-full bg-rose-600 text-[10px] font-bold text-white flex items-center justify-center shadow-xs">
+                    {unreadNotificationsCount}
+                  </span>
                 )}
               </button>
             )}
@@ -571,34 +564,6 @@ export const Header: React.FC<HeaderProps> = ({
                     </button>
                   </div>
 
-                  {/* Notifications in Menu */}
-                  {onOpenNotifications && (
-                    <div className="pb-3 border-b border-stone-100 dark:border-stone-800">
-                      <button
-                        onClick={() => {
-                          onOpenNotifications();
-                          setDesktopMenuOpen(false);
-                        }}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-semibold transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300">
-                            <Bell className="w-4 h-4" />
-                          </div>
-                          <span>
-                            {language === 'bn' ? 'বিজ্ঞপ্তি ও অফার' : 'Notifications & Drops'}
-                          </span>
-                        </div>
-                        {unreadNotificationsCount > 0 ? (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold text-[10px]">
-                            {unreadNotificationsCount} new
-                          </span>
-                        ) : (
-                          <span className="text-stone-400 text-[10px]">0 new</span>
-                        )}
-                      </button>
-                    </div>
-                  )}
 
                   {/* Account Section inside Menu */}
                   <div className="space-y-1">

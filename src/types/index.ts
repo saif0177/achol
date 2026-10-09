@@ -392,3 +392,18 @@ export interface AppNotification {
   actionTargetId?: string;
   orderId?: string;
 }
+
+export interface TopAnnouncement {
+  id: string;
+  textEn: string;
+  textBn: string;
+  link?: string;
+  isActive: boolean;
+}
+
+export interface TopAnnouncementBarConfig {
+  isEnabled: boolean;
+  rotationSpeedSeconds: number;
+  hotline: string;
+  announcements: TopAnnouncement[];
+}

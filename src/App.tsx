@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Language, Product, ProductVariant, CartItem, FilterState, Order, Category, Promotion } from './types';
 import { translations } from './i18n/translations';
 import { store } from './services/store';
@@ -52,7 +52,10 @@ import {
   CheckCircle2,
   Heart,
   Zap,
-  Ruler
+  Ruler,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export default function App() {
@@ -299,9 +302,82 @@ export default function App() {
   // Data fetching
   const categories = store.getCategories();
   const heroBanners = store.getBanners('hero');
-  const topSelling = store.getTopSelling(4);
-  const topRated = store.getTopRated(4);
-  const specialOffers = store.getSpecialOffers(4);
+  const topSelling = store.getTopSelling(8);
+  const topRated = store.getTopRated(8);
+  const newArrivals = store.getNewArrivals(8);
+  const specialOffers = store.getSpecialOffers(8);
+
+  // Horizontal Scroll Controls for "Most Cherished Sarees"
+  const mostCherishedScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollCherishedLeft, setCanScrollCherishedLeft] = useState(false);
+  const [canScrollCherishedRight, setCanScrollCherishedRight] = useState(true);
+
+  const checkCherishedScroll = () => {
+    if (mostCherishedScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = mostCherishedScrollRef.current;
+      setCanScrollCherishedLeft(scrollLeft > 10);
+      setCanScrollCherishedRight(scrollLeft + clientWidth < scrollWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkCherishedScroll();
+    const handleResize = () => checkCherishedScroll();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [topSelling]);
+
+  const handleScrollCherished = (direction: 'left' | 'right') => {
+    if (mostCherishedScrollRef.current) {
+      const scrollAmount = Math.min(mostCherishedScrollRef.current.clientWidth * 0.75, 480);
+      mostCherishedScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+      setTimeout(checkCherishedScroll, 350);
+    }
+  };
+
+  // "Specially For You" (Personalized Handloom Curation that randomizes on each page refresh)
+  const [speciallyForYouProducts, setSpeciallyForYouProducts] = useState<Product[]>([]);
+  const [visibleSpeciallyForYouCount, setVisibleSpeciallyForYouCount] = useState<number>(8);
+  const [isLoadingMoreSpeciallyForYou, setIsLoadingMoreSpeciallyForYou] = useState<boolean>(false);
+
+  // Random shuffle on initial mount and page visit
+  const shuffleSpeciallyForYou = () => {
+    const all = store.getProducts();
+    const shuffled = [...all];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    // Duplicate pool if needed so user has plenty of initial variety to scroll
+    const pool = shuffled.length < 12 ? [...shuffled, ...[...shuffled].sort(() => Math.random() - 0.5)] : shuffled;
+    setSpeciallyForYouProducts(pool);
+    setVisibleSpeciallyForYouCount(8);
+  };
+
+  useEffect(() => {
+    shuffleSpeciallyForYou();
+  }, []);
+
+  // Infinite "More" click handler: expands visible count and extends pool seamlessly
+  const handleLoadMoreSpeciallyForYou = () => {
+    setIsLoadingMoreSpeciallyForYou(true);
+    setTimeout(() => {
+      setVisibleSpeciallyForYouCount((prev) => {
+        const next = prev + 4;
+        // Infinite generator: if user clicks past current pool length, append another randomized batch
+        if (next > speciallyForYouProducts.length) {
+          const all = store.getProducts();
+          const extraShuffled = [...all].sort(() => Math.random() - 0.5);
+          setSpeciallyForYouProducts((cur) => [...cur, ...extraShuffled]);
+        }
+        return next;
+      });
+      setIsLoadingMoreSpeciallyForYou(false);
+    }, 280);
+  };
 
   // Shop filtered products
   const shopProducts = store.searchProducts(filters.searchQuery, filters);
@@ -523,28 +599,33 @@ export default function App() {
               activeCategoryId={filters.categoryId}
             />
 
-            {/* 3. Flash Sale Section with High Aesthetic & Urgency (Requirement 1, 3, 11, 12) */}
+            {/* 3. Top Rated Weaves Showcase with Countdown Timer & Direct Access to All Offers */}
             <FlashSaleSection
-              products={specialOffers}
+              products={topRated}
               language={language}
               wishlist={wishlist}
               onToggleWishlist={handleToggleWishlist}
               onSelectProduct={handleSelectProduct}
               onQuickAddToCart={handleAddToCart}
               onDirectOrder={handleOpenDirectOrder}
-              onViewAllFlash={() => setActiveView('flash-sale')}
+              onViewAllFlash={() => setActiveView('offers')}
               onSelectOffer={() => {
-                setActiveView('flash-sale');
+                setActiveView('offers');
               }}
             />
 
-            {/* 4. Top Selling Handloom Sarees with Noticeable Explore Button (Requirement 4) */}
-            <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-stone-900 text-stone-100 rounded-3xl p-6 sm:p-10 my-6 shadow-xl border border-stone-800">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            {/* 4. Top Selling Handloom Sarees (Single Row Horizontal Scroll on Both Computer and Mobile) */}
+            <section className="py-10 sm:py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-stone-900 text-stone-100 rounded-3xl p-5 sm:p-10 my-6 shadow-xl border border-stone-800">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
                 <div>
-                  <span className="text-xs font-semibold tracking-wider uppercase text-amber-400 block mb-1">
-                    {language === 'bn' ? 'সর্বোচ্চ বিক্রিত' : 'Customer Favorites'}
-                  </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold tracking-wider uppercase text-amber-400 block">
+                      {language === 'bn' ? 'সর্বোচ্চ বিক্রিত' : 'Customer Favorites'}
+                    </span>
+                    <span className="sm:hidden text-[10px] font-semibold text-amber-300 bg-stone-800 px-2 py-0.5 rounded-full border border-stone-700">
+                      {language === 'bn' ? 'সোয়াইপ করুন ➔' : 'Swipe ➔'}
+                    </span>
+                  </div>
                   <h2
                     className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-[#fff6f6]"
                     style={{ color: '#fff6f6' }}
@@ -552,79 +633,125 @@ export default function App() {
                     {language === 'bn' ? 'জনপ্রিয় ঐতিহ্যবাহী শাড়িসমূহ' : 'Most Cherished Sarees'}
                   </h2>
                 </div>
-                {/* Highly Noticeable Explore More Button */}
-                <button
-                  onClick={() => {
-                    setFilters({ ...defaultFilters, sortBy: 'top_selling' });
-                    setActiveView('shop');
-                  }}
-                  className="px-5 py-2.5 bg-stone-900 dark:bg-amber-950 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 group self-start sm:self-auto cursor-pointer border border-stone-800 hover:border-amber-700"
-                >
-                  <span>{language === 'bn' ? 'সব জনপ্রিয় শাড়ি এক্সপ্লোর করুন' : 'Explore All Bestsellers'}</span>
-                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-amber-300" />
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                {topSelling.map((p) => (
-                  <ProductCard
-                    key={p.id}
-                    product={p}
-                    language={language}
-                    isWishlisted={wishlist.includes(p.id)}
-                    isListView={false}
-                    onToggleWishlist={handleToggleWishlist}
-                    onSelectProduct={handleSelectProduct}
-                    onQuickAddToCart={handleAddToCart}
-                    onDirectOrder={handleOpenDirectOrder}
-                  />
-                ))}
-              </div>
-
-              {/* Noticeable Mid-page Collection Banner */}
-              <div className="mt-8 pt-6 border-t border-stone-200/80 flex items-center justify-center">
-                <button
-                  onClick={() => {
-                    setFilters({ ...defaultFilters, sortBy: 'top_selling' });
-                    setActiveView('shop');
-                  }}
-                  className="px-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold text-xs rounded-2xl border border-amber-300 transition-all flex items-center gap-2 shadow-2xs group cursor-pointer"
-                >
-                  <span>{language === 'bn' ? 'হাতে বোনা সব জনপ্রিয় শাড়ি ব্রাউজ করুন (১০০+ কালেকশন)' : 'Browse Full 100+ Authentic Handloom Collection'}</span>
-                  <ArrowRight className="w-4 h-4 text-amber-800 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-            </section>
-
-            {/* 5. Top Rated Masterpieces with Noticeable Explore Button (Requirement 4) */}
-            <section className="py-12 bg-stone-100/70 border-y border-stone-200">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-                  <div>
-                    <span className="text-xs font-semibold tracking-wider uppercase text-amber-900 block mb-1">
-                      {language === 'bn' ? 'ক্রেতাদের প্রশংসা' : 'Artisan Excellence'}
-                    </span>
-                    <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
-                      {language === 'bn' ? 'সেরা রেটিং প্রাপ্ত ঢাকাই সম্ভার' : 'Top Rated Weaves'}
-                    </h2>
+                {/* Actions: Desktop Horizontal Scroll Arrows & Noticeable Explore More Button */}
+                <div className="flex items-center gap-3 self-start sm:self-auto">
+                  {/* Desktop Horizontal Scroll Arrows */}
+                  <div className="hidden sm:flex items-center gap-1.5 bg-stone-800 p-1 rounded-xl border border-stone-700 shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleScrollCherished('left')}
+                      disabled={!canScrollCherishedLeft}
+                      aria-label="Scroll left"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-200 hover:bg-stone-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title={language === 'bn' ? 'বামে স্ক্রোল করুন' : 'Scroll left'}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScrollCherished('right')}
+                      disabled={!canScrollCherishedRight}
+                      aria-label="Scroll right"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-200 hover:bg-stone-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      title={language === 'bn' ? 'ডানে স্ক্রোল করুন' : 'Scroll right'}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  {/* Highly Noticeable Explore More Button */}
+
                   <button
                     onClick={() => {
-                      setFilters({ ...defaultFilters, sortBy: 'top_rated' });
+                      setFilters({ ...defaultFilters, sortBy: 'top_selling' });
                       setActiveView('shop');
                     }}
-                    className="px-5 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 group self-start sm:self-auto cursor-pointer border border-amber-800 hover:border-amber-600"
+                    className="px-5 py-2.5 bg-stone-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 group cursor-pointer border border-stone-700 hover:border-amber-700"
                   >
-                    <span>{language === 'bn' ? 'সব সেরা রেটিং শাড়ি দেখুন' : 'Explore All Top Rated'}</span>
+                    <span>{language === 'bn' ? 'সব জনপ্রিয় শাড়ি এক্সপ্লোর করুন' : 'Explore All Bestsellers'}</span>
                     <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-amber-300" />
                   </button>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                  {topRated.map((p) => (
+              {/* ONLY ONE ROW of "Most Cherished Sarees" on Computer & Mobile with Horizontal Scroll */}
+              {/* On Mobile: smaller cards (w-[40vw] xs:w-[38vw] max-w-[165px]) so they are nicely proportioned */}
+              {/* On Computer: single row of generous cards (w-[260px] md:w-[280px] lg:w-[295px]) with smooth horizontal scrolling */}
+              <div
+                ref={mostCherishedScrollRef}
+                onScroll={checkCherishedScroll}
+                className="flex flex-row flex-nowrap gap-3 sm:gap-4 lg:gap-5 overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth scrollbar-thin scrollbar-thumb-stone-700 scrollbar-track-transparent touch-pan-x"
+              >
+                {topSelling.map((p) => (
+                  <div
+                    key={p.id}
+                    className="w-[40vw] xs:w-[38vw] min-w-[135px] max-w-[165px] sm:w-[260px] sm:min-w-0 sm:max-w-none md:w-[280px] lg:w-[295px] shrink-0 snap-start transition-transform duration-200 hover:-translate-y-1"
+                  >
                     <ProductCard
-                      key={p.id}
+                      product={p}
+                      language={language}
+                      isWishlisted={wishlist.includes(p.id)}
+                      isListView={false}
+                      onToggleWishlist={handleToggleWishlist}
+                      onSelectProduct={handleSelectProduct}
+                      onQuickAddToCart={handleAddToCart}
+                      onDirectOrder={handleOpenDirectOrder}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 5. "Specially For You" (Randomized on every page load/refresh, Vertical Grid on Mobile and Computer, Infinite "More" button) */}
+            <section className="py-12 bg-stone-100/70 dark:bg-stone-900/60 border-y border-stone-200 dark:border-stone-800">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold tracking-wider uppercase text-amber-900 dark:text-amber-400 block">
+                        {language === 'bn' ? 'ব্যক্তিগত পছন্দ' : 'Handpicked For You'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-300/60 dark:border-emerald-800">
+                        <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        {language === 'bn' ? 'প্রতিবার নতুন কালেকশন' : 'Refreshes Every Visit'}
+                      </span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">
+                      {language === 'bn' ? 'স্পেশালি ফর ইউ (Specially For You)' : 'Specially For You'}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 mt-1 max-w-xl">
+                      {language === 'bn'
+                        ? 'আপনার পছন্দের সাথে মানানসই ঐতিহ্যবাহী ঢাকাই শাড়ির বিশেষ কালেকশন। প্রতিবার রিফ্রেশে নতুন নতুন শাড়ি প্রদর্শিত হয়।'
+                        : 'Personalized heirloom handloom curation randomly refreshed on each page visit to match your unique style.'}
+                    </p>
+                  </div>
+                  {/* Re-shuffle / Explore More Action */}
+                  <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                    <button
+                      onClick={shuffleSpeciallyForYou}
+                      title={language === 'bn' ? 'কালেকশন রিফ্রেশ করুন' : 'Refresh / Shuffle Collection'}
+                      className="px-3.5 py-2.5 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 rounded-xl text-xs font-semibold transition-all border border-stone-200 dark:border-stone-700 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                      <span>{language === 'bn' ? 'র‍্যান্ডম রিফ্রেশ' : 'Shuffle'}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilters({ ...defaultFilters, sortBy: 'relevance' });
+                        setActiveView('shop');
+                      }}
+                      className="px-5 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center gap-2 group cursor-pointer border border-amber-800 hover:border-amber-600"
+                    >
+                      <span>{language === 'bn' ? 'সকল শাড়ি দেখুন' : 'Explore All'}</span>
+                      <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform text-amber-300" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Vertical Grid for BOTH mobile and computer (NOT horizontal scroll) */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+                  {speciallyForYouProducts.slice(0, visibleSpeciallyForYouCount).map((p, idx) => (
+                    <ProductCard
+                      key={`${p.id}-sfy-${idx}`}
                       product={p}
                       language={language}
                       isWishlisted={wishlist.includes(p.id)}
@@ -635,6 +762,31 @@ export default function App() {
                       onDirectOrder={handleOpenDirectOrder}
                     />
                   ))}
+                </div>
+
+                {/* Prominent "More" Button for Infinite Saree Feed */}
+                <div className="mt-10 flex flex-col items-center justify-center gap-2.5">
+                  <button
+                    onClick={handleLoadMoreSpeciallyForYou}
+                    disabled={isLoadingMoreSpeciallyForYou}
+                    className="px-8 py-3 bg-stone-900 hover:bg-stone-800 dark:bg-amber-950 dark:hover:bg-amber-900 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2.5 group cursor-pointer border border-stone-700 dark:border-amber-800 active:scale-95 disabled:opacity-75"
+                  >
+                    {isLoadingMoreSpeciallyForYou ? (
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+                    )}
+                    <span>
+                      {isLoadingMoreSpeciallyForYou
+                        ? (language === 'bn' ? 'শাড়ি লোড হচ্ছে...' : 'Loading More Sarees...')
+                        : (language === 'bn' ? 'আরও শাড়ি দেখুন (More)' : 'More Sarees (Load More)')}
+                    </span>
+                  </button>
+                  <p className="text-[11px] sm:text-xs text-stone-500 dark:text-stone-400 font-medium text-center">
+                    {language === 'bn'
+                      ? `এখন প্রদর্শিত হচ্ছে ${Math.min(visibleSpeciallyForYouCount, speciallyForYouProducts.length)}টি শাড়ি • আরও দেখতে ক্লিক করুন (আনলিমিটেড)`
+                      : `Displaying ${Math.min(visibleSpeciallyForYouCount, speciallyForYouProducts.length)} curated sarees • Click for more (Infinite)`}
+                  </p>
                 </div>
               </div>
             </section>
@@ -800,8 +952,8 @@ export default function App() {
                   <div
                     className={
                       isListView
-                        ? 'flex flex-col gap-4'
-                        : 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6'
+                        ? 'flex flex-col gap-3 sm:gap-4'
+                        : 'grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-5'
                     }
                   >
                     {shopProducts.map((p) => (

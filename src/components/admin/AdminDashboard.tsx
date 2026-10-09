@@ -30,9 +30,11 @@ import {
   FolderPlus,
   BookOpen,
   Gift,
-  Copy
+  Copy,
+  Megaphone,
+  X
 } from 'lucide-react';
-import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion, HiddenPromotionalCategory } from '../../types';
+import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig } from '../../types';
 import { store } from '../../services/store';
 import { ProductFormModal } from './ProductFormModal';
 import { PrivateCodesModal } from './PrivateCodesModal';
@@ -95,8 +97,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'products' | 'categories' | 'category_details' | 'flash_sales' | 'popup_banner' | 'promotions' | 'orders' | 'private_codes'
+    'overview' | 'products' | 'categories' | 'category_details' | 'flash_sales' | 'popup_banner' | 'promotions' | 'announcements' | 'orders' | 'private_codes'
   >('overview');
+
+  // Top Announcement Bar states
+  const [announcementConfig, setAnnouncementConfig] = useState<TopAnnouncementBarConfig>(() => store.getTopAnnouncementConfig());
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<TopAnnouncement | null>(null);
+  const [announcementSavedToast, setAnnouncementSavedToast] = useState(false);
+  const [previewTickerIndex, setPreviewTickerIndex] = useState(0);
 
   // Modals & Sub-forms
   const [showProductForm, setShowProductForm] = useState(false);
@@ -174,6 +183,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setLandingPopups(store.getAllLandingPopupsAdmin());
     setPromotions(store.getAllPromotionsAdmin());
     setHiddenCategories(store.getHiddenPromotionalCategories());
+    setAnnouncementConfig(store.getTopAnnouncementConfig());
   };
 
   // KPIs
@@ -765,6 +775,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           { id: 'flash_sales', label: `Flash Deals & Timers (${flashSales.length})`, icon: Zap },
           { id: 'popup_banner', label: `Landing Popups (${landingPopups.length})`, icon: Tag },
           { id: 'promotions', label: `Promotions & Offers (${promotions.length})`, icon: Gift },
+          { id: 'announcements', label: `Top Announcement Bar (${announcementConfig.announcements.length})`, icon: Megaphone },
           { id: 'orders', label: `Orders & Courier (${orders.length})`, icon: Truck }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -2506,6 +2517,506 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB: TOP ANNOUNCEMENT BAR & HEADER TICKER
+            ======================================================== */}
+        {activeTab === 'announcements' && (
+          <div className="space-y-6">
+            
+            {/* Header & New Announcement Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-stone-200 dark:border-stone-800">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-100">
+                    Top Announcement Bar & Header Marquee Ticker
+                  </h3>
+                  <span className="text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-300/50">
+                    হেডার নোটিশ বার
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                  Manage the top header announcement bar messages, ticker rotation speed, and hotline number in real time.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingAnnouncement(null);
+                  setShowAnnouncementForm(true);
+                }}
+                className="px-4 py-2 bg-stone-900 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Announcement</span>
+              </button>
+            </div>
+
+            {/* Success Toast */}
+            {announcementSavedToast && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Announcement bar settings updated and published to the live store!</span>
+              </div>
+            )}
+
+            {/* Live Store Preview Card */}
+            <div className="bg-stone-950 rounded-2xl p-4 sm:p-5 border border-stone-800 shadow-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                  <Eye className="w-4 h-4" />
+                  <span>LIVE STORE PREVIEW (স্টোরের সরাসরি দৃশ্য)</span>
+                </div>
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                  announcementConfig.isEnabled
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/50'
+                    : 'bg-rose-950 text-rose-300 border border-rose-600/50'
+                }`}>
+                  {announcementConfig.isEnabled ? 'Bar is Visible' : 'Bar is Hidden'}
+                </span>
+              </div>
+
+              {/* Exact Store Top Bar Replica */}
+              <div className="bg-stone-900 text-stone-200 text-xs py-2 px-4 rounded-xl border border-stone-800 flex items-center justify-between overflow-hidden">
+                <div className="flex items-center gap-2.5 max-w-2xl truncate">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0 animate-ping" />
+                  <span className="font-medium text-xs sm:text-sm truncate text-white">
+                    {announcementConfig.announcements.filter((a) => a.isActive)[previewTickerIndex]
+                      ? (language === 'bn'
+                          ? announcementConfig.announcements.filter((a) => a.isActive)[previewTickerIndex].textBn
+                          : announcementConfig.announcements.filter((a) => a.isActive)[previewTickerIndex].textEn)
+                      : 'No active announcement messages currently configured.'}
+                  </span>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-3 text-stone-400 text-xs shrink-0">
+                  <span className="flex items-center gap-1 text-amber-300 font-mono">
+                    Hotline: {announcementConfig.hotline || '09612-444888'}
+                  </span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1 text-stone-300">
+                    <Truck className="w-3 h-3 text-amber-400" />
+                    <span>Track Order</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Ticker Controls Preview */}
+              <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
+                <span>
+                  Rotation speed: <strong className="text-amber-300">{announcementConfig.rotationSpeedSeconds}s</strong> per message
+                </span>
+                {announcementConfig.announcements.filter((a) => a.isActive).length > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const activeList = announcementConfig.announcements.filter((a) => a.isActive);
+                        setPreviewTickerIndex((prev) => (prev - 1 + activeList.length) % activeList.length);
+                      }}
+                      className="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-white rounded text-[10px] cursor-pointer"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const activeList = announcementConfig.announcements.filter((a) => a.isActive);
+                        setPreviewTickerIndex((prev) => (prev + 1) % activeList.length);
+                      }}
+                      className="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-white rounded text-[10px] cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Global Settings Card */}
+            <div className="bg-white dark:bg-stone-900 rounded-2xl p-5 border border-stone-200 dark:border-stone-800 shadow-2xs space-y-4">
+              <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-amber-800 dark:text-amber-400" />
+                <span>Announcement Bar Global Settings</span>
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                {/* 1. Master Toggle */}
+                <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-stone-900 dark:text-stone-100 block">
+                      Enable Top Bar
+                    </span>
+                    <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                      Show announcement marquee across store
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={announcementConfig.isEnabled}
+                    onChange={(e) => {
+                      const updated: TopAnnouncementBarConfig = {
+                        ...announcementConfig,
+                        isEnabled: e.target.checked
+                      };
+                      setAnnouncementConfig(updated);
+                      store.saveTopAnnouncementConfig(updated);
+                      setAnnouncementSavedToast(true);
+                      setTimeout(() => setAnnouncementSavedToast(false), 2500);
+                    }}
+                    className="w-5 h-5 rounded border-stone-300 text-amber-900 focus:ring-amber-900 cursor-pointer"
+                  />
+                </div>
+
+                {/* 2. Rotation Interval */}
+                <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                      Rotation Speed
+                    </span>
+                    <span className="text-xs font-bold font-mono text-amber-900 dark:text-amber-400">
+                      {announcementConfig.rotationSpeedSeconds}s
+                    </span>
+                  </div>
+                  <select
+                    value={announcementConfig.rotationSpeedSeconds}
+                    onChange={(e) => {
+                      const updated: TopAnnouncementBarConfig = {
+                        ...announcementConfig,
+                        rotationSpeedSeconds: Number(e.target.value)
+                      };
+                      setAnnouncementConfig(updated);
+                      store.saveTopAnnouncementConfig(updated);
+                      setAnnouncementSavedToast(true);
+                      setTimeout(() => setAnnouncementSavedToast(false), 2500);
+                    }}
+                    className="w-full text-xs p-1.5 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-lg text-stone-900 dark:text-white"
+                  >
+                    <option value={3}>3 Seconds (Fast)</option>
+                    <option value={4}>4 Seconds (Standard)</option>
+                    <option value={5}>5 Seconds (Relaxed)</option>
+                    <option value={7}>7 Seconds (Slow)</option>
+                    <option value={10}>10 Seconds (Very Slow)</option>
+                  </select>
+                </div>
+
+                {/* 3. Hotline Number */}
+                <div className="p-3.5 bg-stone-50 dark:bg-stone-800/60 rounded-xl border border-stone-200 dark:border-stone-700 space-y-1.5">
+                  <span className="text-xs font-bold text-stone-900 dark:text-stone-100 block">
+                    Support Hotline
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      defaultValue={announcementConfig.hotline}
+                      onBlur={(e) => {
+                        const updated: TopAnnouncementBarConfig = {
+                          ...announcementConfig,
+                          hotline: e.target.value.trim()
+                        };
+                        setAnnouncementConfig(updated);
+                        store.saveTopAnnouncementConfig(updated);
+                        setAnnouncementSavedToast(true);
+                        setTimeout(() => setAnnouncementSavedToast(false), 2500);
+                      }}
+                      placeholder="09612-444888"
+                      className="w-full text-xs p-1.5 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-lg font-mono text-stone-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Announcement Form Modal */}
+            {showAnnouncementForm && (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-stone-900 rounded-2xl max-w-xl w-full p-6 border border-stone-200 dark:border-stone-800 shadow-2xl space-y-4">
+                  
+                  <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-stone-800">
+                    <h4 className="font-serif font-bold text-base text-stone-900 dark:text-white">
+                      {editingAnnouncement ? 'Edit Announcement Message' : 'Create New Top Announcement'}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowAnnouncementForm(false)}
+                      className="p-1 text-stone-400 hover:text-stone-900 dark:hover:text-white rounded-lg"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* One-Click Quick Templates */}
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-stone-600 dark:text-stone-400 block">
+                      Quick Templates (এক ক্লিকে টেমপ্লেট নির্বাচন করুন):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        {
+                          title: 'Eid Discount',
+                          bn: '🔥 ঈদ ধামাকা: ৩টি শাড়ির অর্ডারে ফ্রি হোম ডেলিভারি + ৫% ছাড় | কোড: AANCHOL500',
+                          en: '🔥 Special Offer: Free Delivery on 3 sarees + Extra 5% Off | Code: AANCHOL500'
+                        },
+                        {
+                          title: 'Nationwide COD',
+                          bn: '🚚 সারাদেশে ক্যাশ অন ডেলিভারি · পার্সেল খুলে দেখে মূল্য পরিশোধের সুবিধা',
+                          en: '🚚 Cash on Delivery Nationwide · Inspect saree before payment'
+                        },
+                        {
+                          title: 'Support Hotline',
+                          bn: '📞 শাড়ির মাপ বা তথ্যের জন্য হটলাইনে যোগাযোগ করুন: 09612-444888 (সকাল ১০টা - রাত ১০টা)',
+                          en: '📞 Saree Inquiries & Customer Care Hotline: 09612-444888 (10 AM - 10 PM)'
+                        },
+                        {
+                          title: 'New Loom Drop',
+                          bn: '✨ রূপগঞ্জের আসল তাঁতিদের বোনা নতুন জামদানি কালেকশন এখন লাইভ!',
+                          en: '✨ New handloom master batch of Dhakai Jamdani is now live!'
+                        }
+                      ].map((tpl, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            const bnInput = document.getElementById('ann_text_bn') as HTMLTextAreaElement;
+                            const enInput = document.getElementById('ann_text_en') as HTMLTextAreaElement;
+                            if (bnInput && enInput) {
+                              bnInput.value = tpl.bn;
+                              enInput.value = tpl.en;
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 hover:bg-amber-100 dark:hover:bg-amber-950/60 text-stone-800 dark:text-stone-200 hover:text-amber-950 dark:hover:text-amber-300 text-[10px] font-bold rounded-lg border border-stone-200 dark:border-stone-700 transition-colors cursor-pointer"
+                        >
+                          + {tpl.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const fd = new FormData(e.currentTarget);
+                      const textBn = (fd.get('textBn') as string).trim();
+                      const textEn = (fd.get('textEn') as string).trim();
+                      const link = (fd.get('link') as string).trim() || undefined;
+                      const isActive = fd.get('isActive') === 'on';
+
+                      if (!textBn || !textEn) {
+                        alert('Both Bengali and English message texts are required.');
+                        return;
+                      }
+
+                      if (editingAnnouncement) {
+                        store.updateAnnouncement({
+                          id: editingAnnouncement.id,
+                          textBn,
+                          textEn,
+                          link,
+                          isActive
+                        });
+                      } else {
+                        store.addAnnouncement({
+                          textBn,
+                          textEn,
+                          link,
+                          isActive
+                        });
+                      }
+
+                      refreshData();
+                      setShowAnnouncementForm(false);
+                      setEditingAnnouncement(null);
+                      setAnnouncementSavedToast(true);
+                      setTimeout(() => setAnnouncementSavedToast(false), 2500);
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                        বাংলা বার্তা (Bengali Message) *
+                      </label>
+                      <textarea
+                        id="ann_text_bn"
+                        name="textBn"
+                        required
+                        rows={2}
+                        defaultValue={editingAnnouncement?.textBn || ''}
+                        placeholder="e.g. 🔥 ঈদ ধামাকা: ৩টি শাড়ির অর্ডারে ফ্রি হোম ডেলিভারি + ৫% ছাড় | কোড: AANCHOL500"
+                        className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                        English Message *
+                      </label>
+                      <textarea
+                        id="ann_text_en"
+                        name="textEn"
+                        required
+                        rows={2}
+                        defaultValue={editingAnnouncement?.textEn || ''}
+                        placeholder="e.g. 🔥 Special Offer: Free Delivery on 3 sarees + Extra 5% Off | Code: AANCHOL500"
+                        className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                        Click Action Link or Destination (ঐচ্ছিক লিঙ্ক)
+                      </label>
+                      <input
+                        type="text"
+                        name="link"
+                        defaultValue={editingAnnouncement?.link || ''}
+                        placeholder="e.g. offers or shop or https://..."
+                        className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-mono text-stone-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="ann_active_check"
+                        name="isActive"
+                        defaultChecked={editingAnnouncement ? editingAnnouncement.isActive : true}
+                        className="w-4 h-4 rounded border-stone-300 text-amber-900 focus:ring-amber-900 cursor-pointer"
+                      />
+                      <label htmlFor="ann_active_check" className="text-xs font-bold text-stone-800 dark:text-stone-200 cursor-pointer">
+                        Message is Active in the live ticker rotation
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-3 border-t border-stone-200 dark:border-stone-800">
+                      <button
+                        type="button"
+                        onClick={() => setShowAnnouncementForm(false)}
+                        className="px-4 py-2 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-100 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2 bg-stone-900 hover:bg-amber-900 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Save className="w-4 h-4 text-amber-300" />
+                        <span>{editingAnnouncement ? 'Save Changes' : 'Add to Ticker'}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* List of Announcement Messages */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
+                  All Configured Announcement Messages ({announcementConfig.announcements.length})
+                </h4>
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  Active: <strong className="text-emerald-600">{announcementConfig.announcements.filter((a) => a.isActive).length}</strong>
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {announcementConfig.announcements.map((ann, idx) => (
+                  <div
+                    key={ann.id}
+                    className={`bg-white dark:bg-stone-900 rounded-2xl border p-4 sm:p-5 shadow-2xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                      ann.isActive
+                        ? 'border-stone-200 dark:border-stone-800'
+                        : 'border-stone-200 dark:border-stone-800/60 opacity-60 bg-stone-50/50'
+                    }`}
+                  >
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 px-2 py-0.5 rounded font-bold">
+                          #{idx + 1}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          ann.isActive
+                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40'
+                            : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                        }`}>
+                          {ann.isActive ? 'Active on Store' : 'Paused'}
+                        </span>
+                        {ann.link && (
+                          <span className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded font-mono">
+                            Link: {ann.link}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-stone-900 dark:text-stone-100">
+                          {ann.textBn}
+                        </p>
+                        <p className="text-xs text-stone-600 dark:text-stone-400">
+                          {ann.textEn}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-stone-100 dark:border-stone-800">
+                      {/* Play / Pause Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          store.toggleAnnouncement(ann.id);
+                          refreshData();
+                          setAnnouncementSavedToast(true);
+                          setTimeout(() => setAnnouncementSavedToast(false), 2000);
+                        }}
+                        className={`p-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+                          ann.isActive
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100'
+                        }`}
+                        title={ann.isActive ? 'Pause message' : 'Activate message'}
+                      >
+                        {ann.isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        <span className="text-[11px]">{ann.isActive ? 'Pause' : 'Activate'}</span>
+                      </button>
+
+                      {/* Edit Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAnnouncement(ann);
+                          setShowAnnouncementForm(true);
+                        }}
+                        className="p-2 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl cursor-pointer"
+                        title="Edit Message"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Delete this announcement message from the ticker?')) {
+                            store.deleteAnnouncement(ann.id);
+                            refreshData();
+                            setAnnouncementSavedToast(true);
+                            setTimeout(() => setAnnouncementSavedToast(false), 2000);
+                          }
+                        }}
+                        className="p-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-xl cursor-pointer"
+                        title="Delete Message"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         )}
 
