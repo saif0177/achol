@@ -19,7 +19,8 @@ import {
   Globe,
   Settings,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Tag
 } from 'lucide-react';
 import { Language, Product } from '../../types';
 import { translations } from '../../i18n/translations';
@@ -44,6 +45,7 @@ interface HeaderProps {
   onOpenSareeGuide?: () => void;
   onOpenFlashSale?: () => void;
   onOpenOffers?: () => void;
+  onOpenCoupons?: () => void;
   onOpenNotifications?: () => void;
   unreadNotificationsCount?: number;
   isDarkMode?: boolean;
@@ -70,6 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSareeGuide,
   onOpenFlashSale,
   onOpenOffers,
+  onOpenCoupons,
   onOpenNotifications,
   unreadNotificationsCount = 0,
   isDarkMode = false,
@@ -593,6 +596,22 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>{t.navTrackOrder}</span>
                     </button>
 
+                    {onOpenCoupons && (
+                      <button
+                        onClick={() => {
+                          onOpenCoupons();
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-medium cursor-pointer transition-colors"
+                      >
+                        <Tag className="w-4 h-4 text-amber-700" />
+                        <span>{language === 'bn' ? 'চলমান সকল কুপন ও ভাউচার' : 'Available Coupons & Vouchers'}</span>
+                        <span className="ml-auto bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border border-amber-300">
+                          {store.getCoupons().length}
+                        </span>
+                      </button>
+                    )}
+
                     {onOpenSareeGuide && (
                       <button
                         onClick={() => {
@@ -636,6 +655,19 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" style={{ animationDuration: '6s' }} />
                   <span>{language === 'bn' ? 'সকল অফার' : 'All Offers'}</span>
+                </button>
+              )}
+
+              {onOpenCoupons && (
+                <button
+                  onClick={onOpenCoupons}
+                  className="flex items-center gap-1.5 text-stone-800 dark:text-stone-200 hover:text-amber-900 dark:hover:text-amber-400 font-bold transition-colors cursor-pointer"
+                >
+                  <Tag className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                  <span>{language === 'bn' ? 'কুপন ভাউচার' : 'Coupons'}</span>
+                  <span className="bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 text-[10px] font-mono px-1.5 py-0.2 rounded-full border border-amber-300/80">
+                    {store.getCoupons().length}
+                  </span>
                 </button>
               )}
 

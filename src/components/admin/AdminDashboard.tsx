@@ -32,13 +32,20 @@ import {
   Gift,
   Copy,
   Megaphone,
-  X
+  X,
+  Table,
+  Percent,
+  Flame
 } from 'lucide-react';
-import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig } from '../../types';
+import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig, Coupon } from '../../types';
 import { store } from '../../services/store';
 import { ProductFormModal } from './ProductFormModal';
 import { PrivateCodesModal } from './PrivateCodesModal';
 import { SareeQRCodeModal } from './SareeQRCodeModal';
+import { SareeDetailModal } from './SareeDetailModal';
+import { SareeSpreadsheet } from './SareeSpreadsheet';
+import { CouponModal } from './CouponModal';
+import { ImageUploadBrowser } from '../common/ImageUploadBrowser';
 import { AdminFormBuilder, AdminFormSchema } from './AdminFormBuilder';
 
 interface AdminDashboardProps {
@@ -97,7 +104,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'products' | 'categories' | 'category_details' | 'flash_sales' | 'popup_banner' | 'promotions' | 'announcements' | 'orders' | 'private_codes'
+    'overview' | 'products' | 'categories' | 'category_details' | 'flash_sales' | 'popup_banner' | 'promotions' | 'announcements' | 'orders' | 'private_codes' | 'coupons'
   >('overview');
 
   // Top Announcement Bar states
@@ -110,8 +117,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Modals & Sub-forms
   const [showProductForm, setShowProductForm] = useState(false);
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [viewingSaree, setViewingSaree] = useState<Product | null>(null);
   const [showPrivateCodes, setShowPrivateCodes] = useState(false);
   const [selectedProductForQr, setSelectedProductForQr] = useState<Product | null>(null);
+
+  // Coupons Engine (Requirement 3 & 4)
+  const [coupons, setCoupons] = useState<Coupon[]>(() => store.getAllCouponsAdmin());
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [couponSearch, setCouponSearch] = useState('');
+
+  // Inline Subcategories State (Requirement 2)
+  const [inlineSubcatInputs, setInlineSubcatInputs] = useState<Record<string, { nameEn: string; nameBn: string }>>({});
 
   // Requirement 2: Category Details Blogger-Style Editor State
   const [selectedArticleCategoryId, setSelectedArticleCategoryId] = useState<string>('dhakai-jamdani');
@@ -184,6 +201,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setPromotions(store.getAllPromotionsAdmin());
     setHiddenCategories(store.getHiddenPromotionalCategories());
     setAnnouncementConfig(store.getTopAnnouncementConfig());
+    setCoupons(store.getAllCouponsAdmin());
+  };
+
+  const handleAddInlineSubcategory = (catId: string) => {
+    const input = inlineSubcatInputs[catId];
+    if (!input || !input.nameEn.trim()) {
+      alert('Please enter a subcategory name in English.');
+      return;
+    }
+    const slug = input.nameEn.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    store.addSubcategory(catId, {
+      id: slug,
+      nameEn: input.nameEn.trim(),
+      nameBn: input.nameBn.trim() || input.nameEn.trim(),
+      slug
+    });
+    setInlineSubcatInputs((prev) => ({
+      ...prev,
+      [catId]: { nameEn: '', nameBn: '' }
+    }));
+    refreshData();
   };
 
   // KPIs
@@ -335,19 +373,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           },
           {
             name: 'targetLink',
-            labelEn: 'Target Category / Page on Click',
-            labelBn: 'ক্লিক করলে কোথায় যাবে',
-            type: 'select',
-            options: [
-              { value: 'flash-sale', labelEn: 'Flash Sale Deals Page' },
-              { value: 'dhakai-jamdani', labelEn: 'Dhakai Jamdani Collection' },
-              { value: 'dhakai-muslin', labelEn: 'Dhakai Muslin Collection' },
-              { value: 'tangail-taat', labelEn: 'Tangail Taat Collection' },
-              { value: 'rajshahi-silk', labelEn: 'Rajshahi Pure Silk Collection' },
-              { value: 'bridal-festive', labelEn: 'Bridal Katan Collection' },
-              { value: 'shop', labelEn: 'All Handloom Sarees' }
-            ],
-            defaultValue: 'flash-sale'
+            labelEn: 'Direct Redirect URL (Click Anywhere on Banner to Open)',
+            labelBn: 'রিডাইরেক্ট ইউআরএল / লিংক (ব্যানারের যেকোনো জায়গায় ক্লিক করলে যাবে)',
+            type: 'text',
+            placeholder: 'e.g. /flash-sale, /offers, /shop, /category/dhakai-jamdani, or https://...',
+            defaultValue: 'flash-sale',
+            helperText: 'Clicking anywhere on this flash sale banner will redirect visitor to this URL'
           },
           {
             name: 'badgeTextEn',
@@ -481,16 +512,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           },
           {
             name: 'ctaLink',
-            labelEn: 'Target Category / Page on Click',
-            type: 'select',
-            options: [
-              { value: 'shop', labelEn: 'All Handloom Sarees' },
-              { value: 'dhakai-jamdani', labelEn: 'Dhakai Jamdani Collection' },
-              { value: 'dhakai-muslin', labelEn: 'Dhakai Muslin Collection' },
-              { value: 'tangail-taat', labelEn: 'Tangail Taat Collection' },
-              { value: 'rajshahi-silk', labelEn: 'Rajshahi Pure Silk Collection' }
-            ],
-            defaultValue: 'shop'
+            labelEn: 'Direct Redirect URL (Click Anywhere on Pop-up to Open)',
+            labelBn: 'রিডাইরেক্ট ইউআরএল / লিংক (পপ-আপে যেকোনো জায়গায় ক্লিক করলে যাবে)',
+            type: 'text',
+            placeholder: 'e.g. /shop, /flash-sale, /offers, /category/dhakai-jamdani, or https://...',
+            defaultValue: 'shop',
+            helperText: 'Clicking anywhere on this pop-up banner or graphic will redirect the customer to this URL'
           }
         ]
       }
@@ -770,6 +797,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {[
           { id: 'overview', label: 'Dashboard Overview', icon: TrendingUp },
           { id: 'products', label: `Sarees & Inventory (${products.length})`, icon: Package },
+          { id: 'coupons', label: `Coupons & Vouchers (${coupons.length})`, icon: Percent },
           { id: 'categories', label: `Categories (${categories.length})`, icon: Layers },
           { id: 'category_details', label: 'Category Details & Blog (Blogger)', icon: BookOpen },
           { id: 'flash_sales', label: `Flash Deals & Timers (${flashSales.length})`, icon: Zap },
@@ -890,6 +918,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <span>New Flash Sale</span>
                 </button>
               </div>
+            </div>
+
+            {/* Requirement 10: Saree Data Spreadsheet in Home Section */}
+            <div className="pt-4 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-stone-900 p-5 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-300 dark:border-amber-800">
+                    <Table className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 dark:text-white">
+                      Saree Data Spreadsheet (Excel-Style Table)
+                    </h3>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">
+                      Add, expand and edit complete saree details in a spreadsheet interface with inline calculations.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setProductToEdit(null);
+                    setShowProductForm(true);
+                  }}
+                  className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add New Saree</span>
+                </button>
+              </div>
+
+              <SareeSpreadsheet
+                products={products}
+                categories={categories}
+                hiddenCategories={hiddenCategories}
+                language={language}
+                onRefresh={refreshData}
+                onEditInFullModal={(p) => {
+                  setProductToEdit(p);
+                  setShowProductForm(true);
+                }}
+                onViewMore={(p) => setViewingSaree(p)}
+              />
             </div>
           </div>
         )}
@@ -1039,6 +1110,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                         <td className="p-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* View More Button (Requirement 1) */}
+                            <button
+                              onClick={() => setViewingSaree(prod)}
+                              className="px-2.5 py-1 text-[11px] font-bold text-amber-950 dark:text-amber-200 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/60 dark:hover:bg-amber-800 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs mr-1"
+                              title="View All Details & Photos (Full Saree Modal)"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-amber-800 dark:text-amber-300" />
+                              <span>View More</span>
+                            </button>
+
                             {/* QR Code Tag Modal Button (Requirement 4) */}
                             <button
                               onClick={() => setSelectedProductForQr(prod)}
@@ -1105,14 +1186,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add Category (Form Builder)</span>
+                  <span>+ Add Category</span>
                 </button>
                 <button
-                  onClick={() => setShowSubcategoryForm(true)}
-                  className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  onClick={() => setShowPromoCategoryForm(true)}
+                  className="px-4 py-2 bg-rose-900 hover:bg-rose-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
-                  <FolderPlus className="w-4 h-4" />
-                  <span>Add Subcategory</span>
+                  <Tag className="w-4 h-4 text-rose-300" />
+                  <span>+ Create Offer / Hidden Category</span>
                 </button>
               </div>
             </div>
@@ -1129,88 +1210,121 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            {/* Dynamic Form Builder for Subcategory */}
-            {showSubcategoryForm && (
-              <div className="bg-stone-100 dark:bg-stone-900/80 p-5 rounded-2xl border border-stone-300 dark:border-stone-700 animate-in fade-in duration-200">
-                <AdminFormBuilder
-                  schema={subcategorySchema}
-                  onSubmit={handleSaveSubcategory}
-                  onCancel={() => setShowSubcategoryForm(false)}
-                  language={language}
-                />
-              </div>
-            )}
-
             {/* Categories Grid List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className="bg-white dark:bg-stone-900 p-5 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xs space-y-3"
+                  className="bg-white dark:bg-stone-900 p-5 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xs space-y-3 flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700 shrink-0">
-                        <img
-                          src={cat.image}
-                          alt={cat.nameEn}
-                          className="w-full h-full object-cover"
-                        />
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700 shrink-0">
+                          <img
+                            src={cat.image}
+                            alt={cat.nameEn}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
+                            {cat.nameEn}
+                          </h4>
+                          <span className="text-xs text-stone-500 dark:text-stone-400">
+                            {cat.nameBn}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
-                          {cat.nameEn}
-                        </h4>
-                        <span className="text-xs text-stone-500 dark:text-stone-400">
-                          {cat.nameBn}
-                        </span>
-                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete category ${cat.nameEn}?`)) {
+                            store.deleteCategory(cat.id);
+                            refreshData();
+                          }
+                        }}
+                        className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
+                        title="Delete Category"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete category ${cat.nameEn}?`)) {
-                          store.deleteCategory(cat.id);
-                          refreshData();
-                        }
-                      }}
-                      className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
-                      title="Delete Category"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2">
+                      {cat.descriptionEn}
+                    </p>
 
-                  <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2">
-                    {cat.descriptionEn}
-                  </p>
-
-                  {/* Subcategories */}
-                  <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
-                    <span className="text-[10px] font-bold uppercase text-stone-400 block mb-1.5">
-                      Subcategories ({cat.subcategories?.length || 0}):
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {cat.subcategories?.map((sub) => (
-                        <span
-                          key={sub.id}
-                          className="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-[11px] font-medium text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 flex items-center gap-1.5"
-                        >
-                          <span>{sub.nameEn} ({sub.nameBn})</span>
-                          <button
-                            onClick={() => {
-                              store.deleteSubcategory(cat.id, sub.id);
-                              refreshData();
-                            }}
-                            className="text-stone-400 hover:text-rose-600 cursor-pointer"
+                    {/* Subcategories (Requirement 2: inside each category, add multiple subcategories without separate top button) */}
+                    <div className="pt-2 border-t border-stone-100 dark:border-stone-800 space-y-2">
+                      <span className="text-[10px] font-bold uppercase text-stone-400 block">
+                        Subcategories ({cat.subcategories?.length || 0}):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cat.subcategories?.map((sub) => (
+                          <span
+                            key={sub.id}
+                            className="px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-[11px] font-medium text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 flex items-center gap-1.5"
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                      {(!cat.subcategories || cat.subcategories.length === 0) && (
-                        <span className="text-xs text-stone-400 italic">No subcategories yet</span>
-                      )}
+                            <span>{sub.nameEn} ({sub.nameBn})</span>
+                            <button
+                              onClick={() => {
+                                store.deleteSubcategory(cat.id, sub.id);
+                                refreshData();
+                              }}
+                              className="text-stone-400 hover:text-rose-600 cursor-pointer font-bold"
+                              title="Delete subcategory"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        {(!cat.subcategories || cat.subcategories.length === 0) && (
+                          <span className="text-xs text-stone-400 italic">No subcategories yet</span>
+                        )}
+                      </div>
+
+                      {/* Direct Inline Subcategory Form inside category */}
+                      <div className="flex items-center gap-1.5 pt-2">
+                        <input
+                          type="text"
+                          placeholder="Subcategory (EN)..."
+                          value={inlineSubcatInputs[cat.id]?.nameEn || ''}
+                          onChange={(e) =>
+                            setInlineSubcatInputs({
+                              ...inlineSubcatInputs,
+                              [cat.id]: {
+                                ...(inlineSubcatInputs[cat.id] || { nameEn: '', nameBn: '' }),
+                                nameEn: e.target.value
+                              }
+                            })
+                          }
+                          className="flex-1 px-2.5 py-1.5 text-xs border border-stone-200 dark:border-stone-700 rounded-lg bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="বাংলা নাম..."
+                          value={inlineSubcatInputs[cat.id]?.nameBn || ''}
+                          onChange={(e) =>
+                            setInlineSubcatInputs({
+                              ...inlineSubcatInputs,
+                              [cat.id]: {
+                                ...(inlineSubcatInputs[cat.id] || { nameEn: '', nameBn: '' }),
+                                nameBn: e.target.value
+                              }
+                            })
+                          }
+                          className="w-24 px-2.5 py-1.5 text-xs border border-stone-200 dark:border-stone-700 rounded-lg bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddInlineSubcategory(cat.id)}
+                          className="px-2.5 py-1.5 bg-amber-900 hover:bg-amber-800 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 shadow-2xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1364,6 +1478,214 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB: COUPONS & DISCOUNT CONDITIONS (Requirements 3 & 4)
+            ======================================================== */}
+        {activeTab === 'coupons' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-200 dark:border-stone-800">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
+                  <Percent className="w-5 h-5 text-amber-900 dark:text-amber-400" />
+                  <span>Coupons &amp; Promotional Vouchers</span>
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Manage discount codes, optional usage limits, duration, and minimum order conditions.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search coupon code..."
+                    value={couponSearch}
+                    onChange={(e) => setCouponSearch(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-white"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    setEditingCoupon(null);
+                    setShowCouponModal(true);
+                  }}
+                  className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Create Coupon</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Coupons Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {coupons
+                .filter((c) =>
+                  !couponSearch ||
+                  c.code.toLowerCase().includes(couponSearch.toLowerCase()) ||
+                  (c.descriptionEn || '').toLowerCase().includes(couponSearch.toLowerCase())
+                )
+                .map((c) => {
+                  const isExpired = c.endDate ? new Date(c.endDate).getTime() < Date.now() : false;
+                  const isUsageExceeded = c.maxUsageLimit !== undefined && (c.usageCount || 0) >= c.maxUsageLimit;
+                  const usagePercent = c.maxUsageLimit ? Math.min(100, Math.round(((c.usageCount || 0) / c.maxUsageLimit) * 100)) : null;
+
+                  return (
+                    <div
+                      key={c.id}
+                      className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-4 shadow-2xs space-y-3.5 flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-base text-amber-900 dark:text-amber-400 tracking-wider">
+                                {c.code}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(c.code);
+                                  alert(`Copied ${c.code} to clipboard!`);
+                                }}
+                                className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+                                title="Copy code"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <span className="text-xs text-stone-500 dark:text-stone-400 block mt-0.5">
+                              {c.descriptionEn}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                              !c.isActive
+                                ? 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'
+                                : isExpired || isUsageExceeded
+                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            }`}
+                          >
+                            {!c.isActive ? 'Disabled' : isExpired ? 'Expired' : isUsageExceeded ? 'Limit Reached' : 'Active'}
+                          </span>
+                        </div>
+
+                        {/* Value & Discount Badges */}
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-950 dark:text-amber-200 rounded-lg text-xs font-bold font-mono">
+                            {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `৳${c.discountValue.toLocaleString()} FLAT OFF`}
+                          </span>
+                          {c.isFreeDelivery && (
+                            <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-200 rounded-lg text-xs font-bold">
+                              ✓ Free Delivery
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Optional Conditions Details */}
+                        <div className="p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl border border-stone-200 dark:border-stone-700/60 space-y-2 text-[11px]">
+                          {/* Duration */}
+                          <div className="flex items-center justify-between text-stone-600 dark:text-stone-300">
+                            <span className="text-stone-400 font-medium flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>Duration:</span>
+                            </span>
+                            <span className="font-semibold">
+                              {c.startDate && c.endDate
+                                ? `${c.startDate.split('T')[0]} → ${c.endDate.split('T')[0]}`
+                                : c.endDate
+                                ? `Until ${c.endDate.split('T')[0]}`
+                                : 'No Expiry'}
+                            </span>
+                          </div>
+
+                          {/* Usage Limit */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-stone-600 dark:text-stone-300">
+                              <span className="text-stone-400 font-medium">Usage Limit:</span>
+                              <span className="font-mono font-semibold">
+                                {c.maxUsageLimit ? `${c.usageCount || 0} / ${c.maxUsageLimit} redeemed` : `${c.usageCount || 0} used (Unlimited)`}
+                              </span>
+                            </div>
+                            {usagePercent !== null && (
+                              <div className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    usagePercent >= 100 ? 'bg-rose-500' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                                  }`}
+                                  style={{ width: `${usagePercent}%` }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Min Order & Max Discount */}
+                          {(c.minOrderAmount || c.maxDiscountAmount) && (
+                            <div className="pt-1 border-t border-stone-200 dark:border-stone-700/60 flex items-center justify-between text-stone-600 dark:text-stone-300">
+                              {c.minOrderAmount ? (
+                                <span>Min: <strong className="font-mono">৳{c.minOrderAmount.toLocaleString()}</strong></span>
+                              ) : <span />}
+                              {c.maxDiscountAmount ? (
+                                <span>Max cap: <strong className="font-mono">৳{c.maxDiscountAmount.toLocaleString()}</strong></span>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Card Actions */}
+                      <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            store.toggleCouponActive(c.id);
+                            refreshData();
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
+                            c.isActive ? 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300' : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {c.isActive ? 'Pause' : 'Activate'}
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCoupon(c);
+                              setShowCouponModal(true);
+                            }}
+                            className="p-1.5 text-stone-600 dark:text-stone-300 hover:text-amber-900 rounded cursor-pointer"
+                            title="Edit Coupon"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Delete coupon ${c.code}?`)) {
+                                store.deleteCoupon(c.id);
+                                refreshData();
+                              }
+                            }}
+                            className="p-1.5 text-stone-400 hover:text-rose-600 rounded cursor-pointer"
+                            title="Delete Coupon"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
@@ -1670,6 +1992,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             ======================================================== */}
         {activeTab === 'flash_sales' && (
           <div className="space-y-6">
+            {/* Offer, Sale & Flash Deal Hub Toolbar */}
+            <div className="bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 text-white p-4 sm:p-5 rounded-2xl border border-rose-500/30 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-600/20 text-rose-300 flex items-center justify-center border border-rose-500/40 shrink-0">
+                  <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-serif font-bold text-sm sm:text-base text-amber-200">
+                      Offer, Sale &amp; Flash Deal Control Hub
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider">
+                      Live Engine
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-300">
+                    Flash Deals are an essential part of Sales &amp; Offers. Easily toggle between Flash Deals, Sales, and Offers:
+                  </p>
+                </div>
+              </div>
+
+              {/* Standout Buttons: Flash Deal, Sale, Offer */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('flash_sales')}
+                  className="px-4 py-2 bg-gradient-to-r from-rose-600 via-red-500 to-amber-500 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md ring-2 ring-amber-300 transform scale-102 cursor-pointer"
+                >
+                  <Zap className="w-4 h-4 fill-amber-200 text-amber-200 animate-bounce" />
+                  <span>⚡ Flash Deal ({flashSales.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('promotions')}
+                  className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 hover:border-amber-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Tag className="w-3.5 h-3.5 text-amber-400" />
+                  <span>🏷️ Sale</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('promotions')}
+                  className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-purple-300 border border-stone-700 hover:border-purple-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Gift className="w-3.5 h-3.5 text-purple-400" />
+                  <span>🎁 Offer ({promotions.length})</span>
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between pb-2 border-b border-stone-200 dark:border-stone-800">
               <div>
                 <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
@@ -3241,6 +3615,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         language={language}
         products={products}
       />
+
+      {/* Saree Detail Modal (Requirement 1: View More on Saree shows full details + photos + edit + delete) */}
+      {viewingSaree && (
+        <SareeDetailModal
+          isOpen={Boolean(viewingSaree)}
+          onClose={() => setViewingSaree(null)}
+          product={viewingSaree}
+          categories={categories}
+          hiddenCategories={hiddenCategories}
+          language={language}
+          onEdit={(saree) => {
+            setViewingSaree(null);
+            setProductToEdit(saree);
+            setShowProductForm(true);
+          }}
+          onDelete={(sareeId) => {
+            store.deleteProduct(sareeId);
+            refreshData();
+            setViewingSaree(null);
+          }}
+        />
+      )}
+
+      {/* Coupon Modal (Requirements 3 & 4: Create / Edit Coupon & optional limits) */}
+      {showCouponModal && (
+        <CouponModal
+          isOpen={showCouponModal}
+          onClose={() => {
+            setShowCouponModal(false);
+            setEditingCoupon(null);
+          }}
+          couponToEdit={editingCoupon}
+          onSave={(savedCoupon) => {
+            store.saveCoupon(savedCoupon);
+            refreshData();
+            setShowCouponModal(false);
+            setEditingCoupon(null);
+          }}
+        />
+      )}
 
     </div>
   );

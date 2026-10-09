@@ -5,7 +5,7 @@ import { store } from '../../services/store';
 
 interface LandingPopupProps {
   language: Language;
-  onNavigateShop: () => void;
+  onNavigateShop: (destination?: string) => void;
 }
 
 export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigateShop }) => {
@@ -93,12 +93,12 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
 
   const handleCtaClick = () => {
     handleClose();
-    onNavigateShop();
+    onNavigateShop(config?.ctaLink || 'shop');
   };
 
   if (!isOpen || !config || !config.isActive) return null;
 
-  // Mode 1: Dedicated Image-Only Banner (Requirement 2 & 3: "just image only not any text or something... upload image like from Photoshop")
+  // Mode 1: Dedicated Image-Only Banner (Photoshop/Designer banner, tap anywhere to redirect)
   if (config.displayMode === 'image_only') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
@@ -108,27 +108,37 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
           onClick={handleClose}
         />
 
-        {/* Pure Graphic Banner Dialog */}
-        <div className="relative w-full max-w-xl bg-transparent rounded-3xl overflow-hidden z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-          {/* Close button */}
+        {/* Pure Graphic Banner Dialog - Click anywhere to redirect */}
+        <div 
+          onClick={handleCtaClick}
+          className="relative w-full max-w-xl bg-transparent rounded-3xl overflow-hidden z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300 cursor-pointer group"
+          title="Click anywhere to open offer link"
+        >
+          {/* Close button (stops propagation so user can dismiss) */}
           <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-stone-950/80 hover:bg-stone-950 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 border border-white/20"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose();
+            }}
+            className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-stone-950/80 hover:bg-stone-950 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 border border-white/20 cursor-pointer"
             title="Close Banner"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Clickable Graphic Image from Photoshop/Designer */}
-          <div
-            onClick={handleCtaClick}
-            className="cursor-pointer group relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl"
-          >
+          <div className="relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
             <img
               src={config.image || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
               alt={config.titleEn || 'Promotional Banner'}
               className="w-full h-auto max-h-[80vh] object-contain sm:object-cover group-hover:scale-102 transition-transform duration-500"
             />
+
+            {/* Tap anywhere indicator */}
+            <div className="absolute top-3 left-3 bg-stone-950/80 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1 border border-white/20 pointer-events-none">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>{language === 'bn' ? 'অফার দেখতে স্পর্শ করুন' : 'Tap to open offer'}</span>
+            </div>
 
             {/* Optional Floating Countdown Timer on Image if enabled */}
             {config.hasTimer && (
@@ -153,6 +163,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
   }
 
   // Mode 2: Standard Luxury Popup Card with Copyable Code, Timer & Details
+  // Click anywhere on the banner/card to redirect to configured URL
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -161,12 +172,19 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
         onClick={handleClose}
       />
 
-      {/* Modal Dialog */}
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden z-10 border border-amber-900/20 transform transition-all animate-in fade-in zoom-in-95 duration-300">
-        {/* Close Button */}
+      {/* Modal Dialog: Click anywhere to navigate to URL */}
+      <div 
+        onClick={handleCtaClick}
+        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden z-10 border border-amber-900/20 transform transition-all animate-in fade-in zoom-in-95 duration-300 cursor-pointer group hover:shadow-amber-900/10"
+        title="Click anywhere to visit offer link"
+      >
+        {/* Close Button: stopPropagation */}
         <button
-          onClick={handleClose}
-          className="absolute top-3.5 right-3.5 z-20 w-8 h-8 rounded-full bg-stone-900/70 hover:bg-stone-900 text-white flex items-center justify-center transition-colors shadow-md"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClose();
+          }}
+          className="absolute top-3.5 right-3.5 z-20 w-8 h-8 rounded-full bg-stone-900/70 hover:bg-stone-900 text-white flex items-center justify-center transition-colors shadow-md cursor-pointer"
           title="Close"
         >
           <X className="w-4 h-4" />
@@ -177,7 +195,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
           <img
             src={config.image || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
             alt="Promotion Banner"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
           
@@ -209,9 +227,12 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
             {language === 'bn' ? config.subtitleBn : config.subtitleEn}
           </p>
 
-          {/* Discount Code Box */}
+          {/* Discount Code Box (stopPropagation on copy button) */}
           {config.discountCode && (
-            <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-default"
+            >
               <div className="flex items-center gap-2 text-left">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
                   <Tag className="w-4 h-4" />
@@ -227,7 +248,10 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
               </div>
 
               <button
-                onClick={handleCopyCode}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyCode();
+                }}
                 className="w-full sm:w-auto px-4 py-2 bg-amber-900 hover:bg-amber-800 text-amber-50 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copied ? (
@@ -260,15 +284,21 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
           {/* Action Buttons */}
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
             <button
-              onClick={handleCtaClick}
-              className="w-full py-3 px-6 bg-stone-900 hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCtaClick();
+              }}
+              className="w-full py-3 px-6 bg-stone-900 group-hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer"
             >
               <span>{language === 'bn' ? config.ctaTextBn : config.ctaTextEn}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={handleClose}
-              className="w-full sm:w-auto py-2.5 px-4 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClose();
+              }}
+              className="w-full sm:w-auto py-2.5 px-4 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors cursor-pointer"
             >
               {language === 'bn' ? 'পরে দেখব' : 'Dismiss'}
             </button>

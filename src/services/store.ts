@@ -1,4 +1,4 @@
-import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig } from '../types';
+import { Product, Category, Banner, Order, CustomerAccount, PrivatePriceCode, Review, FilterState, CartItem, LandingPopupConfig, FlashSaleCampaign, AppNotification, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig, Coupon } from '../types';
 
 const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
@@ -1476,6 +1476,68 @@ export const INITIAL_PROMOTIONS: Promotion[] = [
   }
 ];
 
+export const INITIAL_COUPONS: Coupon[] = [
+  {
+    id: 'cp-welcome500',
+    code: 'WELCOME500',
+    discountType: 'fixed',
+    discountValue: 500,
+    minOrderAmount: 3000,
+    maxUsageLimit: 2000,
+    usageCount: 142,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    descriptionEn: '৳500 Welcome Discount on First Saree (Min ৳3,000)',
+    descriptionBn: 'প্রথম অর্ডারে নগদ ৫০০ টাকা ছাড় (ন্যূনতম ৩,০০০ টাকার অর্ডারে)'
+  },
+  {
+    id: 'cp-festive15',
+    code: 'FESTIVE15',
+    discountType: 'percentage',
+    discountValue: 15,
+    minOrderAmount: 5000,
+    maxDiscountAmount: 3000,
+    maxUsageLimit: 500,
+    usageCount: 88,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    descriptionEn: 'Flat 15% OFF on Festive Weaves (Max ৳3,000 Discount)',
+    descriptionBn: 'উৎসবে ১৫% ছাড় (সর্বোচ্চ ৩,০০০ টাকা পর্যন্ত ছাড়)'
+  },
+  {
+    id: 'cp-freeship',
+    code: 'FREESHIP',
+    discountType: 'fixed',
+    discountValue: 0,
+    isFreeDelivery: true,
+    minOrderAmount: 2000,
+    maxUsageLimit: 4000,
+    usageCount: 312,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    descriptionEn: 'Nationwide Free Delivery on orders over ৳2,000',
+    descriptionBn: '২,০০০ টাকার অধিক অর্ডারে সম্পূর্ণ ফ্রি ডেলিভারি'
+  },
+  {
+    id: 'cp-eid20',
+    code: 'EID20',
+    discountType: 'percentage',
+    discountValue: 20,
+    minOrderAmount: 10000,
+    maxDiscountAmount: 5000,
+    maxUsageLimit: 200,
+    usageCount: 65,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
+    isActive: true,
+    descriptionEn: 'Special 20% Eid Celebration Offer (Min ৳10,000, Limited to 200 people)',
+    descriptionBn: 'ঈদ স্পেশাল ২০% মূল্যছাড় (ন্যূনতম ১০,০০০ টাকার অর্ডারে, ২০০ জনের জন্য)'
+  }
+];
+
 class StoreService {
   private products: Product[] = [];
   private categories: Category[] = [];
@@ -1491,6 +1553,7 @@ class StoreService {
   private categoryArticles: CategoryArticle[] = INITIAL_CATEGORY_ARTICLES;
   private promotions: Promotion[] = INITIAL_PROMOTIONS;
   private hiddenPromotionalCategories: HiddenPromotionalCategory[] = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
+  private coupons: Coupon[] = INITIAL_COUPONS;
   private topAnnouncementConfig: TopAnnouncementBarConfig = INITIAL_TOP_ANNOUNCEMENTS;
   private activeCustomerPhone: string | null = null;
 
@@ -1580,6 +1643,9 @@ class StoreService {
       const storedPromotions = localStorage.getItem('aanchol_promotions');
       this.promotions = storedPromotions ? JSON.parse(storedPromotions) : INITIAL_PROMOTIONS;
 
+      const storedCoupons = localStorage.getItem('aanchol_coupons');
+      this.coupons = storedCoupons ? JSON.parse(storedCoupons) : INITIAL_COUPONS;
+
       const storedAnnouncements = localStorage.getItem('aanchol_top_announcements');
       this.topAnnouncementConfig = storedAnnouncements ? JSON.parse(storedAnnouncements) : INITIAL_TOP_ANNOUNCEMENTS;
 
@@ -1598,6 +1664,7 @@ class StoreService {
       this.categoryArticles = INITIAL_CATEGORY_ARTICLES;
       this.promotions = INITIAL_PROMOTIONS;
       this.hiddenPromotionalCategories = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
+      this.coupons = INITIAL_COUPONS;
       this.topAnnouncementConfig = INITIAL_TOP_ANNOUNCEMENTS;
       this.activeCustomerPhone = '01712345678';
     }
@@ -2235,6 +2302,21 @@ class StoreService {
     this.persist('aanchol_orders', this.orders);
     this.persist('aanchol_products', this.products);
 
+    // Increment coupon / promo usage count
+    if (newOrder.appliedCoupon) {
+      const codeUpper = newOrder.appliedCoupon.trim().toUpperCase();
+      const cp = this.coupons.find((c) => c.code.toUpperCase() === codeUpper);
+      if (cp) {
+        cp.usageCount = (cp.usageCount || 0) + 1;
+        this.persist('aanchol_coupons', this.coupons);
+      }
+      const pr = this.promotions.find((p) => p.code?.toUpperCase() === codeUpper);
+      if (pr) {
+        pr.usageCount = (pr.usageCount || 0) + 1;
+        this.persist('aanchol_promotions', this.promotions);
+      }
+    }
+
     // Update customer account
     this.saveCustomerOrder(newOrder);
 
@@ -2624,26 +2706,141 @@ class StoreService {
   }
 
   // ==========================================
-  // COUPON & FREE DELIVERY CALCULATION (Requirements 2 & 10)
+  // COUPONS ENGINE (Requirement 3 & 4)
+  // ==========================================
+  public getCoupons(): Coupon[] {
+    const now = Date.now();
+    return this.coupons.filter((c) => {
+      if (!c.isActive) return false;
+      if (c.startDate && new Date(c.startDate).getTime() > now) return false;
+      if (c.endDate && new Date(c.endDate).getTime() < now) return false;
+      if (c.maxUsageLimit && (c.usageCount || 0) >= c.maxUsageLimit) return false;
+      return true;
+    });
+  }
+
+  public getAllCouponsAdmin(): Coupon[] {
+    return this.coupons;
+  }
+
+  public getCouponById(id: string): Coupon | undefined {
+    return this.coupons.find((c) => c.id === id);
+  }
+
+  public getCouponByCode(code: string): Coupon | undefined {
+    return this.coupons.find((c) => c.code.trim().toUpperCase() === code.trim().toUpperCase());
+  }
+
+  public saveCoupon(coupon: Coupon): void {
+    const idx = this.coupons.findIndex((c) => c.id === coupon.id);
+    if (idx >= 0) {
+      this.coupons[idx] = coupon;
+    } else {
+      this.coupons.unshift(coupon);
+    }
+    this.persist('aanchol_coupons', this.coupons);
+  }
+
+  public deleteCoupon(id: string): void {
+    this.coupons = this.coupons.filter((c) => c.id !== id);
+    this.persist('aanchol_coupons', this.coupons);
+  }
+
+  public toggleCouponActive(id: string): void {
+    const c = this.coupons.find((item) => item.id === id);
+    if (c) {
+      c.isActive = !c.isActive;
+      this.persist('aanchol_coupons', this.coupons);
+    }
+  }
+
+  // ==========================================
+  // COUPON & FREE DELIVERY CALCULATION (Requirements 2, 3, 4, 10)
   // ==========================================
   public validateCoupon(
     rawCode: string,
     subtotal: number,
     items?: (CartItem | { productId: string })[]
-  ): { valid: boolean; discount: number; isFreeDelivery: boolean; promo?: Promotion; message: string } {
+  ): { valid: boolean; discount: number; isFreeDelivery: boolean; promo?: Promotion; coupon?: Coupon; message: string } {
     const code = rawCode.trim().toUpperCase();
     if (!code) {
       return { valid: false, discount: 0, isFreeDelivery: false, message: 'Please enter a coupon code.' };
     }
 
-    // Check promotions
+    const now = Date.now();
+
+    // 1. Check dedicated Coupons table first (Requirement 3 & 4)
+    const matchedCoupon = this.coupons.find((c) => c.code.trim().toUpperCase() === code);
+    if (matchedCoupon) {
+      if (!matchedCoupon.isActive) {
+        return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon is currently inactive.' };
+      }
+      if (matchedCoupon.startDate && new Date(matchedCoupon.startDate).getTime() > now) {
+        return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon offer has not started yet.' };
+      }
+      if (matchedCoupon.endDate && new Date(matchedCoupon.endDate).getTime() < now) {
+        return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon offer has expired.' };
+      }
+      if (matchedCoupon.maxUsageLimit && (matchedCoupon.usageCount || 0) >= matchedCoupon.maxUsageLimit) {
+        return {
+          valid: false,
+          discount: 0,
+          isFreeDelivery: false,
+          message: `This coupon has reached its maximum limit (${matchedCoupon.maxUsageLimit} uses).`
+        };
+      }
+      if (matchedCoupon.minOrderAmount && subtotal < matchedCoupon.minOrderAmount) {
+        return {
+          valid: false,
+          discount: 0,
+          isFreeDelivery: false,
+          message: `Minimum order amount of ৳${matchedCoupon.minOrderAmount.toLocaleString()} required for this coupon.`
+        };
+      }
+
+      let discount = 0;
+      if (matchedCoupon.discountType === 'percentage') {
+        discount = Math.round((subtotal * matchedCoupon.discountValue) / 100);
+      } else {
+        discount = matchedCoupon.discountValue;
+      }
+
+      // Check optional maximum discount cap
+      if (matchedCoupon.maxDiscountAmount && discount > matchedCoupon.maxDiscountAmount) {
+        discount = matchedCoupon.maxDiscountAmount;
+      }
+
+      const isFreeDelivery = !!matchedCoupon.isFreeDelivery;
+
+      return {
+        valid: true,
+        discount,
+        isFreeDelivery,
+        coupon: matchedCoupon,
+        message: isFreeDelivery && discount === 0
+          ? 'Free Delivery coupon applied!'
+          : `Coupon ${matchedCoupon.code} applied: ৳${discount.toLocaleString()} discount!`
+      };
+    }
+
+    // 2. Check promotions
     const activePromos = this.getPromotions();
     const promo = activePromos.find((p) => p.code && p.code.trim().toUpperCase() === code);
 
     if (promo) {
       // Check expiration
-      if (promo.endDate && new Date(promo.endDate).getTime() < Date.now()) {
+      if (promo.endDate && new Date(promo.endDate).getTime() < now) {
         return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon has expired.' };
+      }
+
+      // Check max usage limit
+      if (promo.maxUsageLimit && (promo.usageCount || 0) >= promo.maxUsageLimit) {
+        return {
+          valid: false,
+          discount: 0,
+          isFreeDelivery: false,
+          message: `This promotion has reached its maximum usage limit (${promo.maxUsageLimit} people).`
+        };
       }
 
       // Check min order amount
@@ -2667,6 +2864,11 @@ class StoreService {
         discount = Math.round((subtotal * (promo.discountPercent || 0)) / 100);
       }
 
+      // Check max discount cap
+      if (promo.maxDiscountAmount && discount > promo.maxDiscountAmount) {
+        discount = promo.maxDiscountAmount;
+      }
+
       return {
         valid: true,
         discount,
@@ -2678,7 +2880,7 @@ class StoreService {
       };
     }
 
-    // Check private codes
+    // 3. Check private codes
     const privateCode = this.privateCodes.find(
       (c) => c.code.trim().toUpperCase() === code && c.isActive && !c.used
     );

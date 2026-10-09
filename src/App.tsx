@@ -1205,6 +1205,44 @@ export default function App() {
         />
       )}
 
+      {/* 11. Landing Popup with Destination Redirection (Requirement 12) */}
+      <LandingPopup
+        language={language}
+        onNavigateShop={(destination) => {
+          if (!destination || destination === 'shop') {
+            setActiveView('shop');
+            return;
+          }
+          if (destination === 'offers') {
+            setActiveView('offers');
+            return;
+          }
+          if (destination === 'flash-sale') {
+            setActiveView('flash-sale');
+            return;
+          }
+          const cat = categories.find((c) => c.id === destination || c.slug === destination);
+          if (cat) {
+            handleSelectCategory(cat.id);
+            return;
+          }
+          const prod = store.getProducts().find(
+            (p: Product) => p.id === destination || p.code.toLowerCase() === destination.toLowerCase()
+          );
+          if (prod) {
+            handleSelectProduct(prod);
+            return;
+          }
+          const promo = store.getPromotions().find((p) => p.id === destination || p.code === destination);
+          if (promo) {
+            setSelectedOffer(promo);
+            setActiveView('offer-detail');
+            return;
+          }
+          setActiveView('shop');
+        }}
+      />
+
     </div>
   );
 }

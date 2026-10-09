@@ -23,6 +23,7 @@ import {
 import QRCode from 'qrcode';
 import { Product, ProductVariant, Category, Language } from '../../types';
 import { store } from '../../services/store';
+import { ImageUploadBrowser } from '../common/ImageUploadBrowser';
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -57,10 +58,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [nameEn, setNameEn] = useState(productToEdit?.nameEn || '');
   const [nameBn, setNameBn] = useState(productToEdit?.nameBn || '');
   const [code, setCode] = useState(productToEdit?.code || `JM-${Math.floor(100 + Math.random() * 900)}`);
+  const [pricingMethod, setPricingMethod] = useState<'discount' | 'sale_price'>(productToEdit?.pricingMethod || 'discount');
   const [price, setPrice] = useState(productToEdit?.price || 12000);
   const [originalPrice, setOriginalPrice] = useState(productToEdit?.originalPrice || 14000);
   const [discountPercent, setDiscountPercent] = useState(productToEdit?.discountPercent || 14);
   const [categoryId, setCategoryId] = useState(productToEdit?.categoryId || categories[0]?.id || 'dhakai-jamdani');
+  const [subcategoryIds, setSubcategoryIds] = useState<string[]>(
+    productToEdit?.subcategoryIds || (productToEdit?.subcategoryId ? [productToEdit.subcategoryId] : [])
+  );
   const [subcategoryId, setSubcategoryId] = useState(productToEdit?.subcategoryId || '');
   const [sareeType, setSareeType] = useState<Product['sareeType']>(productToEdit?.sareeType || 'Dhakai Jamdani');
   const [fabric, setFabric] = useState(productToEdit?.fabric || '80-Count Pure Cotton & Fine Resham Zari');
@@ -331,8 +336,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       price: Number(price),
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
       discountPercent: discountPercent ? Number(discountPercent) : undefined,
+      pricingMethod,
       categoryId,
-      subcategoryId: subcategoryId || undefined,
+      subcategoryId: subcategoryIds[0] || undefined,
+      subcategoryIds,
       sareeType,
       fabric,
       fabricBn,
@@ -501,7 +508,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   Category & Weave Type Placement
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Requirement 9: One actual category, multiple subcategories under it */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="font-bold text-stone-700 block mb-1">Saree Type *</label>
                     <select
@@ -519,14 +527,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="font-bold text-stone-700 block mb-1">Primary Category *</label>
+                    <label className="font-bold text-stone-700 block mb-1">
+                      Actual / Main Category (Each saree can have only one) *
+                    </label>
                     <select
                       value={categoryId}
                       onChange={(e) => {
                         setCategoryId(e.target.value);
+                        setSubcategoryIds([]);
                         setSubcategoryId('');
                       }}
-                      className="w-full p-2 bg-white border border-stone-300 rounded-xl font-semibold"
+                      className="w-full p-2 bg-white border border-stone-300 rounded-xl font-semibold text-stone-900"
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -535,22 +546,53 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       ))}
                     </select>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="font-bold text-stone-700 block mb-1">Subcategory</label>
-                    <select
-                      value={subcategoryId}
-                      onChange={(e) => setSubcategoryId(e.target.value)}
-                      className="w-full p-2 bg-white border border-stone-300 rounded-xl font-semibold"
-                    >
-                      <option value="">-- No Subcategory / General --</option>
-                      {currentCategory?.subcategories?.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.nameEn} ({s.nameBn})
-                        </option>
-                      ))}
-                    </select>
+                {/* Subcategories multi-selection under the chosen category */}
+                <div className="p-3 bg-white rounded-xl border border-stone-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-stone-800 text-xs">
+                      Subcategories under {currentCategory?.nameEn} (Can select multiple)
+                    </label>
+                    <span className="text-[10px] text-stone-500">
+                      {subcategoryIds.length} selected
+                    </span>
                   </div>
+                  {currentCategory?.subcategories && currentCategory.subcategories.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {currentCategory.subcategories.map((sub) => {
+                        const isChecked = subcategoryIds.includes(sub.id);
+                        return (
+                          <label
+                            key={sub.id}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs cursor-pointer border transition-all ${
+                              isChecked
+                                ? 'bg-amber-100 border-amber-500 text-amber-950 font-bold shadow-2xs'
+                                : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? [...subcategoryIds, sub.id]
+                                  : subcategoryIds.filter((id) => id !== sub.id);
+                                setSubcategoryIds(next);
+                                setSubcategoryId(next[0] || '');
+                              }}
+                              className="rounded text-amber-700 focus:ring-amber-700"
+                            />
+                            <span>{sub.nameEn} ({sub.nameBn})</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-stone-400 text-xs italic">
+                      No subcategories defined under this category yet.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -588,70 +630,150 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 <p className="text-stone-500 text-[11px]">Configure selling rates and watch auto-calculated stock</p>
               </div>
 
-              {/* Requirement 4: Flash Sale Offer Campaign Selector with Auto-discount calculation */}
-              <div className="bg-gradient-to-r from-rose-900/10 via-amber-900/10 to-rose-900/5 p-4 rounded-2xl border border-rose-300 dark:border-rose-800 space-y-2">
+              {/* Requirement 8: Hidden / Offer Categories - Offers can only be applied to a Hidden/Offer Category, not directly to a saree */}
+              <div className="bg-gradient-to-r from-amber-900/5 via-rose-900/5 to-amber-900/10 p-4 rounded-2xl border border-rose-300 dark:border-rose-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-rose-950 dark:text-rose-200 text-xs flex items-center gap-1.5 uppercase tracking-wider">
-                    <Flame className="w-4 h-4 text-rose-600 fill-rose-600 animate-pulse" />
-                    <span>Assign Flash Sale / Special Offer Campaign (অফার নির্বাচন)</span>
+                  <label className="font-bold text-stone-900 dark:text-stone-100 text-xs flex items-center gap-1.5 uppercase tracking-wider">
+                    <Tag className="w-4 h-4 text-rose-600" />
+                    <span>Hidden / Offer Categories Assignment (অফার ক্যাটাগরি)</span>
                   </label>
-                  {flashSaleId && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-600 text-white rounded-md uppercase">
-                      Auto-discount Applied (-{flashSaleDiscount}%)
-                    </span>
-                  )}
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-100 text-rose-900 rounded-md">
+                    {promotionalCategoryIds.length} Assigned
+                  </span>
                 </div>
-                <select
-                  value={flashSaleId}
-                  onChange={(e) => handleSelectOfferCampaign(e.target.value)}
-                  className="w-full p-2.5 bg-white border border-rose-300 rounded-xl font-semibold text-xs text-stone-900 cursor-pointer shadow-xs focus:ring-2 focus:ring-rose-500"
-                >
-                  <option value="">No Active Flash Sale Offer (Standard Pricing)</option>
-                  {flashSaleCampaigns.map((camp) => (
-                    <option key={camp.id} value={camp.id}>
-                      🔥 {camp.titleEn} ({camp.titleBn}) — {camp.discountPercent}% OFF
-                    </option>
-                  ))}
-                </select>
                 <p className="text-[11px] text-stone-600 leading-tight">
-                  Selecting an offer campaign automatically calculates and applies the discount rate to this saree, sets the sale price, and displays the offer badge directly on the website product card.
+                  Offers cannot be applied directly to a saree. Offers are controlled through Hidden/Offer Categories. Select which Hidden/Offer Categories this saree belongs to:
                 </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {hiddenPromotionalCategories.map((promoCat) => {
+                    const isSelected = promotionalCategoryIds.includes(promoCat.id);
+                    return (
+                      <button
+                        key={promoCat.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setPromotionalCategoryIds(promotionalCategoryIds.filter((id) => id !== promoCat.id));
+                          } else {
+                            setPromotionalCategoryIds([...promotionalCategoryIds, promoCat.id]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-rose-900 border-rose-950 text-white shadow-xs'
+                            : 'bg-white border-stone-300 text-stone-700 hover:bg-stone-100'
+                        }`}
+                      >
+                        {isSelected ? <Check className="w-3.5 h-3.5 text-white" /> : <Plus className="w-3.5 h-3.5 text-stone-400" />}
+                        <span>{promoCat.nameEn} ({promoCat.nameBn})</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 space-y-1">
-                  <label className="font-bold text-stone-800 block text-xs">Selling Price (৳) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                    className="w-full p-2.5 bg-white border border-amber-300 rounded-xl font-bold text-lg text-amber-950"
-                  />
-                  <span className="text-[10px] text-amber-800 block">Final customer payable amount</span>
+              {/* Requirement 7: Choose between two pricing methods: Option A (Discount) vs Option B (Sale Price) */}
+              <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-2">
+                  <span className="font-bold text-stone-900 text-xs uppercase tracking-wider">
+                    Pricing Method (Select Option A or Option B)
+                  </span>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
+                      <input
+                        type="radio"
+                        name="pricingMethod"
+                        checked={pricingMethod === 'discount'}
+                        onChange={() => setPricingMethod('discount')}
+                        className="text-amber-800 focus:ring-amber-800"
+                      />
+                      <span>Option A — Discount</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
+                      <input
+                        type="radio"
+                        name="pricingMethod"
+                        checked={pricingMethod === 'sale_price'}
+                        onChange={() => setPricingMethod('sale_price')}
+                        className="text-amber-800 focus:ring-amber-800"
+                      />
+                      <span>Option B — Sale Price</span>
+                    </label>
+                  </div>
                 </div>
 
-                <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1">
-                  <label className="font-bold text-stone-800 block text-xs">Original / Retail Price (৳)</label>
-                  <input
-                    type="number"
-                    value={originalPrice}
-                    onChange={(e) => setOriginalPrice(Number(e.target.value))}
-                    className="w-full p-2.5 bg-white border border-stone-300 rounded-xl font-semibold text-lg text-stone-700"
-                  />
-                  <span className="text-[10px] text-stone-500 block">Strike-through reference price</span>
-                </div>
-
-                <div className="bg-rose-50/60 p-4 rounded-2xl border border-rose-200 space-y-1">
-                  <label className="font-bold text-rose-900 block text-xs">Discount Rate (%)</label>
-                  <input
-                    type="number"
-                    value={discountPercent}
-                    onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                    className="w-full p-2.5 bg-white border border-rose-300 rounded-xl font-bold text-lg text-rose-950"
-                  />
-                  <span className="text-[10px] text-rose-800 block">Displayed as discount badge</span>
-                </div>
+                {pricingMethod === 'discount' ? (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-stone-500">
+                      Option A: Enter original price and discount amount/percentage. The system automatically calculates the discounted price.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-white p-3 rounded-xl border border-stone-300">
+                        <label className="font-bold text-stone-700 block text-xs mb-1">Original Price (৳) *</label>
+                        <input
+                          type="number"
+                          value={originalPrice || price}
+                          onChange={(e) => {
+                            const orig = Number(e.target.value) || 0;
+                            setOriginalPrice(orig);
+                            const calc = Math.round(orig * (1 - (discountPercent || 0) / 100));
+                            setPrice(calc);
+                          }}
+                          className="w-full p-2 border border-stone-300 rounded-lg font-bold text-stone-900"
+                        />
+                      </div>
+                      <div className="bg-rose-50 p-3 rounded-xl border border-rose-200">
+                        <label className="font-bold text-rose-900 block text-xs mb-1">Discount (%) *</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={discountPercent}
+                          onChange={(e) => {
+                            const disc = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                            setDiscountPercent(disc);
+                            const orig = originalPrice || price;
+                            const calc = Math.round(orig * (1 - disc / 100));
+                            setPrice(calc);
+                          }}
+                          className="w-full p-2 border border-rose-300 rounded-lg font-bold text-rose-950"
+                        />
+                      </div>
+                      <div className="bg-amber-50 p-3 rounded-xl border border-amber-300">
+                        <label className="font-bold text-amber-900 block text-xs mb-1">Calculated Price (৳)</label>
+                        <div className="p-2 bg-white rounded-lg border border-amber-300 font-mono font-bold text-amber-950 text-base">
+                          ৳{price.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-stone-500">
+                      Option B: Enter original price and directly enter the sale price. No discount calculation is required.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-white p-3 rounded-xl border border-stone-300">
+                        <label className="font-bold text-stone-700 block text-xs mb-1">Original Price (৳)</label>
+                        <input
+                          type="number"
+                          value={originalPrice || price}
+                          onChange={(e) => setOriginalPrice(Number(e.target.value) || 0)}
+                          className="w-full p-2 border border-stone-300 rounded-lg font-bold text-stone-900"
+                        />
+                      </div>
+                      <div className="bg-amber-50 p-3 rounded-xl border-2 border-amber-400">
+                        <label className="font-bold text-amber-950 block text-xs mb-1">Direct Sale Price (৳) *</label>
+                        <input
+                          type="number"
+                          value={price}
+                          onChange={(e) => setPrice(Number(e.target.value) || 0)}
+                          className="w-full p-2 bg-white border border-amber-400 rounded-lg font-mono font-bold text-amber-950 text-base"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Total Stock Auto-Sum Card */}
@@ -743,43 +865,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Requirement 2 & 11: Promotional / Offer Category assignment */}
-              {hiddenPromotionalCategories.length > 0 && (
-                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
-                  <label className="text-xs font-bold text-stone-900 block">
-                    Promotional &amp; Offer Categories (Campaign Assignment)
-                  </label>
-                  <p className="text-[11px] text-stone-500">
-                    Select promotional campaigns or offers this saree belongs to. Sarees can belong to multiple promotional categories without catalog duplication.
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {hiddenPromotionalCategories.map((promoCat) => {
-                      const isSelected = promotionalCategoryIds.includes(promoCat.id);
-                      return (
-                        <button
-                          key={promoCat.id}
-                          type="button"
-                          onClick={() => {
-                            if (isSelected) {
-                              setPromotionalCategoryIds(promotionalCategoryIds.filter((id) => id !== promoCat.id));
-                            } else {
-                              setPromotionalCategoryIds([...promotionalCategoryIds, promoCat.id]);
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-amber-900 border-amber-950 text-white shadow-xs'
-                              : 'bg-white border-stone-300 text-stone-700 hover:bg-stone-100'
-                          }`}
-                        >
-                          {isSelected ? '✓ ' : '+ '}
-                          {promoCat.nameEn}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* End of Step 2 */}
             </div>
           )}
 
@@ -1083,58 +1169,87 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </p>
               </div>
 
-              {/* Main Photo Uploader & Sample Selector */}
-              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-4">
-                <span className="font-bold text-stone-900 uppercase tracking-wider block text-[11px]">
-                  Primary Saree Photography
-                </span>
-
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <div className="w-28 h-36 rounded-2xl overflow-hidden border border-stone-300 bg-white shrink-0 shadow-sm">
-                    <img
-                      src={primaryImage}
-                      alt="Primary Saree"
-                      className="w-full h-full object-cover"
-                    />
+              {/* Main Photo & Multiple Saree Photos Gallery (Requirement 5 & 6) */}
+              <div className="bg-stone-50 p-4 sm:p-5 rounded-2xl border border-stone-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-stone-900 uppercase tracking-wider block text-xs">
+                      Saree Photography Gallery ({images.length} Photos)
+                    </span>
+                    <p className="text-stone-500 text-[11px]">
+                      Add multiple saree images with the &quot;Add More&quot; and &quot;Browse Image&quot; buttons below.
+                    </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImages([...images, sampleImages[0].url]);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-amber-800 hover:bg-amber-900 rounded-xl shadow-xs transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add More Saree Image</span>
+                  </button>
+                </div>
 
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <label className="px-4 py-2.5 bg-amber-900 hover:bg-amber-800 text-white font-bold rounded-xl cursor-pointer flex items-center gap-1.5 shadow-sm transition-colors">
-                        <Upload className="w-4 h-4" />
-                        <span>Upload Saree Photo from Device</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileUpload(e)}
-                          className="hidden"
-                        />
-                      </label>
-                      <span className="text-[10px] text-stone-500">Supports JPG, PNG, WebP</span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-stone-500 uppercase block">
-                        Or pick authentic handloom photoshoot sample:
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {sampleImages.map((sample, idx) => (
-                          <button
-                            type="button"
-                            key={idx}
-                            onClick={() => setPrimaryImage(sample.url)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer ${
-                              primaryImage === sample.url
-                                ? 'border-amber-900 bg-amber-100 text-amber-950 font-bold shadow-2xs'
-                                : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-100'
-                            }`}
-                          >
-                            {sample.label}
-                          </button>
-                        ))}
+                {/* Multiple Images List */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {images.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 bg-white rounded-xl border border-stone-200 shadow-2xs space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                          <span>Image #{idx + 1}</span>
+                          {imgUrl === primaryImage && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-600 text-white">
+                              PRIMARY
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {imgUrl !== primaryImage && (
+                            <button
+                              type="button"
+                              onClick={() => setPrimaryImage(imgUrl)}
+                              className="text-[10px] font-semibold text-amber-800 hover:underline"
+                            >
+                              Set as Primary
+                            </button>
+                          )}
+                          {images.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = images.filter((_, i) => i !== idx);
+                                setImages(next);
+                                if (imgUrl === primaryImage) {
+                                  setPrimaryImage(next[0] || sampleImages[0].url);
+                                }
+                              }}
+                              className="p-1 text-stone-400 hover:text-rose-600"
+                              title="Remove this photo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
+
+                      <ImageUploadBrowser
+                        value={imgUrl}
+                        onChange={(newUrl) => {
+                          const next = [...images];
+                          next[idx] = newUrl;
+                          setImages(next);
+                          if (idx === 0 || imgUrl === primaryImage) {
+                            setPrimaryImage(newUrl);
+                          }
+                        }}
+                      />
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 

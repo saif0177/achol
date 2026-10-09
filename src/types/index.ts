@@ -70,9 +70,30 @@ export interface Product {
   artisanVillage?: string;
   weavingDurationDays?: number;
   isFreeDelivery?: boolean;
+  pricingMethod?: 'discount' | 'sale_price';
+  discountType?: 'percentage' | 'fixed_amount';
+  discountValue?: number;
   promotionalCategoryId?: string;
   promotionalCategoryIds?: string[];
+  subcategoryIds?: string[];
   specifications?: { key: string; value: string }[];
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  maxUsageLimit?: number;
+  usageCount?: number;
+  startDate?: string;
+  endDate?: string;
+  isFreeDelivery?: boolean;
+  isActive: boolean;
+  descriptionEn?: string;
+  descriptionBn?: string;
 }
 
 export interface CategoryArticle {
@@ -153,16 +174,22 @@ export interface Promotion {
   discountAmount?: number;
   fixedDiscount?: number;
   code?: string;
+  selectedCouponCode?: string;
   placements: PromotionPlacement[];
   productIds?: string[];
   categoryIds?: string[];
   promotionalCategoryId?: string;
-  destinationType?: 'actual_category' | 'hidden_promotional_category' | 'offer_page' | 'products' | 'shop';
+  destinationType?: 'actual_category' | 'hidden_promotional_category' | 'offer_page' | 'products' | 'shop' | 'custom' | 'flash_sale';
   destinationCategoryId?: string;
+  destinationLink?: string;
   hasFreeDelivery?: boolean;
   minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  maxUsageLimit?: number;
+  usageCount?: number;
   startDate?: string;
   endDate?: string;
+  durationDays?: number;
   isActive: boolean;
   image?: string;
   ctaTextEn?: string;
@@ -181,13 +208,19 @@ export interface LandingPopupConfig {
   subtitleBn: string;
   image: string;
   discountCode?: string;
+  selectedCouponCode?: string;
   ctaTextEn: string;
   ctaTextBn: string;
   ctaLink: string;
+  destinationType?: 'product' | 'category' | 'offer_category' | 'flash_sale' | 'offers' | 'custom';
+  destinationTargetId?: string;
   displayMode?: 'standard' | 'image_only';
   hasTimer?: boolean;
   startDate?: string;
   endTime?: string;
+  durationDays?: number;
+  maxUsageLimit?: number;
+  minOrderAmount?: number;
   cooldownMinutes?: number;
 }
 
@@ -201,6 +234,10 @@ export interface FlashSaleCampaign {
   hasTimer: boolean;
   startTime?: string;
   endTime?: string;
+  durationDays?: number;
+  maxUsageLimit?: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
   isActive: boolean;
   bannerImage: string;
   displayMode?: 'banner_with_text' | 'image_only';
@@ -208,6 +245,8 @@ export interface FlashSaleCampaign {
   buttonTextEn?: string;
   buttonTextBn?: string;
   targetLink?: string;
+  destinationType?: 'product' | 'category' | 'offer_category' | 'flash_sale' | 'offers' | 'custom';
+  destinationTargetId?: string;
   badgeTextEn?: string;
   badgeTextBn?: string;
 }
@@ -222,8 +261,11 @@ export interface Banner {
   ctaTextEn: string;
   ctaTextBn: string;
   ctaLink: string;
+  destinationType?: 'product' | 'category' | 'offer_category' | 'flash_sale' | 'offers' | 'custom';
+  destinationTargetId?: string;
   startDate?: string;
   endDate?: string;
+  durationDays?: number;
   hasCountdown: boolean;
   countdownTarget?: string; // ISO date string
   isActive: boolean;

@@ -25,6 +25,7 @@ interface CartDrawerProps {
   appliedDiscount: number;
   appliedCodeName: string;
   onApplyCode: (codeStr: string, discount: number) => void;
+  onOpenCoupons?: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -37,7 +38,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onProceedToCheckout,
   appliedDiscount,
   appliedCodeName,
-  onApplyCode
+  onApplyCode,
+  onOpenCoupons
 }) => {
   const t = translations[language];
   const [couponInput, setCouponInput] = useState('');
@@ -203,10 +205,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             
             {/* Private Code / Coupon Box */}
             <form onSubmit={handleApplyCoupon} className="space-y-1.5">
-              <label className="text-[11px] text-stone-500 font-medium flex items-center gap-1">
-                <Tag className="w-3 h-3 text-amber-900" />
-                <span>{t.havePrivateCode}</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] text-stone-500 font-medium flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-amber-900" />
+                  <span>{t.havePrivateCode}</span>
+                </label>
+                {onOpenCoupons && (
+                  <button
+                    type="button"
+                    onClick={onOpenCoupons}
+                    className="text-[11px] font-bold text-amber-900 hover:text-amber-700 underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{language === 'bn' ? '🎟️ কুপন দেখুন' : '🎟️ View Coupons'}</span>
+                  </button>
+                )}
+              </div>
               <div className="flex gap-2">
                 <input
                   type="text"

@@ -61,14 +61,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   return (
     <div className="relative w-full overflow-hidden bg-stone-900 border-b border-stone-800">
       {/* Visual background image with measured contrast scrim for WCAG AA readability */}
-      <div className="relative h-[340px] sm:h-[380px] lg:h-[400px] w-full flex items-center">
+      <div 
+        onClick={() => onCtaClick(current.ctaLink || 'shop')}
+        className="relative h-[340px] sm:h-[380px] lg:h-[400px] w-full flex items-center cursor-pointer group"
+        title="Click anywhere to visit banner offer"
+      >
         {current.image ? (
           <div className="absolute inset-0">
             <img
               src={current.image}
               alt={current.titleEn}
               referrerPolicy="no-referrer"
-              className="w-full h-full object-cover object-center transform scale-102 transition-transform duration-1000 ease-out"
+              className="w-full h-full object-cover object-center transform scale-102 group-hover:scale-104 transition-transform duration-1000 ease-out"
             />
             {/* Scrim gradient: 60-30-10 measured overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/80 to-stone-950/40" />
@@ -89,7 +93,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </div>
 
             {/* Title with anti-orphan balance */}
-            <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-[1.18] text-balance drop-shadow-sm">
+            <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-[1.18] text-balance drop-shadow-sm group-hover:text-amber-100 transition-colors">
               {language === 'bn' ? current.titleBn : current.titleEn}
             </h1>
 
@@ -134,7 +138,10 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             {/* CTA action button */}
             <div className="pt-1.5 flex flex-wrap items-center gap-3 sm:gap-4">
               <button
-                onClick={() => onCtaClick(current.ctaLink || 'shop')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCtaClick(current.ctaLink || 'shop');
+                }}
                 className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer"
               >
                 <span>{language === 'bn' ? current.ctaTextBn : current.ctaTextEn}</span>
@@ -153,12 +160,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
         {/* Carousel slide controls */}
         {activeBanners.length > 1 && (
-          <div className="absolute bottom-6 right-8 z-20 flex items-center gap-2">
+          <div 
+            onClick={(e) => e.stopPropagation()} 
+            className="absolute bottom-6 right-8 z-20 flex items-center gap-2"
+          >
             <button
-              onClick={() =>
-                setCurrentIndex((prev) => (prev === 0 ? activeBanners.length - 1 : prev - 1))
-              }
-              className="p-2 rounded-full bg-stone-950/60 text-white hover:bg-amber-700 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentIndex((prev) => (prev === 0 ? activeBanners.length - 1 : prev - 1));
+              }}
+              className="p-2 rounded-full bg-stone-950/60 text-white hover:bg-amber-700 transition-colors cursor-pointer"
               aria-label="Previous Slide"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -167,8 +178,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               {activeBanners.map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`h-1.5 rounded-full transition-all ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
                     idx === currentIndex ? 'w-6 bg-amber-400' : 'w-1.5 bg-white/40'
                   }`}
                   aria-label={`Go to slide ${idx + 1}`}
@@ -176,8 +190,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               ))}
             </div>
             <button
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % activeBanners.length)}
-              className="p-2 rounded-full bg-stone-950/60 text-white hover:bg-amber-700 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentIndex((prev) => (prev + 1) % activeBanners.length);
+              }}
+              className="p-2 rounded-full bg-stone-950/60 text-white hover:bg-amber-700 transition-colors cursor-pointer"
               aria-label="Next Slide"
             >
               <ChevronRight className="w-4 h-4" />

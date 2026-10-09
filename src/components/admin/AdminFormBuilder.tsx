@@ -14,6 +14,7 @@ import {
   Eye,
   Info
 } from 'lucide-react';
+import { ImageUploadBrowser } from '../common/ImageUploadBrowser';
 
 export type AdminFieldType =
   | 'text'
@@ -327,32 +328,14 @@ export const AdminFormBuilder: React.FC<AdminFormBuilderProps> = ({
                       </label>
                     )}
 
-                    {/* 6. IMAGE (URL + Presets + File Upload + Live Preview) */}
+                    {/* 6. IMAGE (Browse Image Browser + Presets + File Upload + Live Preview) */}
                     {field.type === 'image' && (
                       <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={value ?? ''}
-                            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                            placeholder="Enter image URL or select from below..."
-                            className="flex-1 px-3 py-2 text-xs border border-stone-200 dark:border-stone-700 rounded-xl bg-stone-50/50 dark:bg-stone-900/50 dark:text-white focus:outline-none focus:border-amber-700"
-                          />
-
-                          <label className="px-3 py-2 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-xl border border-stone-300 dark:border-stone-600 cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>Upload File</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageFileUpload(field.name, file);
-                              }}
-                            />
-                          </label>
-                        </div>
+                        <ImageUploadBrowser
+                          value={value ?? ''}
+                          onChange={(newUrl) => handleFieldChange(field.name, newUrl)}
+                          label={field.labelEn}
+                        />
 
                         {/* Preset Quick Images if provided */}
                         {field.sampleImages && field.sampleImages.length > 0 && (
@@ -372,20 +355,6 @@ export const AdminFormBuilder: React.FC<AdminFormBuilderProps> = ({
                                 <span>{sample.label}</span>
                               </button>
                             ))}
-                          </div>
-                        )}
-
-                        {/* Live Image Preview */}
-                        {value && (
-                          <div className="relative w-full h-32 rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-900 group">
-                            <img
-                              src={value}
-                              alt="Form Preview"
-                              className="w-full h-full object-cover object-center"
-                            />
-                            <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/70 text-white text-[10px] font-mono backdrop-blur-xs">
-                              Live Preview
-                            </div>
                           </div>
                         )}
                       </div>
