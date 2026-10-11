@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Table,
   Plus,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Save,
   Trash2,
   Edit2,
@@ -19,7 +20,9 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   RefreshCw,
-  X
+  X,
+  Lock,
+  ArrowLeftRight
 } from 'lucide-react';
 import { Product, Category, Language, HiddenPromotionalCategory, ProductVariant } from '../../types';
 import { store } from '../../services/store';
@@ -47,6 +50,57 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Synchronized Top Horizontal Scrollbar Refs
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const tableInnerRef = useRef<HTMLTableElement>(null);
+  const [tableScrollWidth, setTableScrollWidth] = useState<number>(0);
+
+  const isSyncingTop = useRef(false);
+  const isSyncingTable = useRef(false);
+
+  const handleTopScroll = () => {
+    if (isSyncingTop.current) return;
+    isSyncingTable.current = true;
+    if (tableScrollRef.current && topScrollRef.current) {
+      tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    }
+    setTimeout(() => {
+      isSyncingTable.current = false;
+    }, 50);
+  };
+
+  const handleTableScroll = () => {
+    if (isSyncingTable.current) return;
+    isSyncingTop.current = true;
+    if (topScrollRef.current && tableScrollRef.current) {
+      topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
+    }
+    setTimeout(() => {
+      isSyncingTop.current = false;
+    }, 50);
+  };
+
+  // Measure table width for synced top scrollbar
+  useEffect(() => {
+    const measure = () => {
+      if (tableInnerRef.current) {
+        setTableScrollWidth(tableInnerRef.current.scrollWidth);
+      } else if (tableScrollRef.current) {
+        setTableScrollWidth(tableScrollRef.current.scrollWidth);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    const ro = new ResizeObserver(measure);
+    if (tableInnerRef.current) ro.observe(tableInnerRef.current);
+    if (tableScrollRef.current) ro.observe(tableScrollRef.current);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro.disconnect();
+    };
+  }, [products, expandedRowId]);
 
   // Draft state for expanded row being edited
   const [draftProduct, setDraftProduct] = useState<Product | null>(null);
@@ -233,9 +287,53 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
         </div>
       )}
 
+      {/* Top Horizontal Scrollbar Control (Requirement: horizontal scrolling bar on top to scroll easily) */}
+      <div className="bg-stone-50 dark:bg-stone-850 border-y border-stone-200 dark:border-stone-700 px-3 py-1.5 flex items-center justify-between gap-3 text-[11px] text-stone-600 dark:text-stone-300">
+        <div className="flex items-center gap-1.5 shrink-0 font-semibold text-amber-900 dark:text-amber-400">
+          <ArrowLeftRight className="w-3.5 h-3.5" />
+          <span>Top Scroll Bar:</span>
+        </div>
+        <div
+          ref={topScrollRef}
+          onScroll={handleTopScroll}
+          className="overflow-x-auto overflow-y-hidden flex-1 h-4 scrollbar-thin scrollbar-thumb-amber-600/70 scrollbar-track-stone-200 dark:scrollbar-track-stone-800 cursor-ew-resize"
+          title="Drag or scroll horizontally here to pan the table"
+        >
+          <div style={{ width: `${Math.max(tableScrollWidth, 1200)}px`, height: '1px' }} />
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (tableScrollRef.current) {
+                tableScrollRef.current.scrollBy({ left: -250, behavior: 'smooth' });
+              }
+            }}
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950 font-bold text-[10px] cursor-pointer"
+            title="Scroll Left"
+          >
+            <ChevronLeft className="w-3 h-3" />
+            <span>Left</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (tableScrollRef.current) {
+                tableScrollRef.current.scrollBy({ left: 250, behavior: 'smooth' });
+              }
+            }}
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950 font-bold text-[10px] cursor-pointer"
+            title="Scroll Right"
+          >
+            <span>Right</span>
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
       {/* Spreadsheet Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+      <div ref={tableScrollRef} onScroll={handleTableScroll} className="overflow-x-auto">
+        <table ref={tableInnerRef} className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-stone-100 dark:bg-stone-800 border-y border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-bold uppercase tracking-wider text-[10px]">
               <th className="py-2.5 px-3 w-10 text-center">+/-</th>

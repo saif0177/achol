@@ -18,6 +18,7 @@ import { CategoryCircles } from './components/home/CategoryCircles';
 import { FlashSaleSection } from './components/home/FlashSaleSection';
 import { TrustHighlights } from './components/home/TrustHighlights';
 import { PhotoReviewsGallery } from './components/home/PhotoReviewsGallery';
+import { AllCustomerReviewsPage } from './components/home/AllCustomerReviewsPage';
 import { LandingPopup } from './components/home/LandingPopup';
 
 // Product Components
@@ -71,10 +72,15 @@ export default function App() {
     return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
   }, []);
 
-  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
+  // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'all-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
   const [activeView, setActiveView] = useState<
-    'home' | 'shop' | 'product-detail' | 'product-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
+    'home' | 'shop' | 'product-detail' | 'product-reviews' | 'all-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
   >('home');
+
+  // Ensure every view navigation begins seamlessly from the top
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeView]);
 
   // Selected Offer & Category for Dedicated Article Views
   const [selectedOffer, setSelectedOffer] = useState<Promotion | null>(null);
@@ -421,14 +427,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Landing Popup Banner (Requirement 1: popup after landing, controlled via admin) */}
-      {activeView === 'home' && (
-        <LandingPopup
-          language={language}
-          onNavigateShop={() => setActiveView('shop')}
-        />
-      )}
-
       {/* Primary Global Navigation Header */}
       <Header
         language={language}
@@ -468,6 +466,7 @@ export default function App() {
             ======================================================== */}
         {activeView === 'product-detail' && selectedProduct && (
           <ProductDetailPage
+            key={selectedProduct.id}
             product={selectedProduct}
             initialVariant={selectedVariant}
             language={language}
@@ -482,6 +481,7 @@ export default function App() {
             onExploreCategory={(catId) => {
               handleSelectCategory(catId);
             }}
+            onOpenAccount={() => setIsAccountOpen(true)}
           />
         )}
 
@@ -490,11 +490,24 @@ export default function App() {
             ======================================================== */}
         {activeView === 'product-reviews' && selectedProduct && (
           <ProductReviewsPage
+            key={selectedProduct.id}
             product={selectedProduct}
             selectedVariant={selectedVariant}
             language={language}
             onBackToProduct={() => setActiveView('product-detail')}
             onDirectOrder={handleOpenDirectOrder}
+            onOpenAccount={() => setIsAccountOpen(true)}
+          />
+        )}
+
+        {/* ========================================================
+            VIEW: ALL CUSTOMER REVIEWS PAGE (From Home Gallery)
+            ======================================================== */}
+        {activeView === 'all-reviews' && (
+          <AllCustomerReviewsPage
+            language={language}
+            onBack={() => setActiveView('home')}
+            onSelectProduct={handleSelectProduct}
           />
         )}
 
@@ -792,7 +805,10 @@ export default function App() {
             </section>
 
             {/* 6. Smaller, Refined Customer Photo Reviews Gallery (Requirement 4) */}
-            <PhotoReviewsGallery language={language} />
+            <PhotoReviewsGallery
+              language={language}
+              onOpenAllReviews={() => setActiveView('all-reviews')}
+            />
 
             {/* 7. Trust Highlights */}
             <TrustHighlights language={language} />
@@ -1205,10 +1221,11 @@ export default function App() {
         />
       )}
 
-      {/* 11. Landing Popup with Destination Redirection (Requirement 12) */}
-      <LandingPopup
-        language={language}
-        onNavigateShop={(destination) => {
+      {/* 11. Single Landing Popup with Destination Redirection (Requirement 12) */}
+      {activeView === 'home' && (
+        <LandingPopup
+          language={language}
+          onNavigateShop={(destination) => {
           if (!destination || destination === 'shop') {
             setActiveView('shop');
             return;
@@ -1242,6 +1259,7 @@ export default function App() {
           setActiveView('shop');
         }}
       />
+      )}
 
     </div>
   );

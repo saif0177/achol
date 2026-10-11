@@ -1650,7 +1650,15 @@ class StoreService {
       this.topAnnouncementConfig = storedAnnouncements ? JSON.parse(storedAnnouncements) : INITIAL_TOP_ANNOUNCEMENTS;
 
       const storedActivePhone = localStorage.getItem('aanchol_active_phone');
-      this.activeCustomerPhone = storedActivePhone || '01712345678';
+      if (storedActivePhone) {
+        try {
+          this.activeCustomerPhone = JSON.parse(storedActivePhone);
+        } catch {
+          this.activeCustomerPhone = storedActivePhone;
+        }
+      } else {
+        this.activeCustomerPhone = null;
+      }
     } catch {
       this.products = INITIAL_PRODUCTS;
       this.categories = INITIAL_CATEGORIES;
@@ -1666,7 +1674,7 @@ class StoreService {
       this.hiddenPromotionalCategories = INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
       this.coupons = INITIAL_COUPONS;
       this.topAnnouncementConfig = INITIAL_TOP_ANNOUNCEMENTS;
-      this.activeCustomerPhone = '01712345678';
+      this.activeCustomerPhone = null;
     }
   }
 
@@ -3035,6 +3043,22 @@ class StoreService {
       try {
         localStorage.removeItem('aanchol_active_phone');
       } catch {}
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('aanchol_customer_updated', { detail: { phone } }));
+    }
+  }
+
+  public isCustomerLoggedIn(): boolean {
+    return this.getActiveCustomer() !== null;
+  }
+
+  public setActiveCustomer(account: CustomerAccount | null): void {
+    if (account) {
+      this.saveCustomerAccount(account);
+      this.setActiveCustomerPhone(account.phone);
+    } else {
+      this.setActiveCustomerPhone(null);
     }
   }
 

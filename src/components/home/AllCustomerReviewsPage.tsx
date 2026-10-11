@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Star,
@@ -27,6 +27,10 @@ export const AllCustomerReviewsPage: React.FC<AllCustomerReviewsPageProps> = ({
   onBack,
   onSelectProduct
 }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [photoOnly, setPhotoOnly] = useState(false);

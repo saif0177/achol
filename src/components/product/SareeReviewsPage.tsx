@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Star,
@@ -10,7 +10,7 @@ import {
   ShoppingBag,
   Zap
 } from 'lucide-react';
-import { Product, ProductVariant, Language, Review } from '../../types';
+import { Product, ProductVariant, Language, Review, CustomerAccount } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
 
@@ -41,6 +41,17 @@ export const SareeReviewsPage: React.FC<SareeReviewsPageProps> = ({
   const [comment, setComment] = useState('');
   const [submittedToast, setSubmittedToast] = useState(false);
 
+  // Reactive customer auth state
+  const [activeCustomer, setActiveCustomer] = useState<CustomerAccount | null>(() => store.getActiveCustomer());
+
+  useEffect(() => {
+    const handleCustomerChange = () => {
+      setActiveCustomer(store.getActiveCustomer());
+    };
+    window.addEventListener('aanchol_customer_updated', handleCustomerChange);
+    return () => window.removeEventListener('aanchol_customer_updated', handleCustomerChange);
+  }, []);
+
   // Rating Distribution Calculation
   const totalReviews = reviews.length;
   const averageRating = totalReviews > 0
@@ -57,16 +68,20 @@ export const SareeReviewsPage: React.FC<SareeReviewsPageProps> = ({
 
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authorName.trim() || !comment.trim()) return;
+    if (!activeCustomer) {
+      alert(language === 'bn' ? 'রিভিউ প্রদানের জন্য কাস্টমার অ্যাকাউন্ট আবশ্যক' : 'Customer Account is required to submit a review');
+      return;
+    }
+    if (!comment.trim()) return;
 
     const newRev: Review = {
       id: `rev-${Date.now()}`,
       productId: product.id,
-      customerName: authorName.trim(),
-      customerPhoneMasked: '0171***99',
+      customerName: activeCustomer.name,
+      customerPhoneMasked: activeCustomer.phone.replace(/(\d{4})\d{4}(\d{3})/, '$1****$2'),
       rating,
       comment: comment.trim(),
-      date: 'Just now',
+      date: new Date().toISOString().split('T')[0],
       isVerifiedPurchase: true
     };
 
@@ -219,30 +234,34 @@ export const SareeReviewsPage: React.FC<SareeReviewsPageProps> = ({
 
         {/* Write Review Form */}
         {showForm && (
-          <form
-            onSubmit={handleAddReview}
-            className="bg-white dark:bg-stone-900 p-6 rounded-2xl border border-amber-900/20 shadow-md space-y-4"
-          >
-            <h3 className="font-serif text-base font-bold text-stone-900 dark:text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>
-                {language === 'bn' ? 'এই শাড়ি সম্পর্কে আপনার অভিজ্ঞতা লিখুন' : 'Share your Experience with this Saree'}
-              </span>
-            </h3>
+          !activeCustomer ? (
+            <div className="bg-amber-50 dark:bg-amber-950/40 p-6 rounded-2xl border border-amber-200 dark:border-amber-800 text-center space-y-3">
+              <h4 className="font-serif font-bold text-base text-stone-900 dark:text-white">
+                {language === 'bn' ? 'রিভিউ প্রদানের জন্য কাস্টমার অ্যাকাউন্ট আবশ্যক' : 'Customer Account Required to Review'}
+              </h4>
+              <p className="text-xs text-stone-600 dark:text-stone-300 max-w-md mx-auto leading-relaxed">
+                {language === 'bn'
+                  ? 'আঁচল হেরিটেজ শাড়িতে খাঁটি রিভিউ নিশ্চিত করতে কাস্টমার অ্যাকাউন্টে লগইন থাকা বাধ্যতামূলক।'
+                  : 'To ensure authentic verified reviews, you must have an active customer account.'}
+              </p>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleAddReview}
+              className="bg-white dark:bg-stone-900 p-6 rounded-2xl border border-amber-900/20 shadow-md space-y-4"
+            >
+              <h3 className="font-serif text-base font-bold text-stone-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <span>
+                  {language === 'bn' ? 'এই শাড়ি সম্পর্কে আপনার অভিজ্ঞতা লিখুন' : 'Share your Experience with this Saree'}
+                </span>
+              </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                  {language === 'bn' ? 'আপনার নাম' : 'Your Name'} *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder="e.g. Farhana Ahmed"
-                  className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs"
-                />
+              <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
+                <span>
+                  {language === 'bn' ? 'লগইনকৃত অ্যাকাউন্ট:' : 'Verified Reviewer:'}{' '}
+                  <strong>{activeCustomer.name}</strong> ({activeCustomer.phone})
+                </span>
               </div>
 
               <div>
@@ -271,38 +290,38 @@ export const SareeReviewsPage: React.FC<SareeReviewsPageProps> = ({
                   </span>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                {language === 'bn' ? 'আপনার মতামত ও অনুভূতির বিবরণ' : 'Your Detailed Review'} *
-              </label>
-              <textarea
-                rows={3}
-                required
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="কাপড়ের মান, নকশার সূক্ষ্মতা, পরার অনুভূতি..."
-                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
+                  {language === 'bn' ? 'আপনার মতামত ও অনুভূতির বিবরণ' : 'Your Detailed Review'} *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="কাপড়ের মান, নকশার সূক্ষ্মতা, পরার অনুভূতি..."
+                  className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs"
+                />
+              </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-xs font-semibold text-stone-600 dark:text-stone-400"
-              >
-                {language === 'bn' ? 'বাতিল' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
-              >
-                {language === 'bn' ? 'রিভিউ পোস্ট করুন' : 'Post Review'}
-              </button>
-            </div>
-          </form>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 text-xs font-semibold text-stone-600 dark:text-stone-400"
+                >
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                >
+                  {language === 'bn' ? 'রিভিউ পোস্ট করুন' : 'Post Review'}
+                </button>
+              </div>
+            </form>
+          )
         )}
 
         {/* All Reviews List */}

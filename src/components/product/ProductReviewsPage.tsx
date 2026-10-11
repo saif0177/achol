@@ -10,9 +10,11 @@ import {
   Calendar,
   Sparkles,
   ShoppingBag,
-  Zap
+  Zap,
+  Lock,
+  UserCheck
 } from 'lucide-react';
-import { Product, Language, Review, ProductVariant } from '../../types';
+import { Product, Language, Review, ProductVariant, CustomerAccount } from '../../types';
 import { store } from '../../services/store';
 
 interface ProductReviewsPageProps {
@@ -21,6 +23,7 @@ interface ProductReviewsPageProps {
   language: Language;
   onBackToProduct: () => void;
   onDirectOrder: (product: Product, variant: ProductVariant) => void;
+  onOpenAccount?: () => void;
 }
 
 export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
@@ -28,7 +31,8 @@ export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
   selectedVariant,
   language,
   onBackToProduct,
-  onDirectOrder
+  onDirectOrder,
+  onOpenAccount
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [starFilter, setStarFilter] = useState<number | null>(null);
@@ -66,15 +70,30 @@ export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
     return { stars, count, percentage };
   });
 
+  // Reactive customer auth state
+  const [activeCustomer, setActiveCustomer] = useState<CustomerAccount | null>(() => store.getActiveCustomer());
+
+  useEffect(() => {
+    const handleCustomerChange = () => {
+      setActiveCustomer(store.getActiveCustomer());
+    };
+    window.addEventListener('aanchol_customer_updated', handleCustomerChange);
+    return () => window.removeEventListener('aanchol_customer_updated', handleCustomerChange);
+  }, []);
+
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReviewAuthor.trim() || !newReviewComment.trim()) return;
+    if (!activeCustomer) {
+      if (onOpenAccount) onOpenAccount();
+      return;
+    }
+    if (!newReviewComment.trim()) return;
 
     const newRev: Review = {
       id: `rev-${Date.now()}`,
       productId: product.id,
-      customerName: newReviewAuthor.trim(),
-      customerPhoneMasked: '0171***88',
+      customerName: activeCustomer.name,
+      customerPhoneMasked: activeCustomer.phone.replace(/(\d{4})\d{4}(\d{3})/, '$1****$2'),
       rating: newReviewRating,
       comment: newReviewComment.trim(),
       date: new Date().toISOString().split('T')[0],
@@ -186,7 +205,7 @@ export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
           </button>
         </div>
 
-        {/* 3. Review Submission Form Modal/Card */}
+        {/* 3. Review Submission Form Modal/Card - Requires Active Customer Account */}
         {showReviewForm && (
           <div className="bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-8 border-2 border-amber-800/40 dark:border-amber-700/40 shadow-xl space-y-5 animate-in fade-in duration-200">
             <div className="border-b border-stone-100 dark:border-stone-800 pb-3 flex items-center justify-between">
@@ -202,27 +221,53 @@ export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
               </div>
             </div>
 
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                    {language === 'bn' ? 'আপনার পূর্ণ নাম *' : 'Your Full Name *'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newReviewAuthor}
-                    onChange={(e) => setNewReviewAuthor(e.target.value)}
-                    placeholder="e.g. Nusrat Jahan"
-                    className="w-full text-xs p-3 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-800"
-                  />
+            {!activeCustomer ? (
+              <div className="bg-amber-50 dark:bg-amber-950/40 p-6 rounded-2xl border border-amber-200 dark:border-amber-800 text-center space-y-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300 flex items-center justify-center mx-auto">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-base text-stone-900 dark:text-white">
+                    {language === 'bn' ? 'রিভিউ প্রদানের জন্য কাস্টমার অ্যাকাউন্ট আবশ্যক' : 'Customer Account Required to Review'}
+                  </h4>
+                  <p className="text-xs text-stone-600 dark:text-stone-300 max-w-md mx-auto mt-1 leading-relaxed">
+                    {language === 'bn'
+                      ? 'আঁচল হেরিটেজ শাড়ির ১০০% খাঁটি যাচাইকৃত গ্রাহক রিভিউ ব্যবস্থা নিশ্চিত করার জন্য কাস্টমার অ্যাকাউন্টে লগইন থাকা বাধ্যতামূলক। অনুগ্রহ করে আপনার অ্যাকাউন্ট দিয়ে লগইন করুন।'
+                      : 'To maintain 100% genuine verified feedback from real handloom saree owners, a verified customer account is required to write reviews.'}
+                  </p>
+                </div>
+                <div className="flex justify-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewForm(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                  >
+                    {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAccount && onOpenAccount()}
+                    className="px-5 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                  >
+                    {language === 'bn' ? 'লগইন বা অ্যাকাউন্ট তৈরি করুন' : 'Sign In / Create Account'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div className="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
+                  <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    {language === 'bn' ? 'লগইনকৃত অ্যাকাউন্ট:' : 'Verified Reviewer Account:'}{' '}
+                    <strong>{activeCustomer.name}</strong> ({activeCustomer.phone})
+                  </span>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
                     {language === 'bn' ? 'শাড়ির রেটিং দিন *' : 'Star Rating *'}
                   </label>
-                  <div className="flex items-center gap-1.5 pt-1.5">
+                  <div className="flex items-center gap-1.5 pt-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         type="button"
@@ -244,38 +289,38 @@ export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
                     </span>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                  {language === 'bn' ? 'আপনার মন্তব্য ও বিবরণ *' : 'Your Honest Review *'}
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  value={newReviewComment}
-                  onChange={(e) => setNewReviewComment(e.target.value)}
-                  placeholder="Tell us about the texture, softness, color authenticity, and packaging..."
-                  className="w-full text-xs p-3 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-800 leading-relaxed"
-                />
-              </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                    {language === 'bn' ? 'আপনার মন্তব্য ও বিবরণ *' : 'Your Honest Review *'}
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={newReviewComment}
+                    onChange={(e) => setNewReviewComment(e.target.value)}
+                    placeholder={language === 'bn' ? 'শাড়ির কাপড়, জরির দীপ্তি, কোমলতা এবং প্যাকিং ও ডেলিভারি অভিজ্ঞতা জানান...' : 'Tell us about the texture, softness, color authenticity, and packaging...'}
+                    className="w-full text-xs p-3 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-800 leading-relaxed"
+                  />
+                </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowReviewForm(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
-                >
-                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors"
-                >
-                  {language === 'bn' ? 'রিভিউ সাবমিট করুন' : 'Submit Review'}
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewForm(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                  >
+                    {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors"
+                  >
+                    {language === 'bn' ? 'যাচাইকৃত রিভিউ সাবমিট করুন' : 'Submit Verified Review'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 

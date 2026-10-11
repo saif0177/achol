@@ -157,8 +157,14 @@ export const PhotoReviewsGallery: React.FC<PhotoReviewsGalleryProps> = ({
         {/* View More Reviews Button (Requirement 7: redirects to separate all reviews page) */}
         <div className="flex justify-center pt-2">
           <button
-            onClick={() => onOpenAllReviews && onOpenAllReviews()}
-            className="px-6 py-3 bg-stone-900 hover:bg-amber-900 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 group"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onOpenAllReviews) {
+                onOpenAllReviews();
+              }
+            }}
+            className="px-7 py-3.5 bg-stone-900 hover:bg-amber-900 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md hover:shadow-xl transition-all flex items-center gap-2.5 cursor-pointer transform hover:-translate-y-0.5 group active:scale-95"
           >
             <MessageSquareQuote className="w-4 h-4 text-amber-300" />
             <span>

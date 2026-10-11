@@ -21,7 +21,10 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
-  Check
+  Check,
+  LogOut,
+  LogIn,
+  KeyRound
 } from 'lucide-react';
 import { CustomerAccount, Address, Order, Product, Language } from '../../types';
 import { translations } from '../../i18n/translations';
@@ -56,32 +59,83 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 }) => {
   const t = translations[language];
 
-  // Default active user session
-  const [phone, setPhone] = useState('01712345678');
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const [account, setAccount] = useState<CustomerAccount>(
-    store.getCustomerAccount('01712345678') || {
-      phone: '01712345678',
-      name: 'Tasnim Rahman',
-      isVerified: true,
-      loyaltyPoints: 350,
-      savedAddresses: [
-        {
-          id: 'addr-1',
-          recipientName: 'Tasnim Rahman',
-          phone: '01712345678',
-          division: 'Dhaka',
-          district: 'Dhaka',
-          area: 'Dhanmondi Road 27',
-          fullAddress: 'House 14/A, Road 27 (Old), Dhanmondi, Dhaka',
-          isInsideDhaka: true,
-          isDefault: true
-        }
-      ],
-      wishlistProductIds: ['p-jm108', 'p-dm204'],
-      orderIds: ['ANC-84920']
+  // Active Customer session from store
+  const [activeCustomer, setActiveCustomer] = useState<CustomerAccount | null>(() => store.getActiveCustomer());
+  const [loginPhoneInput, setLoginPhoneInput] = useState('01712345678');
+  const [loginNameInput, setLoginNameInput] = useState('Tasnim Rahman');
+  const [loginError, setLoginError] = useState('');
+
+  const demoFallback: CustomerAccount = {
+    phone: '01712345678',
+    name: 'Tasnim Rahman',
+    isVerified: true,
+    loyaltyPoints: 350,
+    savedAddresses: [
+      {
+        id: 'addr-1',
+        recipientName: 'Tasnim Rahman',
+        phone: '01712345678',
+        division: 'Dhaka',
+        district: 'Dhaka',
+        area: 'Dhanmondi Road 27',
+        fullAddress: 'House 14/A, Road 27 (Old), Dhanmondi, Dhaka',
+        isInsideDhaka: true,
+        isDefault: true
+      }
+    ],
+    wishlistProductIds: ['p-jm108', 'p-dm204'],
+    orderIds: ['ANC-84920']
+  };
+
+  const account: CustomerAccount = activeCustomer || demoFallback;
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveCustomer(store.getActiveCustomer());
     }
-  );
+  }, [isOpen]);
+
+  const handleCustomerLogin = (e?: React.FormEvent, customPhone?: string, customName?: string) => {
+    if (e) e.preventDefault();
+    const phoneToUse = (customPhone || loginPhoneInput).trim();
+    if (phoneToUse.length < 11) {
+      setLoginError(language === 'bn' ? 'সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন' : 'Please enter valid 11-digit mobile number');
+      return;
+    }
+    setLoginError('');
+    let cust = store.getCustomerAccount(phoneToUse);
+    if (!cust) {
+      cust = {
+        phone: phoneToUse,
+        name: (customName || loginNameInput).trim() || (phoneToUse === '01712345678' ? 'Tasnim Rahman' : 'Valued Patron'),
+        isVerified: true,
+        loyaltyPoints: 350,
+        savedAddresses: [
+          {
+            id: `addr-${Date.now()}`,
+            recipientName: (customName || loginNameInput).trim() || 'Valued Patron',
+            phone: phoneToUse,
+            division: 'Dhaka',
+            district: 'Dhaka',
+            area: 'Metropolitan',
+            fullAddress: 'Dhanmondi, Dhaka',
+            isInsideDhaka: true,
+            isDefault: true
+          }
+        ],
+        wishlistProductIds: ['p-jm108'],
+        orderIds: ['ANC-84920']
+      };
+      store.saveCustomerAccount(cust);
+    }
+    store.setActiveCustomer(cust);
+    setActiveCustomer(cust);
+  };
+
+  const handleCustomerLogout = () => {
+    store.setActiveCustomer(null);
+    setActiveCustomer(null);
+  };
 
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'addresses' | 'wishlist' | 'about' | 'admin'>(initialTab);
   const [orderFilter, setOrderFilter] = useState<'all' | 'active' | 'delivered'>('all');
@@ -237,7 +291,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
     };
 
     store.saveCustomerAccount(updatedAccount);
-    setAccount(updatedAccount);
+    setActiveCustomer(updatedAccount);
     setShowAddAddress(false);
     setNewRecipient('');
     setNewPhone('');
@@ -250,7 +304,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
       savedAddresses: account.savedAddresses.filter((a) => a.id !== id)
     };
     store.saveCustomerAccount(updated);
-    setAccount(updated);
+    setActiveCustomer(updated);
   };
 
   return (
@@ -373,6 +427,88 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
         {/* Tab Content */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
+
+          {/* USER SIGN IN / REGISTER FORM WHEN NOT LOGGED IN */}
+          {!activeCustomer && activeTab !== 'admin' && activeTab !== 'about' && (
+            <div className="bg-white dark:bg-stone-850 p-6 sm:p-8 rounded-3xl border border-stone-200 dark:border-stone-700 shadow-md max-w-md mx-auto space-y-5 animate-in fade-in duration-200">
+              <div className="text-center space-y-1.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-400 flex items-center justify-center mx-auto shadow-xs border border-amber-200 dark:border-amber-800">
+                  <User className="w-6 h-6" />
+                </div>
+                <h3 className="font-serif text-xl font-bold text-stone-900 dark:text-white">
+                  {language === 'bn' ? 'গ্রাহক অ্যাকাউন্টে লগইন / সাইন আপ' : 'Customer Sign In / Register'}
+                </h3>
+                <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+                  {language === 'bn'
+                    ? 'শাড়িতে খাঁটি রিভিউ প্রদান, লয়্যালটি পয়েন্ট অর্জন এবং অর্ডার ট্র্যাক করার জন্য আপনার অ্যাকাউন্ট লগইন করুন।'
+                    : 'Sign in to submit verified saree reviews, redeem loyalty perks, and track orders.'}
+                </p>
+              </div>
+
+              {loginError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
+                  {loginError}
+                </div>
+              )}
+
+              <form onSubmit={(e) => handleCustomerLogin(e)} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    {language === 'bn' ? 'মোবাইল নম্বর (১১ ডিজিট) *' : 'Mobile Phone Number *'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-mono text-xs">
+                      +880
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      value={loginPhoneInput}
+                      onChange={(e) => setLoginPhoneInput(e.target.value)}
+                      placeholder="01712345678"
+                      className="w-full pl-14 pr-3 py-2.5 border border-stone-300 dark:border-stone-700 rounded-xl font-mono text-xs text-stone-900 dark:text-white bg-white dark:bg-stone-900 focus:outline-none focus:border-amber-700"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    {language === 'bn' ? 'আপনার নাম' : 'Full Name'}
+                  </label>
+                  <input
+                    type="text"
+                    value={loginNameInput}
+                    onChange={(e) => setLoginNameInput(e.target.value)}
+                    placeholder="e.g. Tasnim Rahman"
+                    className="w-full p-2.5 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white bg-white dark:bg-stone-900 focus:outline-none focus:border-amber-700"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-amber-900 hover:bg-amber-800 text-white font-bold rounded-xl shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>{language === 'bn' ? 'লগইন বা অ্যাকাউন্ট শুরু করুন' : 'Sign In / Continue'}</span>
+                </button>
+              </form>
+
+              {/* Quick 1-Click Demo Login */}
+              <div className="pt-2 border-t border-stone-100 dark:border-stone-700 space-y-2">
+                <span className="text-[11px] text-stone-400 block text-center">
+                  {language === 'bn' ? 'বা তাৎক্ষণিক ডেমো অ্যাকাউন্টে প্রবেশ করুন:' : 'Or quick sign in as demo customer:'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCustomerLogin(undefined, '01712345678', 'Tasnim Rahman')}
+                  className="w-full py-2.5 px-3 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-800 dark:text-stone-100 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Tasnim Rahman (01712345678)</span>
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* TAB: ADMIN LOGIN PORTAL (Requirement 2: separate Gmail & password) */}
           {activeTab === 'admin' && (
@@ -941,6 +1077,20 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                   </span>
                 </button>
               </div>
+
+              {/* Log Out Option if logged in */}
+              {activeCustomer && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCustomerLogout}
+                    className="w-full py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors cursor-pointer text-xs"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'অ্যাকাউন্ট থেকে লগআউট করুন' : 'Log Out from Account'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

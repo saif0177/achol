@@ -18,9 +18,11 @@ import {
   Check,
   RefreshCw,
   Award,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  UserCheck
 } from 'lucide-react';
-import { Product, ProductVariant, Language, Review } from '../../types';
+import { Product, ProductVariant, Language, Review, CustomerAccount } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
 
@@ -35,6 +37,7 @@ interface ProductDetailPageProps {
   onOpenAllReviews?: (product: Product) => void;
   onExploreCategory?: (categoryId: string) => void;
   onNavigateToCategoryBlog?: (categoryId: string) => void;
+  onOpenAccount?: () => void;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
@@ -47,35 +50,58 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onSelectProduct,
   onOpenAllReviews,
   onExploreCategory,
-  onNavigateToCategoryBlog
+  onNavigateToCategoryBlog,
+  onOpenAccount
 }) => {
   const t = translations[language];
 
-  // Active Variant State
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(
-    initialVariant || product.variants[0] || {
-      id: 'default',
-      colorNameEn: 'Original',
-      colorNameBn: 'আসল রঙ',
-      colorHex: '#991B1B',
-      colorFamily: 'red',
-      image: product.primaryImage,
-      stock: product.stock,
-      sku: product.code
+  // Resolve matching variant for THIS specific product
+  const resolveInitialVariant = (): ProductVariant => {
+    if (initialVariant && product.variants?.some((v) => v.id === initialVariant.id)) {
+      return initialVariant;
     }
-  );
+    return (
+      product.variants?.[0] || {
+        id: 'default',
+        colorNameEn: 'Original',
+        colorNameBn: 'আসল রঙ',
+        colorHex: '#991B1B',
+        colorFamily: 'red',
+        image: product.primaryImage,
+        stock: product.stock,
+        sku: product.code
+      }
+    );
+  };
 
-  // Active Image Preview
+  const initialResolvedVariant = resolveInitialVariant();
+
+  // Active Variant State
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(initialResolvedVariant);
+
+  // Active Image Preview - ALWAYS starts with the current product's image
   const [activeImage, setActiveImage] = useState<string>(
-    initialVariant?.image || product.primaryImage
+    initialResolvedVariant.image || product.primaryImage
   );
 
-  // Sync active image when variant changes
+  // Sync active image when selectedVariant changes
   useEffect(() => {
     if (selectedVariant?.image) {
       setActiveImage(selectedVariant.image);
+    } else {
+      setActiveImage(product.primaryImage);
     }
-  }, [selectedVariant]);
+  }, [selectedVariant, product.primaryImage]);
+
+  // Reset variant, active image, and state whenever product.id or initialVariant changes
+  useEffect(() => {
+    const nextVariant = resolveInitialVariant();
+    setSelectedVariant(nextVariant);
+    setActiveImage(nextVariant.image || product.primaryImage);
+    setQuantity(1);
+    setShowReviewForm(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [product.id, initialVariant]);
 
   const [quantity, setQuantity] = useState(1);
   const [isAddedToast, setIsAddedToast] = useState(false);
@@ -90,9 +116,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [newReviewComment, setNewReviewComment] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
 
+  // Reactive customer auth state
+  const [activeCustomer, setActiveCustomer] = useState<CustomerAccount | null>(() => store.getActiveCustomer());
+
+  useEffect(() => {
+    const handleCustomerChange = () => {
+      setActiveCustomer(store.getActiveCustomer());
+    };
+    window.addEventListener('aanchol_customer_updated', handleCustomerChange);
+    return () => window.removeEventListener('aanchol_customer_updated', handleCustomerChange);
+  }, []);
+
   useEffect(() => {
     setReviews(store.getReviewsForProduct(product.id));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [product.id]);
 
   const isOutOfStock = selectedVariant.stock <= 0;
@@ -137,16 +173,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     }
   };
 
-  // New review submission
+  // New review submission - requires active customer account
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReviewAuthor.trim() || !newReviewComment.trim()) return;
+    if (!activeCustomer) {
+      if (onOpenAccount) onOpenAccount();
+      return;
+    }
+    if (!newReviewComment.trim()) return;
 
     const newRev: Review = {
       id: `rev-${Date.now()}`,
       productId: product.id,
-      customerName: newReviewAuthor.trim(),
-      customerPhoneMasked: '0171***99',
+      customerName: activeCustomer.name,
+      customerPhoneMasked: activeCustomer.phone.replace(/(\d{4})\d{4}(\d{3})/, '$1****$2'),
       rating: newReviewRating,
       comment: newReviewComment.trim(),
       date: new Date().toISOString().split('T')[0],
@@ -684,71 +724,90 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </button>
               </div>
 
-              {/* Review Write Form */}
+              {/* Review Write Form - Requires Verified Customer Account */}
               {showReviewForm && (
-                <form
-                  onSubmit={handleSubmitReview}
-                  className="bg-stone-50 p-4 rounded-xl space-y-3 border border-stone-200/80"
-                >
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-700 block">
-                      {language === 'bn' ? 'আপনার নাম:' : 'Your Name:'}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newReviewAuthor}
-                      onChange={(e) => setNewReviewAuthor(e.target.value)}
-                      placeholder="e.g. Samira Rahman"
-                      className="w-full text-xs bg-white border border-stone-200 rounded-lg p-2 text-stone-900"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-700 block">
-                      {language === 'bn' ? 'রেটিং:' : 'Rating:'}
-                    </label>
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          type="button"
-                          key={star}
-                          onClick={() => setNewReviewRating(star)}
-                          className="p-1 cursor-pointer"
-                        >
-                          <Star
-                            className={`w-4 h-4 ${
-                              star <= newReviewRating
-                                ? 'fill-amber-400 text-amber-500'
-                                : 'text-stone-300'
-                            }`}
-                          />
-                        </button>
-                      ))}
+                !activeCustomer ? (
+                  <div className="bg-amber-50 dark:bg-amber-950/40 p-4 sm:p-5 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3 text-center animate-in fade-in duration-200">
+                    <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300 flex items-center justify-center mx-auto">
+                      <Lock className="w-4 h-4" />
                     </div>
+                    <div>
+                      <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
+                        {language === 'bn' ? 'রিভিউ লিখতে কাস্টমার অ্যাকাউন্ট আবশ্যক' : 'Customer Account Required to Review'}
+                      </h4>
+                      <p className="text-xs text-stone-600 dark:text-stone-300 max-w-sm mx-auto mt-1 leading-relaxed">
+                        {language === 'bn'
+                          ? 'যাচাইকৃত ক্রেতার সঠিক রিভিউ নিশ্চিত করতে কাস্টমার অ্যাকাউন্টে লগইন থাকা প্রয়োজন। অনুগ্রহ করে লগইন বা অ্যাকাউন্ট তৈরি করুন।'
+                          : 'To ensure genuine verified customer feedback, you must have an active Aanchol account to review sarees.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onOpenAccount && onOpenAccount()}
+                      className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    >
+                      {language === 'bn' ? 'লগইন বা অ্যাকাউন্ট তৈরি করুন' : 'Sign In / Create Account to Review'}
+                    </button>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-700 block">
-                      {language === 'bn' ? 'মতামত:' : 'Comment:'}
-                    </label>
-                    <textarea
-                      required
-                      rows={3}
-                      value={newReviewComment}
-                      onChange={(e) => setNewReviewComment(e.target.value)}
-                      placeholder="Share your experience wearing this saree..."
-                      className="w-full text-xs bg-white border border-stone-200 rounded-lg p-2 text-stone-900"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-amber-900 text-white rounded-lg text-xs font-bold hover:bg-amber-800 cursor-pointer"
+                ) : (
+                  <form
+                    onSubmit={handleSubmitReview}
+                    className="bg-stone-50 dark:bg-stone-800/60 p-4 rounded-xl space-y-3 border border-stone-200/80 dark:border-stone-700/80 animate-in fade-in duration-200"
                   >
-                    {language === 'bn' ? 'রিভিউ সাবমিট করুন' : 'Submit Review'}
-                  </button>
-                </form>
+                    <div className="flex items-center gap-2 p-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-lg border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
+                      <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>
+                        {language === 'bn' ? 'লগইনকৃত অ্যাকাউন্ট:' : 'Verified Account:'}{' '}
+                        <strong>{activeCustomer.name}</strong> ({activeCustomer.phone})
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block">
+                        {language === 'bn' ? 'রেটিং:' : 'Rating:'}
+                      </label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            type="button"
+                            key={star}
+                            onClick={() => setNewReviewRating(star)}
+                            className="p-1 cursor-pointer"
+                          >
+                            <Star
+                              className={`w-4 h-4 ${
+                                star <= newReviewRating
+                                  ? 'fill-amber-400 text-amber-500'
+                                  : 'text-stone-300 dark:text-stone-600'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block">
+                        {language === 'bn' ? 'আপনার মূল্যবান মতামত:' : 'Your Comment:'}
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={newReviewComment}
+                        onChange={(e) => setNewReviewComment(e.target.value)}
+                        placeholder={language === 'bn' ? 'শাড়িটির কাপড়, রঙ, বুনন ও পরার অভিজ্ঞতা জানান...' : 'Share your experience wearing this saree...'}
+                        className="w-full text-xs bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-2 text-stone-900 dark:text-white"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors"
+                    >
+                      {language === 'bn' ? 'যাচাইকৃত রিভিউ সাবমিট করুন' : 'Submit Verified Review'}
+                    </button>
+                  </form>
+                )
               )}
 
               {/* Reviews List (Requirement 7: show just 1 review preview on details page, more redirects to specific saree reviews) */}
@@ -864,7 +923,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 {relatedSarees.map((saree) => (
                   <div
                     key={saree.id}
-                    onClick={() => onSelectProduct(saree)}
+                    onClick={() => {
+                      onSelectProduct(saree, saree.variants?.[0]);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className="w-48 sm:w-56 shrink-0 snap-start bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group"
                   >
                     <div className="aspect-[3/4] w-full overflow-hidden bg-stone-100 dark:bg-stone-800">

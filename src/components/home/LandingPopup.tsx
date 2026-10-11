@@ -21,6 +21,13 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
   });
 
   useEffect(() => {
+    // Check if dismissed in this browsing session
+    try {
+      if (sessionStorage.getItem('aanchol_popup_dismissed_session') === 'true') {
+        return;
+      }
+    } catch {}
+
     // Pick randomly from all active landing popups (Requirement 3: random rotation on landing)
     const randomConfig = store.getRandomActiveLandingPopup();
     if (!randomConfig || !randomConfig.isActive) return;
@@ -30,9 +37,9 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
       return;
     }
 
-    // Check cooldown: Reasonable cooldown (approx 5 minutes) to avoid interrupting browsing (Requirement 4B)
+    // Check cooldown: Reasonable cooldown (default 30 minutes) to avoid interrupting browsing
     const lastShown = Number(localStorage.getItem('aanchol_last_popup_shown') || '0');
-    const cooldownMinutes = randomConfig.cooldownMinutes || 5;
+    const cooldownMinutes = randomConfig.cooldownMinutes ?? 30;
     const cooldownMs = cooldownMinutes * 60 * 1000;
     if (Date.now() - lastShown < cooldownMs) {
       return;
@@ -52,16 +59,29 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
       setTimeLeft(calculateTimeLeft());
     }
 
+    // Mark as shown immediately so quick re-renders cannot schedule duplicate popups
+    try {
+      localStorage.setItem('aanchol_last_popup_shown', String(Date.now()));
+    } catch {}
+
     // Gentle appearance delay after landing
     const timer = setTimeout(() => {
       setIsOpen(true);
-      try {
-        localStorage.setItem('aanchol_last_popup_shown', String(Date.now()));
-      } catch {}
     }, 1200);
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Keyboard escape listener to dismiss
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Countdown timer tick
   useEffect(() => {
@@ -81,6 +101,10 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
 
   const handleClose = () => {
     setIsOpen(false);
+    try {
+      sessionStorage.setItem('aanchol_popup_dismissed_session', 'true');
+      localStorage.setItem('aanchol_last_popup_shown', String(Date.now()));
+    } catch {}
   };
 
   const handleCopyCode = () => {
