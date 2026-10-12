@@ -132,7 +132,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     if (!couponInput.trim()) return;
 
-    const res = store.validateCoupon(couponInput, subtotal, items);
+    const res = store.validateCoupon(couponInput, subtotal, items, customerPhone);
     if (res.valid) {
       const upper = couponInput.trim().toUpperCase();
       setActiveCoupon(upper);

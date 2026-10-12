@@ -67,9 +67,9 @@ app.post('/api/address-assist', async (req, res) => {
         }
       : undefined;
 
-    // Use gemini-3.5-flash with googleMaps tool as specified
+    // Use gemini-3.8-flash with googleMaps tool as specified
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       contents: `Provide accurate location, delivery landmark, and postal area details for this address in Bangladesh: "${query}". Mention notable nearby courier pickup points, roads, or hubs. Provide clear, concise address formatting.`,
       config: {
         tools: [{ googleMaps: {} }],

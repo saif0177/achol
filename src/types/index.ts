@@ -79,6 +79,15 @@ export interface Product {
   specifications?: { key: string; value: string }[];
 }
 
+export type CouponApplicableType =
+  | 'all'
+  | 'specific_categories'
+  | 'specific_subcategories'
+  | 'specific_offers'
+  | 'specific_hidden_categories'
+  | 'specific_products'
+  | 'multiple_custom';
+
 export interface Coupon {
   id: string;
   code: string;
@@ -94,6 +103,21 @@ export interface Coupon {
   isActive: boolean;
   descriptionEn?: string;
   descriptionBn?: string;
+
+  // Requirement 5: Applicable To options
+  applicableTo?: CouponApplicableType;
+  applicableCategoryIds?: string[];
+  applicableSubcategoryIds?: string[];
+  applicableOfferIds?: string[];
+  applicableHiddenCategoryIds?: string[];
+  applicableProductIds?: string[];
+
+  // Requirement 2: Private VIP Code fields
+  isPrivate?: boolean;
+  targetPhone?: string;
+  isOneTime?: boolean;
+  used?: boolean;
+  note?: string;
 }
 
 export interface CategoryArticle {
@@ -179,6 +203,7 @@ export interface Promotion {
   productIds?: string[];
   categoryIds?: string[];
   promotionalCategoryId?: string;
+  excludedProductIds?: string[];
   destinationType?: 'actual_category' | 'hidden_promotional_category' | 'offer_page' | 'products' | 'shop' | 'custom' | 'flash_sale';
   destinationCategoryId?: string;
   destinationLink?: string;

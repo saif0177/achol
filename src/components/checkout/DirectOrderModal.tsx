@@ -78,7 +78,12 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
     setCouponSuccess('');
     if (!couponInput.trim()) return;
 
-    const res = store.validateCoupon(couponInput, subtotal, [{ productId: product.id }]);
+    const res = store.validateCoupon(
+      couponInput,
+      subtotal,
+      [{ productId: product.id, price: product.price, quantity }],
+      customerPhone
+    );
     if (res.valid) {
       setAppliedCoupon(couponInput.trim().toUpperCase());
       setCouponDiscount(res.discount);

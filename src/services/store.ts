@@ -1488,6 +1488,7 @@ export const INITIAL_COUPONS: Coupon[] = [
     startDate: new Date().toISOString(),
     endDate: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
     isActive: true,
+    applicableTo: 'all',
     descriptionEn: '৳500 Welcome Discount on First Saree (Min ৳3,000)',
     descriptionBn: 'প্রথম অর্ডারে নগদ ৫০০ টাকা ছাড় (ন্যূনতম ৩,০০০ টাকার অর্ডারে)'
   },
@@ -1503,6 +1504,7 @@ export const INITIAL_COUPONS: Coupon[] = [
     startDate: new Date().toISOString(),
     endDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
     isActive: true,
+    applicableTo: 'all',
     descriptionEn: 'Flat 15% OFF on Festive Weaves (Max ৳3,000 Discount)',
     descriptionBn: 'উৎসবে ১৫% ছাড় (সর্বোচ্চ ৩,০০০ টাকা পর্যন্ত ছাড়)'
   },
@@ -1518,6 +1520,7 @@ export const INITIAL_COUPONS: Coupon[] = [
     startDate: new Date().toISOString(),
     endDate: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString(),
     isActive: true,
+    applicableTo: 'all',
     descriptionEn: 'Nationwide Free Delivery on orders over ৳2,000',
     descriptionBn: '২,০০০ টাকার অধিক অর্ডারে সম্পূর্ণ ফ্রি ডেলিভারি'
   },
@@ -1533,8 +1536,48 @@ export const INITIAL_COUPONS: Coupon[] = [
     startDate: new Date().toISOString(),
     endDate: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
     isActive: true,
+    applicableTo: 'all',
     descriptionEn: 'Special 20% Eid Celebration Offer (Min ৳10,000, Limited to 200 people)',
     descriptionBn: 'ঈদ স্পেশাল ২০% মূল্যছাড় (ন্যূনতম ১০,০০০ টাকার অর্ডারে, ২০০ জনের জন্য)'
+  },
+  {
+    id: 'cp-vip75',
+    code: 'VIP75',
+    discountType: 'fixed',
+    discountValue: 7000,
+    minOrderAmount: 30000,
+    isActive: true,
+    isPrivate: true,
+    applicableTo: 'specific_products',
+    applicableProductIds: ['p-dm204'],
+    descriptionEn: 'VIP Private Code: ৳7,000 Negotiated Discount on Dhakai Muslin DM-204',
+    descriptionBn: 'ভিআইপি প্রাইভেট কোড: ঢাকাই মসলিন DM-204 শাড়িতে ৭,০০০ টাকা স্পেশাল ছাড়',
+    note: 'Negotiated private code for VIP client for Dhakai Muslin DM-204 (special price ৳35,000).'
+  },
+  {
+    id: 'cp-jm108special',
+    code: 'JM108SPECIAL',
+    discountType: 'fixed',
+    discountValue: 2000,
+    isActive: true,
+    isPrivate: true,
+    applicableTo: 'specific_products',
+    applicableProductIds: ['p-jm108'],
+    descriptionEn: 'VIP Special Code: ৳2,000 Negotiated Discount on Royal Crimson Jamdani JM-108',
+    descriptionBn: 'ভিআইপি স্পেশাল কোড: রক্তিম জামদানি JM-108 শাড়িতে ২,০০০ টাকা ছাড়',
+    note: 'Special negotiated rate for Royal Crimson Jamdani (normally ৳14,500, negotiated ৳12,500).'
+  },
+  {
+    id: 'cp-aanchol500',
+    code: 'AANCHOL500',
+    discountType: 'fixed',
+    discountValue: 500,
+    isActive: true,
+    isPrivate: true,
+    applicableTo: 'all',
+    descriptionEn: 'VIP Loyalty Code: Flat ৳500 Discount',
+    descriptionBn: 'ভিআইপি লয়্যালটি কোড: ফ্ল্যাট ৫০০ টাকা ছাড়',
+    note: 'Flat ৳500 loyalty discount.'
   }
 ];
 
@@ -1661,7 +1704,14 @@ class StoreService {
       this.promotions = storedPromotions ? JSON.parse(storedPromotions) : INITIAL_PROMOTIONS;
 
       const storedCoupons = localStorage.getItem('aanchol_coupons');
-      this.coupons = storedCoupons ? JSON.parse(storedCoupons) : INITIAL_COUPONS;
+      if (storedCoupons) {
+        const parsedCoupons: Coupon[] = JSON.parse(storedCoupons);
+        const existingCodes = new Set(parsedCoupons.map((c) => c.code.toUpperCase()));
+        const missing = INITIAL_COUPONS.filter((c) => !existingCodes.has(c.code.toUpperCase()));
+        this.coupons = [...parsedCoupons, ...missing];
+      } else {
+        this.coupons = INITIAL_COUPONS;
+      }
 
       const storedAnnouncements = localStorage.getItem('aanchol_top_announcements');
       this.topAnnouncementConfig = storedAnnouncements ? JSON.parse(storedAnnouncements) : INITIAL_TOP_ANNOUNCEMENTS;
@@ -1695,12 +1745,33 @@ class StoreService {
     }
   }
 
+  public notifyListeners(entityType = 'all'): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('aanchol_store_updated', {
+          detail: { entityType, timestamp: Date.now() }
+        })
+      );
+    }
+  }
+
+  public subscribe(callback: (entityType: string) => void): () => void {
+    if (typeof window === 'undefined') return () => {};
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      callback(customEvent.detail?.entityType || 'all');
+    };
+    window.addEventListener('aanchol_store_updated', handler);
+    return () => window.removeEventListener('aanchol_store_updated', handler);
+  }
+
   private persist(key: string, data: unknown) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
       console.error('Storage error:', e);
     }
+    this.notifyListeners(key);
   }
 
   // PRODUCTS
@@ -1709,7 +1780,7 @@ class StoreService {
   }
 
   public getAllProductsAdmin(): Product[] {
-    return this.products;
+    return this.products.map((p) => ({ ...p, variants: p.variants.map((v) => ({ ...v })) }));
   }
 
   public getProductById(id: string): Product | undefined {
@@ -1740,10 +1811,35 @@ class StoreService {
 
     const idx = this.products.findIndex((p) => p.id === product.id);
     if (idx >= 0) {
-      this.products[idx] = product;
+      this.products[idx] = { ...product };
     } else {
-      this.products.unshift(product);
+      this.products.unshift({ ...product });
     }
+    this.persist('aanchol_products', this.products);
+
+    // Sync productIds in hidden promotional categories
+    let hiddenCategoriesModified = false;
+    const prodPromoCatIds = product.promotionalCategoryIds || (product.promotionalCategoryId ? [product.promotionalCategoryId] : []);
+    this.hiddenPromotionalCategories = this.hiddenPromotionalCategories.map((cat) => {
+      const isAssigned = prodPromoCatIds.includes(cat.id);
+      const currentList = cat.productIds || [];
+      const hasId = currentList.includes(product.id);
+      if (isAssigned && !hasId) {
+        hiddenCategoriesModified = true;
+        return { ...cat, productIds: [...currentList, product.id] };
+      } else if (!isAssigned && hasId) {
+        hiddenCategoriesModified = true;
+        return { ...cat, productIds: currentList.filter((pid) => pid !== product.id) };
+      }
+      return cat;
+    });
+    if (hiddenCategoriesModified) {
+      this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+    }
+  }
+
+  public toggleProductActive(id: string): void {
+    this.products = this.products.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p));
     this.persist('aanchol_products', this.products);
   }
 
@@ -1778,7 +1874,18 @@ class StoreService {
 
   public deleteProduct(id: string): void {
     this.products = this.products.filter((p) => p.id !== id);
+    this.hiddenPromotionalCategories = this.hiddenPromotionalCategories.map((c) => ({
+      ...c,
+      productIds: c.productIds ? c.productIds.filter((pid) => pid !== id) : []
+    }));
+    this.promotions = this.promotions.map((pr) => ({
+      ...pr,
+      productIds: pr.productIds ? pr.productIds.filter((pid) => pid !== id) : undefined,
+      excludedProductIds: pr.excludedProductIds ? pr.excludedProductIds.filter((pid) => pid !== id) : undefined
+    }));
     this.persist('aanchol_products', this.products);
+    this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+    this.persist('aanchol_promotions', this.promotions);
   }
 
   // CATEGORIES
@@ -1787,7 +1894,15 @@ class StoreService {
   }
 
   public getAllCategoriesAdmin(): Category[] {
-    return this.categories;
+    return this.categories.map((c) => ({
+      ...c,
+      subcategories: c.subcategories ? c.subcategories.map((s) => ({ ...s })) : []
+    }));
+  }
+
+  public toggleCategoryActive(id: string): void {
+    this.categories = this.categories.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c));
+    this.persist('aanchol_categories', this.categories);
   }
 
   public saveCategory(category: Category): void {
@@ -2333,6 +2448,9 @@ class StoreService {
       const cp = this.coupons.find((c) => c.code.toUpperCase() === codeUpper);
       if (cp) {
         cp.usageCount = (cp.usageCount || 0) + 1;
+        if (cp.isOneTime) {
+          cp.used = true;
+        }
         this.persist('aanchol_coupons', this.coupons);
       }
       const pr = this.promotions.find((p) => p.code?.toUpperCase() === codeUpper);
@@ -2600,7 +2718,7 @@ class StoreService {
   }
 
   public getAllPromotionsAdmin(): Promotion[] {
-    return this.promotions;
+    return this.promotions.map((p) => ({ ...p }));
   }
 
   public getPromotionById(id: string): Promotion | undefined {
@@ -2634,7 +2752,7 @@ class StoreService {
   // HIDDEN PROMOTIONAL CATEGORIES (Requirement 11)
   // ==========================================
   public getHiddenPromotionalCategories(): HiddenPromotionalCategory[] {
-    return this.hiddenPromotionalCategories;
+    return this.hiddenPromotionalCategories.map((c) => ({ ...c }));
   }
 
   public getActiveHiddenPromotionalCategories(): HiddenPromotionalCategory[] {
@@ -2678,51 +2796,105 @@ class StoreService {
     }
   }
 
-  // Find all products associated with a promotion or hidden category
-  public getProductsForPromotion(promotion: Promotion): Product[] {
-    const all = this.getProducts();
+  // Add / remove sarees from hidden promotional category (Requirement 6)
+  public addProductToHiddenCategory(promoCatId: string, productId: string): void {
+    const prod = this.products.find((p) => p.id === productId);
+    if (prod) {
+      if (!prod.promotionalCategoryIds) {
+        prod.promotionalCategoryIds = [];
+      }
+      if (!prod.promotionalCategoryIds.includes(promoCatId)) {
+        prod.promotionalCategoryIds.push(promoCatId);
+      }
+      prod.promotionalCategoryId = promoCatId;
+      this.persist('aanchol_products', this.products);
+    }
+    const cat = this.hiddenPromotionalCategories.find((c) => c.id === promoCatId);
+    if (cat) {
+      if (!cat.productIds) {
+        cat.productIds = [];
+      }
+      if (!cat.productIds.includes(productId)) {
+        cat.productIds.push(productId);
+      }
+      this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+    }
+  }
+
+  public removeProductFromHiddenCategory(promoCatId: string, productId: string): void {
+    const prod = this.products.find((p) => p.id === productId);
+    if (prod) {
+      if (prod.promotionalCategoryIds) {
+        prod.promotionalCategoryIds = prod.promotionalCategoryIds.filter((cid) => cid !== promoCatId);
+      }
+      if (prod.promotionalCategoryId === promoCatId) {
+        prod.promotionalCategoryId = prod.promotionalCategoryIds?.[0] || undefined;
+      }
+      this.persist('aanchol_products', this.products);
+    }
+    const cat = this.hiddenPromotionalCategories.find((c) => c.id === promoCatId);
+    if (cat && cat.productIds) {
+      cat.productIds = cat.productIds.filter((id) => id !== productId);
+      this.persist('aanchol_hidden_promotional_categories', this.hiddenPromotionalCategories);
+    }
+  }
+
+  // Exclude or include an individual saree in a specific promotion (Requirement 6)
+  public toggleProductExclusionInPromotion(promoId: string, productId: string): void {
+    const promo = this.promotions.find((p) => p.id === promoId);
+    if (promo) {
+      if (!promo.excludedProductIds) {
+        promo.excludedProductIds = [];
+      }
+      if (promo.excludedProductIds.includes(productId)) {
+        promo.excludedProductIds = promo.excludedProductIds.filter((id) => id !== productId);
+      } else {
+        promo.excludedProductIds.push(productId);
+      }
+      this.persist('aanchol_promotions', this.promotions);
+    }
+  }
+
+  // Find all products associated with a promotion or hidden category (Requirement 6)
+  public getProductsForPromotion(promotion: Promotion, includeInactive = false): Product[] {
+    const all = includeInactive ? this.getAllProductsAdmin() : this.getProducts();
+    let candidates: Product[] = [];
 
     // 1. Explicit productIds
     if (promotion.productIds && promotion.productIds.length > 0) {
-      const explicit = all.filter((p) => promotion.productIds?.includes(p.id));
-      if (explicit.length > 0) return explicit;
-    }
-
-    // 2. Hidden promotional category link
-    if (promotion.promotionalCategoryId) {
+      candidates = all.filter((p) => promotion.productIds?.includes(p.id));
+    } else if (promotion.promotionalCategoryId) {
+      // 2. Hidden promotional category link
       const promoCat = this.hiddenPromotionalCategories.find((c) => c.id === promotion.promotionalCategoryId);
-      const catProducts = all.filter(
+      candidates = all.filter(
         (p) =>
           p.promotionalCategoryIds?.includes(promotion.promotionalCategoryId!) ||
           p.promotionalCategoryId === promotion.promotionalCategoryId ||
           (promoCat?.productIds && promoCat.productIds.includes(p.id))
       );
-      if (catProducts.length > 0) return catProducts;
+    } else if (promotion.destinationCategoryId) {
+      // 3. Normal category link
+      candidates = all.filter((p) => p.categoryId === promotion.destinationCategoryId);
+    } else if (promotion.categoryIds && promotion.categoryIds.length > 0) {
+      candidates = all.filter((p) => promotion.categoryIds?.includes(p.categoryId));
+    } else if (promotion.type === 'flash_sale') {
+      candidates = all.filter((p) => p.flashSaleId || p.isSale);
+    } else {
+      candidates = all.filter((p) => p.isSale).slice(0, 8);
     }
 
-    // 3. Normal category link
-    if (promotion.destinationCategoryId) {
-      const byCat = all.filter((p) => p.categoryId === promotion.destinationCategoryId);
-      if (byCat.length > 0) return byCat;
+    // Filter out excluded sarees (Requirement 6)
+    if (promotion.excludedProductIds && promotion.excludedProductIds.length > 0) {
+      return candidates.filter((p) => !promotion.excludedProductIds?.includes(p.id));
     }
 
-    if (promotion.categoryIds && promotion.categoryIds.length > 0) {
-      const byCats = all.filter((p) => promotion.categoryIds?.includes(p.categoryId));
-      if (byCats.length > 0) return byCats;
-    }
-
-    // Fallback: if flash sale, find flash sale products or sale products
-    if (promotion.type === 'flash_sale') {
-      const flashProds = all.filter((p) => p.flashSaleId || p.isSale);
-      if (flashProds.length > 0) return flashProds;
-    }
-
-    return all.filter((p) => p.isSale).slice(0, 8);
+    return candidates;
   }
 
-  public getProductsByPromotionalCategory(promoCatId: string): Product[] {
+  public getProductsByPromotionalCategory(promoCatId: string, includeInactive = false): Product[] {
+    const all = includeInactive ? this.getAllProductsAdmin() : this.getProducts();
     const promoCat = this.hiddenPromotionalCategories.find((c) => c.id === promoCatId);
-    return this.getProducts().filter(
+    return all.filter(
       (p) =>
         p.promotionalCategoryIds?.includes(promoCatId) ||
         p.promotionalCategoryId === promoCatId ||
@@ -2730,38 +2902,229 @@ class StoreService {
     );
   }
 
-  // ==========================================
-  // COUPONS ENGINE (Requirement 3 & 4)
-  // ==========================================
-  public getCoupons(): Coupon[] {
+  // Calculate pricing rules with non-stacking protection (Requirement 7)
+  public calculateEffectiveProductPricing(product: Product): {
+    originalPrice: number;
+    finalPrice: number;
+    discountPercent: number;
+    discountAmount: number;
+    isSale: boolean;
+    activePromotion?: Promotion;
+    isFreeDelivery: boolean;
+    appliedRule: 'direct_sale_price' | 'product_discount' | 'promotional_offer' | 'regular_price';
+  } {
+    const originalPrice = product.originalPrice && product.originalPrice > product.price
+      ? product.originalPrice
+      : (product.pricingMethod === 'discount' && product.discountPercent && product.discountPercent > 0
+          ? Math.round(product.price / (1 - product.discountPercent / 100))
+          : product.price);
+
+    let baseFinalPrice = product.price;
+    let baseDiscountPercent = product.discountPercent || 0;
+    let baseRule: 'direct_sale_price' | 'product_discount' | 'regular_price' = 'regular_price';
+
+    if (product.pricingMethod === 'sale_price') {
+      baseFinalPrice = product.price;
+      baseDiscountPercent = originalPrice > product.price
+        ? Math.round(((originalPrice - product.price) / originalPrice) * 100)
+        : 0;
+      baseRule = 'direct_sale_price';
+    } else if (product.pricingMethod === 'discount' && baseDiscountPercent > 0) {
+      baseFinalPrice = Math.round(originalPrice * (1 - baseDiscountPercent / 100));
+      baseRule = 'product_discount';
+    } else if (originalPrice > product.price) {
+      baseDiscountPercent = Math.round(((originalPrice - product.price) / originalPrice) * 100);
+      baseRule = 'product_discount';
+    }
+
+    // Now check active promotions:
+    // Hidden category membership alone must not activate a discount; the associated promotion must be active and within its scheduled dates.
     const now = Date.now();
-    return this.coupons.filter((c) => {
-      if (!c.isActive) return false;
-      if (c.startDate && new Date(c.startDate).getTime() > now) return false;
-      if (c.endDate && new Date(c.endDate).getTime() < now) return false;
-      if (c.maxUsageLimit && (c.usageCount || 0) >= c.maxUsageLimit) return false;
+    const activePromos = this.promotions.filter((p) => {
+      if (!p.isActive) return false;
+      if (p.startDate && new Date(p.startDate).getTime() > now) return false;
+      if (p.endDate && new Date(p.endDate).getTime() < now) return false;
+      if (p.excludedProductIds && p.excludedProductIds.includes(product.id)) return false;
       return true;
     });
+
+    let bestPromo: Promotion | undefined;
+    let bestPromoPrice = baseFinalPrice;
+    let hasPromoFreeDelivery = false;
+
+    for (const promo of activePromos) {
+      let isEligible = false;
+
+      if (promo.productIds && promo.productIds.includes(product.id)) {
+        isEligible = true;
+      } else if (promo.promotionalCategoryId) {
+        if (
+          product.promotionalCategoryIds?.includes(promo.promotionalCategoryId) ||
+          product.promotionalCategoryId === promo.promotionalCategoryId
+        ) {
+          isEligible = true;
+        } else {
+          const promoCat = this.hiddenPromotionalCategories.find((c) => c.id === promo.promotionalCategoryId);
+          if (promoCat?.productIds && promoCat.productIds.includes(product.id)) {
+            isEligible = true;
+          }
+        }
+      }
+
+      if (!isEligible) continue;
+
+      if (promo.hasFreeDelivery || promo.type === 'free_delivery') {
+        hasPromoFreeDelivery = true;
+      }
+
+      let candidatePrice = originalPrice;
+      if (promo.type === 'percentage' && promo.discountPercent) {
+        candidatePrice = Math.round(originalPrice * (1 - promo.discountPercent / 100));
+      } else if (promo.type === 'fixed' && (promo.discountAmount || promo.fixedDiscount)) {
+        const amt = promo.discountAmount || promo.fixedDiscount || 0;
+        candidatePrice = Math.max(0, originalPrice - amt);
+      } else if (promo.type === 'flash_sale' && promo.discountPercent) {
+        candidatePrice = Math.round(originalPrice * (1 - promo.discountPercent / 100));
+      }
+
+      // Non-stacking rule: pick the best discount rather than compounding
+      if (candidatePrice < bestPromoPrice) {
+        bestPromoPrice = candidatePrice;
+        bestPromo = promo;
+      }
+    }
+
+    const finalPrice = Math.min(baseFinalPrice, bestPromoPrice);
+    const discountAmount = Math.max(0, originalPrice - finalPrice);
+    const calculatedDiscountPercent = originalPrice > 0 ? Math.round((discountAmount / originalPrice) * 100) : 0;
+    const isFreeDelivery = product.isFreeDelivery === true || hasPromoFreeDelivery;
+
+    return {
+      originalPrice,
+      finalPrice,
+      discountPercent: calculatedDiscountPercent,
+      discountAmount,
+      isSale: discountAmount > 0,
+      activePromotion: bestPromo,
+      isFreeDelivery,
+      appliedRule: bestPromo ? 'promotional_offer' : baseRule
+    };
+  }
+
+  // ==========================================
+  // COUPONS ENGINE (Requirement 3, 4 & 5)
+  // ==========================================
+  public isProductEligibleForCoupon(productId: string, coupon: Coupon): boolean {
+    if (!coupon.applicableTo || coupon.applicableTo === 'all') {
+      return true;
+    }
+
+    const product = this.products.find((p) => p.id === productId || p.code.toUpperCase() === productId.toUpperCase());
+    if (!product) return false;
+
+    // Check specific products
+    if (coupon.applicableProductIds && coupon.applicableProductIds.length > 0) {
+      if (coupon.applicableProductIds.includes(product.id) || coupon.applicableProductIds.includes(product.code)) {
+        return true;
+      }
+    }
+
+    // Check specific categories
+    if (coupon.applicableCategoryIds && coupon.applicableCategoryIds.length > 0) {
+      if (coupon.applicableCategoryIds.includes(product.categoryId)) {
+        return true;
+      }
+    }
+
+    // Check specific subcategories (Requirement 3)
+    if (coupon.applicableSubcategoryIds && coupon.applicableSubcategoryIds.length > 0) {
+      if (
+        (product.subcategoryId && coupon.applicableSubcategoryIds.includes(product.subcategoryId)) ||
+        (product.subcategoryIds && product.subcategoryIds.some((sid) => coupon.applicableSubcategoryIds?.includes(sid)))
+      ) {
+        return true;
+      }
+    }
+
+    // Check specific promotional offers
+    if (coupon.applicableOfferIds && coupon.applicableOfferIds.length > 0) {
+      const offers = this.promotions.filter((p) => coupon.applicableOfferIds?.includes(p.id));
+      for (const promo of offers) {
+        if (promo.productIds && promo.productIds.includes(product.id)) {
+          return true;
+        }
+        if (promo.promotionalCategoryId && (
+          product.promotionalCategoryIds?.includes(promo.promotionalCategoryId) ||
+          product.promotionalCategoryId === promo.promotionalCategoryId
+        )) {
+          return true;
+        }
+        if (promo.destinationCategoryId && promo.destinationCategoryId === product.categoryId) {
+          return true;
+        }
+        if (promo.categoryIds && promo.categoryIds.includes(product.categoryId)) {
+          return true;
+        }
+      }
+    }
+
+    // Check hidden promotional categories
+    if (coupon.applicableHiddenCategoryIds && coupon.applicableHiddenCategoryIds.length > 0) {
+      for (const hidCatId of coupon.applicableHiddenCategoryIds) {
+        if (
+          product.promotionalCategoryIds?.includes(hidCatId) ||
+          product.promotionalCategoryId === hidCatId
+        ) {
+          return true;
+        }
+        const hidCat = this.hiddenPromotionalCategories.find((c) => c.id === hidCatId);
+        if (hidCat?.productIds && hidCat.productIds.includes(product.id)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  public getCoupons(): Coupon[] {
+    const now = Date.now();
+    return this.coupons
+      .filter((c) => {
+        if (!c.isActive) return false;
+        if (c.isPrivate) return false; // Private VIP codes are hidden from public browse list
+        if (c.startDate && new Date(c.startDate).getTime() > now) return false;
+        if (c.endDate && new Date(c.endDate).getTime() < now) return false;
+        if (c.maxUsageLimit && (c.usageCount || 0) >= c.maxUsageLimit) return false;
+        return true;
+      })
+      .map((c) => ({ ...c }));
   }
 
   public getAllCouponsAdmin(): Coupon[] {
-    return this.coupons;
+    return this.coupons.map((c) => ({ ...c }));
   }
 
   public getCouponById(id: string): Coupon | undefined {
-    return this.coupons.find((c) => c.id === id);
+    const found = this.coupons.find((c) => c.id === id);
+    return found ? { ...found } : undefined;
   }
 
   public getCouponByCode(code: string): Coupon | undefined {
-    return this.coupons.find((c) => c.code.trim().toUpperCase() === code.trim().toUpperCase());
+    const found = this.coupons.find((c) => c.code.trim().toUpperCase() === code.trim().toUpperCase());
+    return found ? { ...found } : undefined;
   }
 
   public saveCoupon(coupon: Coupon): void {
-    const idx = this.coupons.findIndex((c) => c.id === coupon.id);
+    const cleanCoupon: Coupon = {
+      ...coupon,
+      code: coupon.code.trim().toUpperCase()
+    };
+    const idx = this.coupons.findIndex((c) => c.id === cleanCoupon.id);
     if (idx >= 0) {
-      this.coupons[idx] = coupon;
+      this.coupons = this.coupons.map((c) => (c.id === cleanCoupon.id ? { ...cleanCoupon } : c));
     } else {
-      this.coupons.unshift(coupon);
+      this.coupons = [{ ...cleanCoupon }, ...this.coupons];
     }
     this.persist('aanchol_coupons', this.coupons);
   }
@@ -2772,21 +3135,28 @@ class StoreService {
   }
 
   public toggleCouponActive(id: string): void {
-    const c = this.coupons.find((item) => item.id === id);
-    if (c) {
-      c.isActive = !c.isActive;
-      this.persist('aanchol_coupons', this.coupons);
-    }
+    this.coupons = this.coupons.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c));
+    this.persist('aanchol_coupons', this.coupons);
   }
 
   // ==========================================
-  // COUPON & FREE DELIVERY CALCULATION (Requirements 2, 3, 4, 10)
+  // COUPON & FREE DELIVERY CALCULATION (Requirements 1, 2, 3, 4, 5)
   // ==========================================
   public validateCoupon(
     rawCode: string,
     subtotal: number,
-    items?: (CartItem | { productId: string })[]
-  ): { valid: boolean; discount: number; isFreeDelivery: boolean; promo?: Promotion; coupon?: Coupon; message: string } {
+    items?: (CartItem | { productId: string; price?: number; quantity?: number })[],
+    customerPhone?: string
+  ): {
+    valid: boolean;
+    discount: number;
+    isFreeDelivery: boolean;
+    promo?: Promotion;
+    coupon?: Coupon;
+    message: string;
+    eligibleSubtotal?: number;
+    eligibleItemCount?: number;
+  } {
     const code = rawCode.trim().toUpperCase();
     if (!code) {
       return { valid: false, discount: 0, isFreeDelivery: false, message: 'Please enter a coupon code.' };
@@ -2794,11 +3164,11 @@ class StoreService {
 
     const now = Date.now();
 
-    // 1. Check dedicated Coupons table first (Requirement 3 & 4)
+    // 1. Check dedicated Coupons table (both public and VIP private codes)
     const matchedCoupon = this.coupons.find((c) => c.code.trim().toUpperCase() === code);
     if (matchedCoupon) {
       if (!matchedCoupon.isActive) {
-        return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon is currently inactive.' };
+        return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon is currently paused / inactive.' };
       }
       if (matchedCoupon.startDate && new Date(matchedCoupon.startDate).getTime() > now) {
         return { valid: false, discount: 0, isFreeDelivery: false, message: 'This coupon offer has not started yet.' };
@@ -2814,20 +3184,89 @@ class StoreService {
           message: `This coupon has reached its maximum limit (${matchedCoupon.maxUsageLimit} uses).`
         };
       }
-      if (matchedCoupon.minOrderAmount && subtotal < matchedCoupon.minOrderAmount) {
+      if (matchedCoupon.isOneTime && matchedCoupon.used) {
         return {
           valid: false,
           discount: 0,
           isFreeDelivery: false,
-          message: `Minimum order amount of ৳${matchedCoupon.minOrderAmount.toLocaleString()} required for this coupon.`
+          message: 'This one-time private coupon has already been redeemed.'
+        };
+      }
+
+      // Check phone number restriction if private code
+      if (matchedCoupon.targetPhone && matchedCoupon.targetPhone.trim()) {
+        const normTarget = matchedCoupon.targetPhone.replace(/[^0-9]/g, '');
+        const normCust = (customerPhone || '').replace(/[^0-9]/g, '');
+        if (normCust && normTarget.length >= 7) {
+          if (!normCust.endsWith(normTarget.slice(-7)) && !normTarget.endsWith(normCust.slice(-7))) {
+            return {
+              valid: false,
+              discount: 0,
+              isFreeDelivery: false,
+              message: `This VIP code is restricted to phone number ending with ...${normTarget.slice(-4)}.`
+            };
+          }
+        }
+      }
+
+      // Enforce Requirement 5: Applicable To item eligibility
+      let eligibleSubtotal = subtotal;
+      let eligibleItemsCount = items?.length || 0;
+
+      if (matchedCoupon.applicableTo && matchedCoupon.applicableTo !== 'all') {
+        if (items && items.length > 0) {
+          const eligibleItems = items.filter((it) => this.isProductEligibleForCoupon(it.productId, matchedCoupon));
+          eligibleItemsCount = eligibleItems.length;
+
+          if (eligibleItems.length === 0) {
+            let restrictionHint = '';
+            if (matchedCoupon.applicableCategoryIds?.length) {
+              const catNames = this.categories
+                .filter((c) => matchedCoupon.applicableCategoryIds?.includes(c.id))
+                .map((c) => c.nameEn)
+                .join(', ');
+              restrictionHint = `valid only for: ${catNames}`;
+            } else if (matchedCoupon.applicableOfferIds?.length) {
+              restrictionHint = 'valid only for specific promotional offers';
+            } else if (matchedCoupon.applicableHiddenCategoryIds?.length) {
+              restrictionHint = 'valid only for special campaign sarees';
+            } else if (matchedCoupon.applicableProductIds?.length) {
+              restrictionHint = 'valid only for specific designated sarees';
+            } else {
+              restrictionHint = 'not applicable to items in your cart';
+            }
+
+            return {
+              valid: false,
+              discount: 0,
+              isFreeDelivery: false,
+              message: `Coupon ${matchedCoupon.code} is ${restrictionHint}. No eligible sarees in your cart.`
+            };
+          }
+
+          eligibleSubtotal = eligibleItems.reduce((sum, it) => {
+            const price = (it as any).price || this.getProductById(it.productId)?.price || 0;
+            const qty = (it as any).quantity || 1;
+            return sum + price * qty;
+          }, 0);
+        }
+      }
+
+      // Check min order amount against eligible subtotal
+      if (matchedCoupon.minOrderAmount && eligibleSubtotal < matchedCoupon.minOrderAmount) {
+        return {
+          valid: false,
+          discount: 0,
+          isFreeDelivery: false,
+          message: `Minimum order amount of ৳${matchedCoupon.minOrderAmount.toLocaleString()} in eligible products required for this coupon.`
         };
       }
 
       let discount = 0;
       if (matchedCoupon.discountType === 'percentage') {
-        discount = Math.round((subtotal * matchedCoupon.discountValue) / 100);
+        discount = Math.round((eligibleSubtotal * matchedCoupon.discountValue) / 100);
       } else {
-        discount = matchedCoupon.discountValue;
+        discount = Math.min(matchedCoupon.discountValue, eligibleSubtotal);
       }
 
       // Check optional maximum discount cap
@@ -2842,9 +3281,14 @@ class StoreService {
         discount,
         isFreeDelivery,
         coupon: matchedCoupon,
-        message: isFreeDelivery && discount === 0
-          ? 'Free Delivery coupon applied!'
-          : `Coupon ${matchedCoupon.code} applied: ৳${discount.toLocaleString()} discount!`
+        eligibleSubtotal,
+        eligibleItemCount: eligibleItemsCount,
+        message:
+          isFreeDelivery && discount === 0
+            ? 'Free Delivery coupon applied!'
+            : matchedCoupon.isPrivate
+            ? `VIP Private Code ${matchedCoupon.code} applied: ৳${discount.toLocaleString()} discount!`
+            : `Coupon ${matchedCoupon.code} applied: ৳${discount.toLocaleString()} discount!`
       };
     }
 
