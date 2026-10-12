@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Clock, ArrowRight } from 'lucide-react';
 import { Banner, Language } from '../../types';
 import { translations } from '../../i18n/translations';
+import { handleImageError, FALLBACK_BANNER_IMAGE } from '../../utils/imageHelper';
 
 interface HeroBannerProps {
   banners: Banner[];
@@ -72,6 +73,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               src={current.image}
               alt={current.titleEn}
               referrerPolicy="no-referrer"
+              onError={(e) => handleImageError(e, FALLBACK_BANNER_IMAGE)}
               className="w-full h-full object-cover object-center transform scale-102 group-hover:scale-104 transition-transform duration-1000 ease-out"
             />
             {/* Scrim gradient: 60-30-10 measured overlay */}

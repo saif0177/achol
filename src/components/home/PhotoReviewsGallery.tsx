@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star, CheckCircle2, MessageSquareQuote, ArrowRight } from 'lucide-react';
 import { Language } from '../../types';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface PhotoReviewsGalleryProps {
   language: Language;
@@ -123,6 +124,7 @@ export const PhotoReviewsGallery: React.FC<PhotoReviewsGalleryProps> = ({
                 <img
                   src={rev.image}
                   alt={rev.name}
+                  onError={handleImageError}
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                 />
               </div>

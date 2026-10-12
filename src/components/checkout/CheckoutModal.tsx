@@ -261,7 +261,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 py-3 sm:py-6 overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-stone-950/70 backdrop-blur-sm transition-opacity"
@@ -269,37 +269,42 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-4xl bg-[#FAF8F5] rounded-none sm:rounded-2xl shadow-2xl z-10 overflow-hidden my-auto max-h-screen sm:max-h-[92vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-stone-200 sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-amber-900" />
-            <h2 className="font-serif text-lg font-bold text-stone-900">
+      <div className="relative w-full max-w-4xl bg-[#FAF8F5] rounded-xl sm:rounded-2xl shadow-2xl z-10 overflow-hidden my-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col">
+        {/* Header - Always sticky and accessible with prominent Cancel button */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-stone-200 sticky top-0 z-30 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <ShieldCheck className="w-5 h-5 text-amber-900 shrink-0" />
+            <h2 className="font-serif text-base sm:text-lg font-bold text-stone-900 truncate">
               {language === 'bn' ? 'নিরাপদ চেকআউট' : 'Secure Express Checkout'}
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-rose-50 text-stone-700 hover:text-rose-700 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-stone-300 hover:border-rose-300 shrink-0"
+            title={language === 'bn' ? 'পেমেন্ট বাতিল করুন' : 'Cancel Checkout'}
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
+            <span>{language === 'bn' ? 'বাতিল' : 'Cancel'}</span>
           </button>
         </div>
 
-        {/* Free Nationwide Delivery Banner */}
-        <div className="bg-emerald-700 text-white px-6 py-2.5 flex items-center justify-between text-xs font-semibold shadow-xs">
-          <div className="flex items-center gap-2">
-            <Truck className="w-4 h-4 text-emerald-200" />
-            <span>
-              {language === 'bn'
-                ? '🎉 অভিনন্দন! আপনার অর্ডারে সারাদেশে সম্পূর্ণ ফ্রি হোম ডেলিভারি প্রযোজ্য (৳০ ডেলিভারি চার্জ)।'
-                : '🎉 100% Free Nationwide Home Delivery included on this order (৳0 Delivery Fee).'}
+        {/* Free Nationwide Delivery Banner (only when free delivery is active) */}
+        {isFreeDelivery && (
+          <div className="bg-emerald-700 text-white px-4 sm:px-6 py-2 flex items-center justify-between text-xs font-semibold shadow-xs shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Truck className="w-4 h-4 text-emerald-200 shrink-0" />
+              <span className="truncate">
+                {language === 'bn'
+                  ? '🎉 অভিনন্দন! আপনার অর্ডারে সারাদেশে সম্পূর্ণ ফ্রি হোম ডেলিভারি প্রযোজ্য।'
+                  : '🎉 100% Free Nationwide Home Delivery included on this order.'}
+              </span>
+            </div>
+            <span className="font-bold uppercase tracking-wider bg-emerald-800/80 px-2 py-0.5 rounded text-[10px] shrink-0 ml-2">
+              Free Shipping
             </span>
           </div>
-          <span className="font-bold uppercase tracking-wider bg-emerald-800/80 px-2 py-0.5 rounded text-[10px]">
-            Free Shipping
-          </span>
-        </div>
+        )}
 
         {/* 2-Column Form Body */}
         <form
@@ -802,25 +807,36 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isPlacing}
-                className="w-full py-3.5 bg-stone-900 hover:bg-amber-900 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {isPlacing ? (
-                  <span>Processing...</span>
-                ) : (
-                  <>
-                    <span>
-                      {paymentMethod === 'cod'
-                        ? (language === 'bn' ? 'অর্ডার নিশ্চিত করুন (ক্যাশ অন ডেলিভারি)' : 'Confirm Order (Cash on Delivery)')
-                        : (language === 'bn' ? `পেমেন্ট সম্পন্ন করুন (${paymentMethod.toUpperCase()})` : `Confirm Order (${paymentMethod.toUpperCase()})`)}
-                    </span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
+              {/* Submit & Cancel Buttons */}
+              <div className="space-y-2">
+                <button
+                  type="submit"
+                  disabled={isPlacing}
+                  className="w-full py-3.5 bg-stone-900 hover:bg-amber-900 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isPlacing ? (
+                    <span>Processing...</span>
+                  ) : (
+                    <>
+                      <span>
+                        {paymentMethod === 'cod'
+                          ? (language === 'bn' ? 'অর্ডার নিশ্চিত করুন (ক্যাশ অন ডেলিভারি)' : 'Confirm Order (Cash on Delivery)')
+                          : (language === 'bn' ? `পেমেন্ট সম্পন্ন করুন (${paymentMethod.toUpperCase()})` : `Confirm Order (${paymentMethod.toUpperCase()})`)}
+                      </span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 bg-stone-100 hover:bg-rose-50 text-stone-700 hover:text-rose-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-stone-200 hover:border-rose-200"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? 'পেমেন্ট / অর্ডার বাতিল করুন (Cancel)' : 'Cancel Order / Close Window'}</span>
+                </button>
+              </div>
 
               <div className="text-[10px] text-stone-400 text-center space-y-1">
                 <p>🔒 256-bit encrypted checkout · 100% Authentic Handloom Guarantee</p>

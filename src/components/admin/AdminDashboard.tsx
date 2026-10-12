@@ -48,6 +48,7 @@ import { BusinessHealthAnalytics } from './BusinessHealthAnalytics';
 import { CouponModal } from './CouponModal';
 import { ImageUploadBrowser } from '../common/ImageUploadBrowser';
 import { AdminFormBuilder, AdminFormSchema } from './AdminFormBuilder';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -121,7 +122,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [viewingSaree, setViewingSaree] = useState<Product | null>(null);
   const [showPrivateCodes, setShowPrivateCodes] = useState(false);
   const [selectedProductForQr, setSelectedProductForQr] = useState<Product | null>(null);
-  const [inventoryViewMode, setInventoryViewMode] = useState<'spreadsheet' | 'table'>('spreadsheet');
 
   // Coupons Engine (Requirement 3 & 4)
   const [coupons, setCoupons] = useState<Coupon[]>(() => store.getAllCouponsAdmin());
@@ -752,7 +752,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="min-h-screen bg-[#F7F5F0] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors">
       
       {/* Top Admin Header */}
-      <header className="bg-stone-900 text-white px-4 sm:px-8 py-3.5 border-b border-stone-800 flex items-center justify-between sticky top-0 z-30 shadow-md">
+      <header className="bg-stone-900 text-white px-4 sm:px-8 h-[60px] border-b border-stone-800 flex items-center justify-between sticky top-0 z-30 shadow-md">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -932,7 +932,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 language={language}
                 onOpenInventorySpreadsheet={() => {
                   setActiveTab('products');
-                  setInventoryViewMode('spreadsheet');
                 }}
                 onEditProduct={(p) => {
                   setProductToEdit(p);
@@ -945,250 +944,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* ========================================================
-            TAB 2: SAREES TABLE & VARIANTS
+            TAB 2: SAREE MASTER INVENTORY & VARIANTS
             ======================================================== */}
         {activeTab === 'products' && (
           <div className="space-y-4">
-            {/* View Switcher & Action Header */}
-            <div className="bg-white dark:bg-stone-900 rounded-2xl p-4 border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="flex items-center bg-stone-100 dark:bg-stone-800 p-1 rounded-xl text-xs font-semibold border border-stone-200 dark:border-stone-700 w-full sm:w-auto">
-                  <button
-                    onClick={() => setInventoryViewMode('spreadsheet')}
-                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      inventoryViewMode === 'spreadsheet'
-                        ? 'bg-amber-900 dark:bg-amber-700 text-white font-bold shadow-xs'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Table className="w-3.5 h-3.5" />
-                    <span>Saree Spreadsheet (Excel View)</span>
-                  </button>
-                  <button
-                    onClick={() => setInventoryViewMode('table')}
-                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      inventoryViewMode === 'table'
-                        ? 'bg-amber-900 dark:bg-amber-700 text-white font-bold shadow-xs'
-                        : 'text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Package className="w-3.5 h-3.5" />
-                    <span>Standard Inventory Table</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                {inventoryViewMode === 'table' && (
-                  <div className="relative w-full sm:w-72">
-                    <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Search code (JM-108), name, fabric..."
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-xs border border-stone-200 dark:border-stone-700 rounded-xl bg-stone-50 dark:bg-stone-800 dark:text-white focus:outline-none focus:border-amber-700"
-                    />
-                  </div>
-                )}
-
-                <button
-                  onClick={() => {
-                    setProductToEdit(null);
-                    setShowProductForm(true);
-                  }}
-                  className="px-4 py-2 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Saree</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Inventory View Content */}
-            {inventoryViewMode === 'spreadsheet' ? (
-              <SareeSpreadsheet
-                products={products}
-                categories={categories}
-                hiddenCategories={hiddenCategories}
-                language={language}
-                onRefresh={refreshData}
-                onEditInFullModal={(p) => {
-                  setProductToEdit(p);
-                  setShowProductForm(true);
-                }}
-                onViewMore={(p) => setViewingSaree(p)}
-              />
-            ) : (
-              /* Sarees Table */
-              <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-2xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-stone-50 dark:bg-stone-800/80 border-b border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 font-bold uppercase tracking-wider text-[10px]">
-                      <tr>
-                        <th className="p-3.5">Image & Code</th>
-                        <th className="p-3.5">Saree Name</th>
-                        <th className="p-3.5">Category</th>
-                        <th className="p-3.5">Color Variants</th>
-                        <th className="p-3.5">Price</th>
-                        <th className="p-3.5">Delivery</th>
-                        <th className="p-3.5">Stock</th>
-                        <th className="p-3.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                      {filteredProducts.map((prod) => (
-                        <tr key={prod.id} className="hover:bg-stone-50/80 dark:hover:bg-stone-800/50 transition-colors">
-                          <td className="p-3.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-12 h-16 rounded-lg overflow-hidden bg-stone-100 shrink-0 border border-stone-200 dark:border-stone-700">
-                                <img
-                                  src={prod.primaryImage}
-                                  alt={prod.nameEn}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <span className="font-mono font-bold text-amber-900 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                                {prod.code}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="p-3.5">
-                            <div className="font-serif font-bold text-stone-900 dark:text-white text-sm">
-                              {prod.nameEn}
-                            </div>
-                            <div className="text-[11px] text-stone-500 dark:text-stone-400">
-                              {prod.nameBn}
-                            </div>
-                          </td>
-
-                          <td className="p-3.5">
-                            <span className="font-semibold text-stone-800 dark:text-stone-200 block">
-                              {prod.sareeType}
-                            </span>
-                            <span className="text-[10px] text-stone-400 block">
-                              {prod.length || '5.5m (12 Haat)'}
-                            </span>
-                          </td>
-
-                          <td className="p-3.5">
-                            <div className="space-y-1">
-                              {prod.variants.map((v) => (
-                                <div key={v.id} className="flex items-center gap-1.5 text-[11px]">
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full shrink-0 border border-stone-300"
-                                    style={{ backgroundColor: v.colorHex }}
-                                  />
-                                  <span className="font-medium text-stone-800 dark:text-stone-300">{v.colorNameEn}</span>
-                                  <span className="font-mono text-[10px] text-amber-900 dark:text-amber-400 font-bold">
-                                    x{v.stock}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-
-                          <td className="p-3.5">
-                            <span className="font-serif font-bold text-stone-900 dark:text-white text-sm">
-                              ৳{prod.price.toLocaleString()}
-                            </span>
-                            {prod.originalPrice && (
-                              <span className="block text-[10px] text-stone-400 line-through">
-                                ৳{prod.originalPrice.toLocaleString()}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Free Delivery Control Column (Requirement 2) */}
-                          <td className="p-3.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = { ...prod, isFreeDelivery: !prod.isFreeDelivery };
-                                store.saveProduct(updated);
-                                refreshData();
-                              }}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                                prod.isFreeDelivery
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                  : 'bg-stone-50 text-stone-600 border-stone-200 dark:bg-stone-800 dark:text-stone-400'
-                              }`}
-                              title="Click to toggle free delivery for this saree"
-                            >
-                              {prod.isFreeDelivery ? '✓ Free Delivery' : '✕ Standard Fee'}
-                            </button>
-                          </td>
-
-                          <td className="p-3.5">
-                            <span
-                              className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] ${
-                                prod.stock <= 0
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : prod.stock <= 5
-                                  ? 'bg-amber-100 text-amber-900'
-                                  : 'bg-emerald-100 text-emerald-800'
-                              }`}
-                            >
-                              {prod.stock} left
-                            </span>
-                          </td>
-
-                          <td className="p-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* View More Button (Requirement 1) */}
-                              <button
-                                onClick={() => setViewingSaree(prod)}
-                                className="px-2.5 py-1 text-[11px] font-bold text-amber-950 dark:text-amber-200 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/60 dark:hover:bg-amber-800 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs mr-1"
-                                title="View All Details & Photos (Full Saree Modal)"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-amber-800 dark:text-amber-300" />
-                                <span>View More</span>
-                              </button>
-
-                              {/* QR Code Tag Modal Button (Requirement 4) */}
-                              <button
-                                onClick={() => setSelectedProductForQr(prod)}
-                                className="p-1.5 text-amber-700 dark:text-amber-400 hover:text-amber-900 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950 cursor-pointer"
-                                title="Artisan QR Tag & Link"
-                              >
-                                <QrCode className="w-4 h-4" />
-                              </button>
-
-                              {/* Edit Saree */}
-                              <button
-                                onClick={() => {
-                                  setProductToEdit(prod);
-                                  setShowProductForm(true);
-                                }}
-                                className="p-1.5 text-stone-600 dark:text-stone-300 hover:text-amber-900 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
-                                title="Edit Listing"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-
-                              {/* Delete Saree */}
-                              <button
-                                onClick={() => {
-                                  if (confirm(`Delete saree ${prod.code}?`)) {
-                                    store.deleteProduct(prod.id);
-                                    refreshData();
-                                  }
-                                }}
-                                className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
-                                title="Delete Listing"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            <SareeSpreadsheet
+              products={products}
+              categories={categories}
+              hiddenCategories={hiddenCategories}
+              language={language}
+              onRefresh={refreshData}
+              onAddNewProduct={() => {
+                setProductToEdit(null);
+                setShowProductForm(true);
+              }}
+              onEditInFullModal={(p) => {
+                setProductToEdit(p);
+                setShowProductForm(true);
+              }}
+              onViewMore={(p) => setViewingSaree(p)}
+            />
           </div>
         )}
 
@@ -1251,6 +1026,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <img
                             src={cat.image}
                             alt={cat.nameEn}
+                            onError={handleImageError}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -2130,6 +1906,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <img
                           src={sale.bannerImage}
                           alt={sale.titleEn}
+                          onError={handleImageError}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute top-2 left-2 flex gap-1.5">
@@ -2281,6 +2058,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <img
                         src={popup.image}
                         alt={popup.titleEn}
+                        onError={handleImageError}
                         className="w-full h-full object-cover"
                       />
                       <span

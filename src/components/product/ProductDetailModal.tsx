@@ -10,12 +10,15 @@ import {
   CheckCircle2,
   ChevronRight,
   ZoomIn,
+  ZoomOut,
+  RotateCcw,
   Sparkles,
   Info
 } from 'lucide-react';
 import { Product, ProductVariant, Language, Review } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -63,6 +66,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   );
   const [quantity, setQuantity] = useState(1);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxScale, setLightboxScale] = useState(1);
   const [activeTab, setActiveTab] = useState<'specs' | 'care' | 'reviews'>('specs');
 
   // Review submission state
@@ -177,6 +181,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   src={activeImage}
                   alt={product.nameEn}
                   referrerPolicy="no-referrer"
+                  onError={handleImageError}
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute bottom-3 right-3 p-2 bg-stone-900/60 backdrop-blur-md text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-xs">
@@ -199,6 +204,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       src={img}
                       alt="Thumbnail"
                       referrerPolicy="no-referrer"
+                      onError={handleImageError}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -371,9 +377,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-amber-900 shrink-0" />
                   <span>
-                    {language === 'bn'
-                      ? 'ঢাকায় ২৪-৪৮ ঘণ্টায় ও সারাদেশে ২-৪ দিনে হোম ডেলিভারি (স্টিডফাস্ট কুরিয়ার)'
-                      : 'Home delivery: 24-48 hrs inside Dhaka, 2-4 days nationwide via Steadfast Courier.'}
+                    {product.isFreeDelivery
+                      ? (language === 'bn'
+                        ? '🎉 সারাদেশে সম্পূর্ণ ফ্রি হোম ডেলিভারি (স্টিডফাস্ট কুরিয়ার)'
+                        : '🎉 100% Free Nationwide Home Delivery via Steadfast Courier.')
+                      : (language === 'bn'
+                        ? 'ঢাকায় ২৪-৪৮ ঘণ্টায় ও সারাদেশে ২-৪ দিনে হোম ডেলিভারি (স্টিডফাস্ট কুরিয়ার)'
+                        : 'Home delivery: 24-48 hrs inside Dhaka, 2-4 days nationwide via Steadfast Courier.')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -650,23 +660,125 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
       </div>
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Modal with Interactive Touch Zoom (Requirement 2) */}
       {lightboxOpen && (
         <div
-          className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setLightboxOpen(false)}
+          className="fixed inset-0 z-60 bg-black/95 flex flex-col justify-between p-3 select-none backdrop-blur-md"
+          role="dialog"
+          aria-label="Enlarged Saree View"
         >
-          <button
-            onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white"
+          {/* Header */}
+          <div className="flex items-center justify-between text-white py-2 px-1 border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-mono text-xs bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded shrink-0">
+                #{product.code}
+              </span>
+              <span className="text-xs font-serif font-bold truncate text-stone-200">
+                {language === 'bn' ? product.nameBn : product.nameEn}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-amber-300">
+                {Math.round(lightboxScale * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLightboxScale(1);
+                  setLightboxOpen(false);
+                }}
+                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                title="Close Lightbox"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Central Zoomable Viewport */}
+          <div
+            className="flex-1 w-full overflow-auto flex items-center justify-center p-2 cursor-zoom-in touch-pinch-zoom"
+            onClick={() => {
+              setLightboxScale((prev) => (prev >= 3 ? 1 : prev === 1 ? 2 : 3));
+            }}
           >
-            <X className="w-6 h-6" />
-          </button>
-          <img
-            src={activeImage}
-            alt="Enlarged Saree"
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-          />
+            <img
+              src={activeImage}
+              alt="Enlarged Saree"
+              referrerPolicy="no-referrer"
+              onError={handleImageError}
+              className="max-h-[75vh] max-w-[95vw] object-contain transition-transform duration-200 ease-out select-none shadow-2xl"
+              style={{
+                transform: `scale(${lightboxScale})`,
+                transformOrigin: 'center center'
+              }}
+            />
+          </div>
+
+          {/* Bottom Floating Toolbar for Mobile Zoom Controls */}
+          <div className="shrink-0 flex items-center justify-between gap-2 bg-stone-900/95 border border-white/15 px-4 py-2.5 rounded-2xl max-w-sm mx-auto w-full text-white shadow-xl">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxScale((s) => Math.max(1, +(s - 0.5).toFixed(1)));
+                }}
+                disabled={lightboxScale <= 1}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4 text-white" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxScale((s) => Math.min(3.5, +(s + 0.5).toFixed(1)));
+                }}
+                disabled={lightboxScale >= 3.5}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all cursor-pointer"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4 text-white" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxScale(1);
+                }}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all cursor-pointer text-xs flex items-center gap-1"
+                title="Reset Zoom"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-stone-300" />
+                <span className="text-[11px]">1x</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {[1.5, 2.5].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxScale(lvl);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                    lightboxScale === lvl
+                      ? 'bg-amber-500 text-stone-950 shadow-sm'
+                      : 'bg-white/10 text-stone-300 hover:bg-white/20'
+                  }`}
+                >
+                  {lvl}x
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { CustomerAccount, Address, Order, Product, Language } from '../../types';
 import { translations } from '../../i18n/translations';
+import { handleImageError } from '../../utils/imageHelper';
 import { store } from '../../services/store';
 
 interface CustomerAccountModalProps {
@@ -711,6 +712,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                                 <img
                                   src={item.image}
                                   alt={item.name}
+                                  onError={handleImageError}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -969,6 +971,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       <img
                         src={prod.primaryImage}
                         alt={prod.nameEn}
+                        onError={handleImageError}
                         className="w-12 h-16 rounded-lg object-cover"
                       />
                       <div>

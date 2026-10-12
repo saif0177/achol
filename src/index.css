@@ -55,4 +55,36 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-
   color: #fff6f6;
 }
 
+/* Prominent horizontal scrollbar for admin inventory tables */
+.admin-horizontal-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #b45309 #f5f5f4;
+}
+.dark .admin-horizontal-scrollbar {
+  scrollbar-color: #d97706 #292524;
+}
+.admin-horizontal-scrollbar::-webkit-scrollbar {
+  height: 14px;
+}
+.admin-horizontal-scrollbar::-webkit-scrollbar-track {
+  background: #f5f5f4;
+  border-radius: 7px;
+}
+.dark .admin-horizontal-scrollbar::-webkit-scrollbar-track {
+  background: #292524;
+}
+.admin-horizontal-scrollbar::-webkit-scrollbar-thumb {
+  background: #b45309;
+  border-radius: 7px;
+  border: 2px solid #f5f5f4;
+}
+.dark .admin-horizontal-scrollbar::-webkit-scrollbar-thumb {
+  background: #d97706;
+  border: 2px solid #292524;
+}
+.admin-horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #92400e;
+}
+
+
 

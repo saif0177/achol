@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Heart, X, ArrowRight, Check, Trash2 } from 'lucide-react';
 import { Product, Language } from '../../types';
+import { handleImageError } from '../../utils/imageHelper';
 
 export interface WishlistToastData {
   product: Product;
@@ -45,6 +46,7 @@ export const WishlistToast: React.FC<WishlistToastProps> = ({
           <img
             src={product.primaryImage}
             alt={product.nameEn}
+            onError={handleImageError}
             className="w-full h-full object-cover"
           />
           <div

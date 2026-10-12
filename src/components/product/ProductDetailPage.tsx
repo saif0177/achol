@@ -13,6 +13,9 @@ import {
   ChevronRight,
   ChevronLeft,
   ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  X,
   Sparkles,
   Info,
   Check,
@@ -25,6 +28,7 @@ import {
 import { Product, ProductVariant, Language, Review, CustomerAccount } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -107,6 +111,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [isAddedToast, setIsAddedToast] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 50 });
+  const [isMobileZoomModalOpen, setIsMobileZoomModalOpen] = useState(false);
+  const [mobileZoomScale, setMobileZoomScale] = useState(1);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Reviews for this saree
@@ -240,7 +246,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-24">
             {/* Main Interactive Zoom Box */}
             <div
-              className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-white border border-stone-200/90 shadow-sm cursor-crosshair group"
+              className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-white border border-stone-200/90 shadow-sm cursor-zoom-in sm:cursor-crosshair group"
+              onClick={() => {
+                setMobileZoomScale(1.5);
+                setIsMobileZoomModalOpen(true);
+              }}
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={handleMouseMove}
@@ -248,15 +258,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <img
                 src={activeImage}
                 alt={product.nameEn}
+                onError={handleImageError}
                 className={`w-full h-full object-cover object-center transition-opacity duration-300 ${
                   isZoomed ? 'opacity-0' : 'opacity-100'
                 }`}
               />
 
-              {/* Magnified Zoom Lens */}
+              {/* Magnified Zoom Lens (Desktop Hover) */}
               {isZoomed && (
                 <div
-                  className="absolute inset-0 pointer-events-none bg-no-repeat"
+                  className="absolute inset-0 pointer-events-none bg-no-repeat hidden sm:block"
                   style={{
                     backgroundImage: `url(${activeImage})`,
                     backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
@@ -280,9 +291,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </div>
 
               {/* Hint badge */}
-              <div className="absolute bottom-3 right-3 bg-stone-900/70 text-white text-[10px] font-medium px-2 py-1 rounded-md flex items-center gap-1 backdrop-blur-xs pointer-events-none">
-                <ZoomIn className="w-3 h-3" />
-                <span>{language === 'bn' ? 'জুম করতে মাউস ঘুরান' : 'Hover to Zoom 2.5x'}</span>
+              <div className="absolute bottom-3 right-3 bg-stone-900/80 text-white text-[10px] font-medium px-2 py-1 rounded-md flex items-center gap-1.5 backdrop-blur-xs pointer-events-none">
+                <ZoomIn className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline">{language === 'bn' ? 'জুম করতে মাউস ঘুরান' : 'Hover to Zoom 2.5x'}</span>
+                <span className="sm:hidden">{language === 'bn' ? 'জুম করতে ট্যাপ করুন' : 'Tap to Zoom Saree'}</span>
               </div>
             </div>
 
@@ -301,11 +313,53 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <img
                     src={img}
                     alt={`Thumbnail ${idx}`}
+                    onError={handleImageError}
                     className="w-full h-full object-cover object-center"
                   />
                 </button>
               ))}
             </div>
+
+            {/* MOBILE ONLY: High-Priority Color Chooser Ledger (Requirement 4: positioned high so mobile users don't need to scroll down) */}
+            {product.variants.length > 1 && (
+              <div className="lg:hidden bg-amber-50/80 dark:bg-stone-900 rounded-2xl p-3.5 border border-amber-200/90 dark:border-amber-900/40 shadow-xs space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-800 dark:bg-amber-400" />
+                    <span>{language === 'bn' ? 'উপলব্ধ রঙ নির্বাচন করুন:' : 'Choose Saree Color:'}</span>
+                  </span>
+                  <span className="font-bold text-amber-900 dark:text-amber-400 text-xs">
+                    {language === 'bn' ? selectedVariant.colorNameBn : selectedVariant.colorNameEn}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {product.variants.map((v) => {
+                    const isSelected = selectedVariant.id === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedVariant(v);
+                          if (v.image) setActiveImage(v.image);
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-900 text-white border-amber-950 shadow-sm scale-102 ring-2 ring-amber-700/50'
+                            : 'bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-200 border-stone-200 dark:border-stone-700 hover:border-amber-700'
+                        }`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
+                          style={{ backgroundColor: v.colorHex }}
+                        />
+                        <span>{language === 'bn' ? v.colorNameBn : v.colorNameEn}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Authenticity Guarantee Card */}
             <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs">
@@ -424,9 +478,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 pt-1">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>
-                  {language === 'bn'
-                    ? '🎉 সারাদেশে সম্পূর্ণ ফ্রি হোম ডেলিভারি · ক্যাশ অন ডেলিভারি সুবিধা'
-                    : '🎉 100% FREE Home Delivery Across Bangladesh · Cash on Delivery'}
+                  {product.isFreeDelivery
+                    ? (language === 'bn'
+                      ? '🎉 সারাদেশে সম্পূর্ণ ফ্রি হোম ডেলিভারি · ক্যাশ অন ডেলিভারি সুবিধা'
+                      : '🎉 100% FREE Home Delivery Across Bangladesh · Cash on Delivery')
+                    : (language === 'bn'
+                      ? '✓ আসল খাঁটি তাঁতের শাড়ি · ক্যাশ অন ডেলিভারিতে দেখে মূল্য পরিশোধ'
+                      : '✓ 100% Authentic Handloom · Cash on Delivery Available')}
                 </span>
               </div>
             </div>
@@ -573,10 +631,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="bg-white p-3 rounded-xl border border-stone-200/80">
                 <Truck className="w-4 h-4 text-amber-800 mx-auto mb-1" />
                 <span className="text-[11px] font-bold text-stone-900 block">
-                  {language === 'bn' ? 'ফ্রি ডেলিভারি' : 'Free Delivery'}
+                  {product.isFreeDelivery ? (language === 'bn' ? 'ফ্রি ডেলিভারি' : 'Free Delivery') : (language === 'bn' ? 'নিয়মিত ডেলিভারি' : 'Standard Delivery')}
                 </span>
                 <span className="text-[10px] text-stone-500">
-                  {language === 'bn' ? 'সারাদেশে ৳০' : '৳0 Nationwide'}
+                  {product.isFreeDelivery ? (language === 'bn' ? 'সারাদেশে ৳০' : '৳0 Nationwide') : (language === 'bn' ? 'ডেলিভারি চার্জ প্রযোজ্য' : 'Standard Shipping')}
                 </span>
               </div>
 
@@ -918,7 +976,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="relative">
               <div
                 ref={carouselRef}
-                className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth"
+                className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth overscroll-x-contain"
               >
                 {relatedSarees.map((saree) => (
                   <div
@@ -927,20 +985,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       onSelectProduct(saree, saree.variants?.[0]);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-48 sm:w-56 shrink-0 snap-start bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group"
+                    className="w-36 xs:w-40 sm:w-52 shrink-0 snap-start bg-white dark:bg-stone-900 rounded-xl sm:rounded-2xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group"
                   >
-                    <div className="aspect-[3/4] w-full overflow-hidden bg-stone-100 dark:bg-stone-800">
+                    <div className="aspect-[5/6] sm:aspect-[3/4] w-full overflow-hidden bg-stone-100 dark:bg-stone-800">
                       <img
                         src={saree.primaryImage}
                         alt={saree.nameEn}
+                        onError={handleImageError}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <div className="p-3.5 space-y-1">
-                      <span className="text-[10px] font-mono text-amber-900 dark:text-amber-400 font-semibold">
-                        {saree.code}
-                      </span>
-                      <h4 className="font-serif text-xs font-bold text-stone-900 dark:text-white truncate">
+                    <div className="p-2 sm:p-3 space-y-0.5 sm:space-y-1">
+                      <div className="flex items-center justify-between text-[9px] sm:text-[10px]">
+                        <span className="font-mono text-amber-900 dark:text-amber-400 font-semibold">
+                          #{saree.code}
+                        </span>
+                        {saree.isFreeDelivery && (
+                          <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[8.5px]">
+                            {language === 'bn' ? 'ফ্রি' : 'Free'}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-serif text-[11px] sm:text-xs font-bold text-stone-900 dark:text-white truncate">
                         {language === 'bn' ? saree.nameBn : saree.nameEn}
                       </h4>
                       <span className="font-bold text-stone-900 dark:text-amber-400 text-xs block">
@@ -954,15 +1020,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 {onExploreCategory && (
                   <div
                     onClick={() => onExploreCategory(product.categoryId)}
-                    className="w-44 sm:w-52 shrink-0 snap-start bg-amber-50 dark:bg-stone-900 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-900/60 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors group"
+                    className="w-36 xs:w-40 sm:w-52 shrink-0 snap-start bg-amber-50 dark:bg-stone-900 rounded-xl sm:rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-900/60 flex flex-col items-center justify-center p-4 sm:p-6 text-center cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors group"
                   >
-                    <div className="w-10 h-10 rounded-full bg-amber-900 text-white flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
-                      <Sparkles className="w-5 h-5 text-amber-300" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-900 text-white flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform shadow-xs">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
                     </div>
-                    <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white">
+                    <h4 className="font-serif font-bold text-xs sm:text-sm text-stone-900 dark:text-white">
                       {language === 'bn' ? 'সবগুলো দেখুন' : 'Explore All'}
                     </h4>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 line-clamp-1">
+                    <p className="text-[10px] sm:text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 line-clamp-1">
                       {product.sareeType}
                     </p>
                   </div>
@@ -973,6 +1039,124 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         )}
 
       </div>
+
+      {/* Mobile Interactive Zoom Lightbox (Requirement 2) */}
+      {isMobileZoomModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-3 select-none backdrop-blur-md"
+          role="dialog"
+          aria-label="Product Image Zoom"
+        >
+          {/* Header Controls */}
+          <div className="flex items-center justify-between text-white py-2 px-1 border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-mono text-xs bg-amber-900/60 text-amber-300 px-2 py-0.5 rounded shrink-0">
+                #{product.code}
+              </span>
+              <span className="text-xs font-serif font-bold truncate text-stone-200">
+                {language === 'bn' ? product.nameBn : product.nameEn}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-amber-300">
+                {Math.round(mobileZoomScale * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsMobileZoomModalOpen(false)}
+                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                title="Close Zoom"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Central Zoomable Viewport */}
+          <div
+            className="flex-1 w-full overflow-auto flex items-center justify-center p-2 cursor-zoom-in touch-pinch-zoom"
+            onClick={() => {
+              setMobileZoomScale((prev) => (prev >= 3 ? 1 : prev === 1 ? 2 : 3));
+            }}
+          >
+            <img
+              src={activeImage}
+              alt={product.nameEn}
+              onError={handleImageError}
+              className="max-h-[75vh] max-w-[95vw] object-contain transition-transform duration-200 ease-out select-none shadow-2xl"
+              style={{
+                transform: `scale(${mobileZoomScale})`,
+                transformOrigin: 'center center'
+              }}
+            />
+          </div>
+
+          {/* Bottom Floating Toolbar for Mobile Zoom Controls */}
+          <div className="shrink-0 flex items-center justify-between gap-2 bg-stone-900/95 border border-white/15 px-4 py-2.5 rounded-2xl max-w-sm mx-auto w-full text-white shadow-xl">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileZoomScale((s) => Math.max(1, +(s - 0.5).toFixed(1)));
+                }}
+                disabled={mobileZoomScale <= 1}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4 text-white" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileZoomScale((s) => Math.min(3.5, +(s + 0.5).toFixed(1)));
+                }}
+                disabled={mobileZoomScale >= 3.5}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all cursor-pointer"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4 text-white" />
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileZoomScale(1);
+                }}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all cursor-pointer text-xs flex items-center gap-1"
+                title="Reset Zoom"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-stone-300" />
+                <span className="text-[11px]">1x</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {[1.5, 2.5].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMobileZoomScale(lvl);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                    mobileZoomScale === lvl
+                      ? 'bg-amber-500 text-stone-950 shadow-sm'
+                      : 'bg-white/10 text-stone-300 hover:bg-white/20'
+                  }`}
+                >
+                  {lvl}x
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

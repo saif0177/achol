@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Product, Category, Language, HiddenPromotionalCategory } from '../../types';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface SareeDetailModalProps {
   product: Product | null;
@@ -195,8 +196,17 @@ export const SareeDetailModal: React.FC<SareeDetailModalProps> = ({
                 <span>Edit Saree</span>
               </button>
             ) : (
-              /* Save Changes and Wizard in Edit Mode */
+              /* In Edit Mode: Save, Full Wizard, and Delete buttons become unlocked */
               <>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 rounded-lg transition active:scale-95 cursor-pointer"
+                  title="Delete Saree"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Delete</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleSaveQuickEdits}
@@ -219,17 +229,6 @@ export const SareeDetailModal: React.FC<SareeDetailModalProps> = ({
                 </button>
               </>
             )}
-
-            {/* Delete Button (Only accessible through View modal) */}
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 rounded-lg transition active:scale-95 cursor-pointer"
-              title="Delete Saree"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Delete</span>
-            </button>
 
             {/* Close Button */}
             <button
@@ -621,6 +620,7 @@ export const SareeDetailModal: React.FC<SareeDetailModalProps> = ({
                   <img
                     src={allPhotos[selectedPhotoIndex] || allPhotos[0]}
                     alt={`${currentItem.nameEn} photo ${selectedPhotoIndex + 1}`}
+                    onError={handleImageError}
                     className="w-full h-full object-contain"
                   />
                   <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded bg-black/70 text-white text-xs font-mono">
@@ -641,7 +641,7 @@ export const SareeDetailModal: React.FC<SareeDetailModalProps> = ({
                           : 'border-stone-200 dark:border-stone-700 opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={photoUrl} alt="" onError={handleImageError} className="w-full h-full object-cover" />
                       {photoUrl === currentItem.primaryImage && (
                         <span className="absolute top-1 left-1 px-1 py-0.2 rounded text-[8px] font-bold bg-amber-600 text-white">
                           MAIN
@@ -665,10 +665,10 @@ export const SareeDetailModal: React.FC<SareeDetailModalProps> = ({
               <>
                 <button
                   type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition cursor-pointer"
+                  onClick={onClose}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-lg transition cursor-pointer"
                 >
-                  Delete Saree
+                  Close
                 </button>
                 <button
                   type="button"
@@ -681,6 +681,13 @@ export const SareeDetailModal: React.FC<SareeDetailModalProps> = ({
               </>
             ) : (
               <>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition cursor-pointer"
+                >
+                  Delete Saree
+                </button>
                 <button
                   type="button"
                   onClick={handleCancelEdit}

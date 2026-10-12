@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 
@@ -13,6 +14,23 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
+
+// Explicit static assets routing to guarantee all saree and banner images load
+// perfectly in production, development, and when shared as a demo link.
+const publicImagesDir = path.resolve(__dirname, 'public/assets/images');
+const srcImagesDir = path.resolve(__dirname, 'src/assets/images');
+const distImagesDir = path.resolve(__dirname, 'dist/assets/images');
+const distSrcImagesDir = path.resolve(__dirname, 'dist/src/assets/images');
+
+app.use('/src/assets/images', express.static(distSrcImagesDir));
+app.use('/src/assets/images', express.static(publicImagesDir));
+app.use('/src/assets/images', express.static(srcImagesDir));
+
+app.use('/assets/images', express.static(distImagesDir));
+app.use('/assets/images', express.static(publicImagesDir));
+app.use('/assets/images', express.static(srcImagesDir));
+
+app.use(express.static(path.resolve(__dirname, 'public')));
 
 // API route for Maps Grounding with Gemini 3.5 Flash using googleMaps tool
 app.post('/api/address-assist', async (req, res) => {
@@ -108,6 +126,19 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.resolve(__dirname, 'dist')));
+    
+    // Fallback for image requests: never serve index.html to <img> tags
+    app.get('*', (req, res, next) => {
+      if (req.path.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i)) {
+        const fallback = path.resolve(__dirname, 'public/assets/images/product_jamdani_crimson_red_1791268726175.jpg');
+        if (fs.existsSync(fallback)) {
+          return res.sendFile(fallback);
+        }
+        return res.status(404).send('Image not found');
+      }
+      next();
+    });
+
     app.get('*', (_req, res) => {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });

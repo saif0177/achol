@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Language, Product } from '../../types';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface AllCustomerReviewsPageProps {
   language: Language;
@@ -298,6 +299,7 @@ export const AllCustomerReviewsPage: React.FC<AllCustomerReviewsPageProps> = ({
                     <img
                       src={rev.image}
                       alt={rev.sareeTitle}
+                      onError={handleImageError}
                       className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-500"
                     />
                   </div>

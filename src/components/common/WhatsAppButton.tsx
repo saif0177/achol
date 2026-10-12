@@ -15,18 +15,18 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMsg}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex items-center group">
+    <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 flex items-center group">
       <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="w-13 h-13 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#25D366]/40 cursor-pointer"
+        className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#25D366]/40 cursor-pointer"
         aria-label="WhatsApp Contact"
         title={language === 'bn' ? 'সরাসরি যোগাযোগ করুন' : 'Direct Assistance'}
       >
         {/* Recognizable WhatsApp SVG Icon */}
         <svg
-          className="w-7 h-7 fill-white"
+          className="w-6 h-6 sm:w-7 sm:h-7 fill-white"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
         >

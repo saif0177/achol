@@ -25,6 +25,7 @@ import {
 import { Language, Product } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface HeaderProps {
   language: Language;
@@ -357,6 +358,7 @@ export const Header: React.FC<HeaderProps> = ({
                           <img
                             src={product.primaryImage}
                             alt={product.nameEn}
+                            onError={handleImageError}
                             className="w-9 h-11 object-cover rounded-md bg-stone-100 shrink-0"
                           />
                           <div className="flex-1 min-w-0">

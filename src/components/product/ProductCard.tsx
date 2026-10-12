@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Heart, Star, ShoppingBag, Check, Zap, Truck, Flame } from 'lucide-react';
 import { Product, Language, ProductVariant } from '../../types';
 import { translations } from '../../i18n/translations';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface ProductCardProps {
   product: Product;
@@ -84,6 +85,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             src={displayImage}
             alt={product.nameEn}
             referrerPolicy="no-referrer"
+            onError={handleImageError}
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
           />
 
@@ -191,10 +193,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </li>
               <li className="flex items-center gap-1.5">
                 <Truck className="w-3 h-3 text-amber-700 shrink-0" />
-                <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                  {language === 'bn'
-                    ? 'সারাদেশে ফ্রি হোম ডেলিভারি · ক্যাশ অন ডেলিভারি'
-                    : 'FREE Nationwide Delivery · Cash on Delivery'}
+                <span className={product.isFreeDelivery ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-stone-600 dark:text-stone-400 font-medium"}>
+                  {product.isFreeDelivery
+                    ? (language === 'bn' ? 'সারাদেশে ফ্রি হোম ডেলিভারি · ক্যাশ অন ডেলিভারি' : 'FREE Nationwide Delivery · Cash on Delivery')
+                    : (language === 'bn' ? 'নিয়মিত ডেলিভারি চার্জ · ক্যাশ অন ডেলিভারি' : 'Standard Delivery · Cash on Delivery')}
                 </span>
               </li>
             </ul>
@@ -286,12 +288,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => onSelectProduct(product, selectedVariant)}
       className="group relative flex flex-col bg-white dark:bg-stone-900 rounded-xl sm:rounded-2xl border border-stone-200/90 dark:border-stone-800 overflow-hidden shadow-xs hover:shadow-lg hover:border-amber-900/40 dark:hover:border-amber-500/40 transition-all duration-300 cursor-pointer"
     >
-      {/* Product Image Area: Refined 4:5 aspect ratio (never overly giant on mobile) */}
-      <div className="relative aspect-[4/5] w-full overflow-hidden bg-stone-100">
+      {/* Product Image Area: Refined shorter aspect ratio on mobile for clean, aesthetic look */}
+      <div className="relative aspect-[5/6] sm:aspect-[4/5] w-full overflow-hidden bg-stone-100">
         <img
           src={displayImage}
           alt={product.nameEn}
           referrerPolicy="no-referrer"
+          onError={handleImageError}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
@@ -361,17 +364,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* Content Area: Compact on mobile, generous & elegant on PC */}
-      <div className="p-2 sm:p-3 md:p-3.5 lg:p-4 flex-1 flex flex-col justify-between space-y-1 sm:space-y-1.5">
+      {/* Content Area: Shorter & compact on mobile, generous & elegant on PC */}
+      <div className="p-1.5 sm:p-3 md:p-3.5 lg:p-4 flex-1 flex flex-col justify-between space-y-1 sm:space-y-1.5">
         <div className="space-y-0.5 sm:space-y-1">
           {/* Saree Code & Free Delivery */}
           <div className="flex items-center justify-between text-[9px] sm:text-xs text-stone-500">
             <span className="font-mono font-semibold text-amber-900 dark:text-amber-400 bg-amber-50 dark:bg-stone-800 px-1.5 py-0.5 rounded truncate max-w-[85px] sm:max-w-none">
               #{product.code}
             </span>
-            <span className="text-[8.5px] sm:text-[11px] text-emerald-700 dark:text-emerald-400 font-bold shrink-0">
-              {language === 'bn' ? 'ফ্রি ডেলিভারি' : 'Free Delivery'}
-            </span>
+            {product.isFreeDelivery ? (
+              <span className="text-[8.5px] sm:text-[11px] text-emerald-700 dark:text-emerald-400 font-bold shrink-0">
+                {language === 'bn' ? 'ফ্রি ডেলিভারি' : 'Free Delivery'}
+              </span>
+            ) : null}
           </div>
 
           {/* Product Name */}

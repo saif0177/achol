@@ -3,6 +3,7 @@ import { X, Search, Sparkles, ArrowRight } from 'lucide-react';
 import { Product, Language } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -213,6 +214,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                     <img
                       src={product.primaryImage}
                       alt={product.nameEn}
+                      onError={handleImageError}
                       className="w-12 h-16 object-cover rounded-lg bg-stone-100 shrink-0"
                     />
                     <div className="flex-1 overflow-hidden">

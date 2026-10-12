@@ -24,6 +24,7 @@ import QRCode from 'qrcode';
 import { Product, ProductVariant, Category, Language } from '../../types';
 import { store } from '../../services/store';
 import { ImageUploadBrowser } from '../common/ImageUploadBrowser';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -1027,6 +1028,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                           <img
                             src={variant.image}
                             alt={variant.colorNameEn}
+                            onError={handleImageError}
                             className="w-10 h-10 rounded-lg object-cover border border-stone-300 shadow-2xs"
                           />
                           <span className="text-[11px] text-stone-500 font-medium">
@@ -1306,6 +1308,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     <img
                       src={primaryImage}
                       alt={nameEn}
+                      onError={handleImageError}
                       className="w-full h-full object-cover"
                     />
                     {discountPercent > 0 && (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Category, Language } from '../../types';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface CategoryCirclesProps {
   categories: Category[];
@@ -65,6 +66,7 @@ export const CategoryCircles: React.FC<CategoryCirclesProps> = ({
                   <img
                     src={cat.image}
                     alt={cat.nameEn}
+                    onError={handleImageError}
                     className="w-full h-full rounded-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>

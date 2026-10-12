@@ -191,31 +191,35 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative border border-stone-200 my-8">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 py-3 sm:py-6 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl relative border border-stone-200 my-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col">
         
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Header */}
-        <div className="space-y-1 mb-4 border-b border-stone-100 pb-3">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-              {language === 'bn' ? 'দ্রুত ১-ক্লিক অর্ডার' : 'Instant 1-Click Checkout'}
-            </span>
+        {/* Header - Sticky with high-visibility Cancel button */}
+        <div className="flex items-center justify-between pb-3 mb-3 border-b border-stone-100 shrink-0">
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                {language === 'bn' ? 'দ্রুত ১-ক্লিক অর্ডার' : 'Instant 1-Click Checkout'}
+              </span>
+            </div>
+            <h3 className="font-serif text-base sm:text-lg font-bold text-stone-900 truncate">
+              {language === 'bn' ? 'সহজেই শাড়িটি অর্ডার করুন' : 'Order Handloom Saree'}
+            </h3>
           </div>
-          <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-900">
-            {language === 'bn' ? 'সহজেই শাড়িটি অর্ডার করুন' : 'Order Handloom Saree'}
-          </h3>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-stone-100 hover:bg-rose-50 text-stone-700 hover:text-rose-700 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-stone-200 hover:border-rose-200 shrink-0 ml-2"
+            title={language === 'bn' ? 'অর্ডার বাতিল করুন' : 'Cancel Order'}
+          >
+            <X className="w-4 h-4" />
+            <span>{language === 'bn' ? 'বাতিল' : 'Cancel'}</span>
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs overflow-y-auto flex-1 pr-0.5">
           
           {/* Selected Product Card Summary */}
           <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-200">
@@ -480,19 +484,30 @@ export const DirectOrderModal: React.FC<DirectOrderModalProps> = ({
             </div>
           </div>
 
-          {/* CTA */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3.5 px-4 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer transform hover:-translate-y-0.5 disabled:opacity-50"
-          >
-            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-            <span>
-              {paymentMethod === 'cod'
-                ? (language === 'bn' ? 'অর্ডার কনফার্ম করুন (ক্যাশ অন ডেলিভারি)' : 'Confirm Order (Cash on Delivery)')
-                : (language === 'bn' ? `অর্ডার কনফার্ম করুন (${paymentMethod.toUpperCase()})` : `Confirm Order (${paymentMethod.toUpperCase()})`)}
-            </span>
-          </button>
+          {/* CTA & Cancel */}
+          <div className="space-y-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3.5 px-4 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer transform hover:-translate-y-0.5 disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+              <span>
+                {paymentMethod === 'cod'
+                  ? (language === 'bn' ? 'অর্ডার কনফার্ম করুন (ক্যাশ অন ডেলিভারি)' : 'Confirm Order (Cash on Delivery)')
+                  : (language === 'bn' ? `অর্ডার কনফার্ম করুন (${paymentMethod.toUpperCase()})` : `Confirm Order (${paymentMethod.toUpperCase()})`)}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 bg-stone-100 hover:bg-rose-50 text-stone-700 hover:text-rose-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-stone-200 hover:border-rose-200"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'অর্ডার বাতিল করুন (Cancel)' : 'Cancel Order / Close'}</span>
+            </button>
+          </div>
 
           {/* Trust Guarantees */}
           <div className="flex items-center justify-center gap-4 text-[11px] text-stone-500 pt-1">

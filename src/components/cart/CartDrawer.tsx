@@ -13,6 +13,7 @@ import {
 import { CartItem, Language } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -126,6 +127,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <img
                   src={item.image}
                   alt={item.nameEn}
+                  onError={handleImageError}
                   className="w-18 h-24 object-cover rounded-lg bg-stone-100 shrink-0"
                 />
 

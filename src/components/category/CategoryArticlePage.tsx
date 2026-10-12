@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Category, CategoryArticle, Language } from '../../types';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface CategoryArticlePageProps {
   category: Category;
@@ -139,6 +140,7 @@ export const CategoryArticlePage: React.FC<CategoryArticlePageProps> = ({
             <img
               src={article.featuredImage}
               alt={article.titleEn}
+              onError={handleImageError}
               className="w-full max-h-[460px] object-cover object-center"
             />
             <div className="p-3 bg-stone-900/80 backdrop-blur-xs text-white text-[11px] flex items-center justify-between">
@@ -186,6 +188,7 @@ export const CategoryArticlePage: React.FC<CategoryArticlePageProps> = ({
                   <img
                     src={imgUrl}
                     alt={`${article.titleEn} gallery ${i + 1}`}
+                    onError={handleImageError}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute bottom-2 left-2 right-2 px-2 py-1 bg-stone-950/70 backdrop-blur-xs rounded-lg text-white text-[10px] truncate opacity-0 group-hover:opacity-100 transition-opacity">

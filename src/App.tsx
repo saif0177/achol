@@ -117,8 +117,8 @@ export default function App() {
     subcategoryId: undefined,
     sareeType: '',
     colorFamily: '',
-    minPrice: 2000,
-    maxPrice: 50000,
+    minPrice: 0,
+    maxPrice: 100000,
     ageRange: '',
     minRating: 0,
     onlyInStock: false,
@@ -692,7 +692,7 @@ export default function App() {
               <div
                 ref={mostCherishedScrollRef}
                 onScroll={checkCherishedScroll}
-                className="flex flex-row flex-nowrap gap-3 sm:gap-4 lg:gap-5 overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth scrollbar-thin scrollbar-thumb-stone-700 scrollbar-track-transparent touch-pan-x"
+                className="flex flex-row flex-nowrap gap-3 sm:gap-4 lg:gap-5 overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-smooth scrollbar-thin scrollbar-thumb-stone-700 scrollbar-track-transparent overscroll-x-contain"
               >
                 {topSelling.map((p) => (
                   <div

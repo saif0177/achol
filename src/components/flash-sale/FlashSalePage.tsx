@@ -15,6 +15,7 @@ import {
 import { Product, ProductVariant, Language, FlashSaleCampaign } from '../../types';
 import { store } from '../../services/store';
 import { ProductCard } from '../product/ProductCard';
+import { handleImageError, FALLBACK_BANNER_IMAGE } from '../../utils/imageHelper';
 
 interface FlashSalePageProps {
   language: Language;
@@ -147,6 +148,7 @@ export const FlashSalePage: React.FC<FlashSalePageProps> = ({
               <img
                 src={activeCampaign.bannerImage || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
                 alt={activeCampaign.titleEn}
+                onError={(e) => handleImageError(e, FALLBACK_BANNER_IMAGE)}
                 className="w-full h-full object-cover object-center transition-all duration-700"
               />
             </div>

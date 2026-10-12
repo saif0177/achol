@@ -13,6 +13,7 @@ import {
 import { Product, ProductVariant, Language, Review, CustomerAccount } from '../../types';
 import { translations } from '../../i18n/translations';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface SareeReviewsPageProps {
   product: Product;
@@ -120,6 +121,7 @@ export const SareeReviewsPage: React.FC<SareeReviewsPageProps> = ({
           <img
             src={product.primaryImage}
             alt={product.nameEn}
+            onError={handleImageError}
             className="w-24 h-32 sm:w-28 sm:h-36 object-cover rounded-xl border border-stone-200 dark:border-stone-700 shadow-xs shrink-0"
           />
 

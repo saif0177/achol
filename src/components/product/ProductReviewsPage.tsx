@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Product, Language, Review, ProductVariant, CustomerAccount } from '../../types';
 import { store } from '../../services/store';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface ProductReviewsPageProps {
   product: Product;
@@ -163,6 +164,7 @@ export const ProductReviewsPage: React.FC<ProductReviewsPageProps> = ({
               <img
                 src={activeVariant.image || product.primaryImage}
                 alt={product.nameEn}
+                onError={handleImageError}
                 className="w-full h-full object-cover"
               />
             </div>

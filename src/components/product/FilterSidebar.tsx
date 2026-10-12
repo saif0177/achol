@@ -121,9 +121,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
     updateLocal({ colorFamily: '', targetColorHex: undefined });
   };
 
-  // Price Range slider boundaries
-  const minLimit = 1000;
-  const maxLimit = 60000;
+  // Price Range slider boundaries (Requirement 7: start from 0 to 100,000)
+  const minLimit = 0;
+  const maxLimit = 100000;
   const minVal = Math.max(minLimit, Math.min(localFilters.minPrice, maxLimit - 500));
   const maxVal = Math.min(maxLimit, Math.max(localFilters.maxPrice, minLimit + 500));
 

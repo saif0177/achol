@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node server.ts",
+    "prebuild": "mkdir -p public/assets/images public/src/assets/images && cp src/assets/images/* public/assets/images/ && cp src/assets/images/* public/src/assets/images/",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",

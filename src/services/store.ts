@@ -1573,14 +1573,31 @@ class StoreService {
         this.products = INITIAL_PRODUCTS;
       }
 
+      // Ensure every product has a valid, beautiful handloom image
+      this.products = this.products.map((p) => {
+        const primaryImage = p.primaryImage && p.primaryImage.trim() !== '' ? p.primaryImage : '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg';
+        const images = p.images && p.images.length > 0 ? p.images : [primaryImage];
+        return {
+          ...p,
+          primaryImage,
+          images
+        };
+      });
+
       const storedHiddenCategories = localStorage.getItem('aanchol_hidden_promotional_categories');
       this.hiddenPromotionalCategories = storedHiddenCategories ? JSON.parse(storedHiddenCategories) : INITIAL_HIDDEN_PROMOTIONAL_CATEGORIES;
 
       const storedCategories = localStorage.getItem('aanchol_categories');
-      this.categories = storedCategories ? JSON.parse(storedCategories) : INITIAL_CATEGORIES;
+      this.categories = (storedCategories ? JSON.parse(storedCategories) : INITIAL_CATEGORIES).map((c: Category) => ({
+        ...c,
+        image: c.image && c.image.trim() !== '' ? c.image : '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'
+      }));
 
       const storedBanners = localStorage.getItem('aanchol_banners');
-      this.banners = storedBanners ? JSON.parse(storedBanners) : INITIAL_BANNERS;
+      this.banners = (storedBanners ? JSON.parse(storedBanners) : INITIAL_BANNERS).map((b: Banner) => ({
+        ...b,
+        image: b.image && b.image.trim() !== '' ? b.image : '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'
+      }));
 
       const storedOrders = localStorage.getItem('aanchol_orders');
       this.orders = storedOrders ? JSON.parse(storedOrders) : INITIAL_ORDERS;

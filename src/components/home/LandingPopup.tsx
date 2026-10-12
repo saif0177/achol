@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Copy, Check, ArrowRight, Tag, Clock } from 'lucide-react';
 import { Language, LandingPopupConfig } from '../../types';
 import { store } from '../../services/store';
+import { handleImageError, FALLBACK_BANNER_IMAGE } from '../../utils/imageHelper';
 
 interface LandingPopupProps {
   language: Language;
@@ -155,6 +156,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
             <img
               src={config.image || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
               alt={config.titleEn || 'Promotional Banner'}
+              onError={(e) => handleImageError(e, FALLBACK_BANNER_IMAGE)}
               className="w-full h-auto max-h-[80vh] object-contain sm:object-cover group-hover:scale-102 transition-transform duration-500"
             />
 
@@ -219,6 +221,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
           <img
             src={config.image || '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'}
             alt="Promotion Banner"
+            onError={(e) => handleImageError(e, FALLBACK_BANNER_IMAGE)}
             className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />

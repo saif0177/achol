@@ -27,6 +27,7 @@ import {
 import { Product, Category, Language, HiddenPromotionalCategory, ProductVariant } from '../../types';
 import { store } from '../../services/store';
 import { ImageUploadBrowser } from '../common/ImageUploadBrowser';
+import { handleImageError } from '../../utils/imageHelper';
 
 interface SareeSpreadsheetProps {
   products: Product[];
@@ -34,6 +35,7 @@ interface SareeSpreadsheetProps {
   hiddenCategories: HiddenPromotionalCategory[];
   language: Language;
   onRefresh: () => void;
+  onAddNewProduct?: () => void;
   onEditInFullModal?: (product: Product) => void;
   onViewMore?: (product: Product) => void;
 }
@@ -44,27 +46,54 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
   hiddenCategories,
   language,
   onRefresh,
+  onAddNewProduct,
   onEditInFullModal,
   onViewMore
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
+  const [selectedDeliveryFilter, setSelectedDeliveryFilter] = useState<'all' | 'free' | 'standard'>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [selectedFabricFilter, setSelectedFabricFilter] = useState<string>('all');
+  const [selectedStockFilter, setSelectedStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Dynamically extract unique fabric/silk types from products
+  const availableFabricTypes = Array.from(
+    new Set(
+      products.map((p) => p.sareeType || p.fabric).filter(Boolean)
+    )
+  );
 
   // Synchronized Top Horizontal Scrollbar Refs
   const topScrollRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const tableInnerRef = useRef<HTMLTableElement>(null);
   const [tableScrollWidth, setTableScrollWidth] = useState<number>(0);
+  const [currentScrollLeft, setCurrentScrollLeft] = useState<number>(0);
+  const [maxScrollLeft, setMaxScrollLeft] = useState<number>(0);
+  const [expandedEditingId, setExpandedEditingId] = useState<string | null>(null);
 
   const isSyncingTop = useRef(false);
   const isSyncingTable = useRef(false);
+
+  const scrollToX = (x: number) => {
+    const target = Math.max(0, Math.min(x, maxScrollLeft || 2500));
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollLeft = target;
+    }
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = target;
+    }
+    setCurrentScrollLeft(target);
+  };
 
   const handleTopScroll = () => {
     if (isSyncingTop.current) return;
     isSyncingTable.current = true;
     if (tableScrollRef.current && topScrollRef.current) {
       tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+      setCurrentScrollLeft(topScrollRef.current.scrollLeft);
     }
     setTimeout(() => {
       isSyncingTable.current = false;
@@ -72,10 +101,11 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
   };
 
   const handleTableScroll = () => {
-    if (isSyncingTable.current) return;
+    if (isSyncingTop.current) return;
     isSyncingTop.current = true;
     if (topScrollRef.current && tableScrollRef.current) {
       topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
+      setCurrentScrollLeft(tableScrollRef.current.scrollLeft);
     }
     setTimeout(() => {
       isSyncingTop.current = false;
@@ -85,10 +115,12 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
   // Measure table width for synced top scrollbar
   useEffect(() => {
     const measure = () => {
-      if (tableInnerRef.current) {
-        setTableScrollWidth(tableInnerRef.current.scrollWidth);
-      } else if (tableScrollRef.current) {
-        setTableScrollWidth(tableScrollRef.current.scrollWidth);
+      const scrollW = tableInnerRef.current?.scrollWidth || tableScrollRef.current?.scrollWidth || 0;
+      const clientW = tableScrollRef.current?.clientWidth || 0;
+      setTableScrollWidth(scrollW);
+      setMaxScrollLeft(Math.max(0, scrollW - clientW));
+      if (tableScrollRef.current) {
+        setCurrentScrollLeft(tableScrollRef.current.scrollLeft);
       }
     };
     measure();
@@ -106,26 +138,84 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
   const [draftProduct, setDraftProduct] = useState<Product | null>(null);
   const [savedNotification, setSavedNotification] = useState<string | null>(null);
 
-  // Filtered rows
+  // Multi-Slot Filtered Rows
   const filteredProducts = products.filter((p) => {
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      !searchQuery ||
-      p.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.nameBn.includes(searchQuery);
+      !q ||
+      p.code.toLowerCase().includes(q) ||
+      p.nameEn.toLowerCase().includes(q) ||
+      p.nameBn.includes(q) ||
+      (p.fabric && p.fabric.toLowerCase().includes(q)) ||
+      (p.sareeType && p.sareeType.toLowerCase().includes(q));
 
     const matchesCategory =
       !selectedCategoryFilter || p.categoryId === selectedCategoryFilter;
 
-    return matchesSearch && matchesCategory;
+    const matchesDelivery =
+      selectedDeliveryFilter === 'all'
+        ? true
+        : selectedDeliveryFilter === 'free'
+        ? !!p.isFreeDelivery
+        : !p.isFreeDelivery;
+
+    const matchesStatus =
+      selectedStatusFilter === 'all'
+        ? true
+        : selectedStatusFilter === 'active'
+        ? !!p.isActive
+        : !p.isActive;
+
+    const matchesFabric =
+      selectedFabricFilter === 'all'
+        ? true
+        : (p.sareeType && p.sareeType.toLowerCase().includes(selectedFabricFilter.toLowerCase())) ||
+          (p.fabric && p.fabric.toLowerCase().includes(selectedFabricFilter.toLowerCase()));
+
+    const matchesStock =
+      selectedStockFilter === 'all'
+        ? true
+        : selectedStockFilter === 'in_stock'
+        ? p.stock > 0
+        : selectedStockFilter === 'low_stock'
+        ? p.stock > 0 && p.stock <= 5
+        : p.stock === 0;
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesDelivery &&
+      matchesStatus &&
+      matchesFabric &&
+      matchesStock
+    );
   });
+
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    Boolean(selectedCategoryFilter) ||
+    selectedDeliveryFilter !== 'all' ||
+    selectedStatusFilter !== 'all' ||
+    selectedFabricFilter !== 'all' ||
+    selectedStockFilter !== 'all';
+
+  const resetAllFilters = () => {
+    setSearchQuery('');
+    setSelectedCategoryFilter('');
+    setSelectedDeliveryFilter('all');
+    setSelectedStatusFilter('all');
+    setSelectedFabricFilter('all');
+    setSelectedStockFilter('all');
+  };
 
   const toggleExpandRow = (product: Product) => {
     if (expandedRowId === product.id) {
       setExpandedRowId(null);
       setDraftProduct(null);
+      setExpandedEditingId(null);
     } else {
       setExpandedRowId(product.id);
+      setExpandedEditingId(null); // Locked / Read-Only by default
       // Clone into draft
       setDraftProduct({
         ...product,
@@ -137,73 +227,6 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
     }
   };
 
-  const handleAddNewRow = () => {
-    const newCode = `ANC-${Math.floor(100 + Math.random() * 900)}`;
-    const newId = `p-${Date.now()}`;
-    const defaultCat = categories[0]?.id || 'dhakai-jamdani';
-    const sampleImg = '/src/assets/images/product_jamdani_crimson_red_1791268726175.jpg';
-
-    const newSaree: Product = {
-      id: newId,
-      code: newCode,
-      nameEn: 'New Handloom Saree Entry',
-      nameBn: 'নতুন তাঁতের শাড়ি',
-      price: 12000,
-      originalPrice: 14000,
-      discountPercent: 14,
-      pricingMethod: 'discount',
-      categoryId: defaultCat,
-      subcategoryId: '',
-      subcategoryIds: [],
-      promotionalCategoryIds: [],
-      sareeType: 'Dhakai Jamdani',
-      fabric: 'Fine Cotton & Resham',
-      fabricBn: 'সুতি ও রেশম সুতা',
-      occasion: 'Festivals & Weddings',
-      occasionBn: 'উৎসব ও অনুষ্ঠান',
-      suitableAgeRange: 'All Ages',
-      descriptionEn: 'Pure handloom saree woven with authentic heritage technique.',
-      descriptionBn: 'ঐতিহ্যবাহী তাঁতশিল্পীদের নিপুণ হাতে বোনা খাঁটি বাংলাদেশি শাড়ি।',
-      careInstructionsEn: 'Dry clean only.',
-      careInstructionsBn: 'ড্রাই ক্লিন করুন।',
-      length: '5.5 meters with Blouse Piece',
-      hasBlousePiece: true,
-      stock: 10,
-      isFeatured: false,
-      isNewArrival: true,
-      isSale: true,
-      isActive: true,
-      rating: 5.0,
-      reviewCount: 0,
-      keywords: ['handloom', 'saree'],
-      primaryImage: sampleImg,
-      images: [sampleImg],
-      variants: [
-        {
-          id: `v-${Date.now()}`,
-          colorNameEn: 'Vermilion Red',
-          colorNameBn: 'রক্তিম লাল',
-          colorHex: '#991B1B',
-          colorFamily: 'red',
-          image: sampleImg,
-          stock: 10,
-          sku: `${newCode}-RED`
-        }
-      ],
-      salesCount: 0,
-      viewsCount: 0,
-      isFreeDelivery: false
-    };
-
-    store.saveProduct(newSaree);
-    onRefresh();
-    // Open the new row expanded
-    setExpandedRowId(newId);
-    setDraftProduct(newSaree);
-    setSavedNotification(`New row ${newCode} added!`);
-    setTimeout(() => setSavedNotification(null), 3000);
-  };
-
   const handleSaveDraft = () => {
     if (!draftProduct) return;
     store.saveProduct(draftProduct);
@@ -212,71 +235,157 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
     setTimeout(() => setSavedNotification(null), 3000);
   };
 
-  // Quick inline update for cells in table
-  const handleQuickUpdate = (product: Product, updates: Partial<Product>) => {
-    const updated = { ...product, ...updates };
-    store.saveProduct(updated);
-    onRefresh();
-  };
-
   return (
-    <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs overflow-hidden space-y-3">
-      {/* Spreadsheet Header Toolbar */}
-      <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-stone-50/80 dark:bg-stone-850">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
-            <Table className="w-4 h-4" />
+    <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
+      {/* Saree Master Inventory Header & Filter Bar */}
+      <div className="p-4 border-b border-stone-200 dark:border-stone-800 bg-stone-50/90 dark:bg-stone-850 space-y-3">
+        {/* Top Header Row with Single Add Saree Button */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-900 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 shadow-2xs">
+              <Table className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                Saree Master Inventory
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-stone-800 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-stone-700">
+                  Showing {filteredProducts.length} of {products.length} Sarees
+                </span>
+              </h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                Full-detail heritage catalog: protected against accidental edits. Click <strong>View</strong> to review photos &amp; unlock editing.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-              Saree Data Spreadsheet
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-                Excel View · {filteredProducts.length} Rows
-              </span>
-            </h3>
-            <p className="text-xs text-stone-500">
-              Interactive inventory table: click row expander (<span className="font-bold">+</span>) to view or edit full details.
-            </p>
+
+          {/* Single Add Saree Button */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => onAddNewProduct ? onAddNewProduct() : onEditInFullModal?.(null as any)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-amber-900 hover:bg-amber-800 dark:bg-amber-700 dark:hover:bg-amber-600 rounded-xl shadow-xs transition active:scale-95 cursor-pointer whitespace-nowrap"
+              title="Add a new saree to inventory catalog"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Saree</span>
+            </button>
           </div>
         </div>
 
-        {/* Filter & Add Row Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search box */}
-          <div className="relative">
+        {/* Filter Slots Bar (Requirement: Silk slot, only free delivery, only active/inactive, etc.) */}
+        <div className="pt-2 border-t border-stone-200/80 dark:border-stone-800 flex flex-wrap items-center gap-2 text-xs">
+          {/* 1. Search Box */}
+          <div className="relative flex-1 min-w-[180px] sm:min-w-[220px]">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search code, name..."
-              className="text-xs pl-7 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 w-36 sm:w-44 focus:ring-1 focus:ring-amber-500"
+              placeholder="Search code (ANC-101), name, fabric..."
+              className="w-full text-xs pl-7 pr-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-1 focus:ring-amber-500"
             />
             <Search className="w-3.5 h-3.5 absolute left-2 top-2 text-stone-400" />
           </div>
 
-          {/* Category Filter */}
-          <select
-            value={selectedCategoryFilter}
-            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-            className="text-xs py-1.5 px-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-200"
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nameEn}
-              </option>
-            ))}
-          </select>
+          {/* 2. Silk / Fabric Slot */}
+          <div className="flex items-center gap-1 bg-white dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700">
+            <Layers className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 shrink-0">Silk/Fabric:</span>
+            <select
+              value={selectedFabricFilter}
+              onChange={(e) => setSelectedFabricFilter(e.target.value)}
+              className="bg-transparent text-xs text-stone-800 dark:text-stone-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="all">All Fabrics &amp; Silks</option>
+              <option value="jamdani">Dhakai Jamdani</option>
+              <option value="silk">Rajshahi Silk</option>
+              <option value="muslin">Dhakai Muslin</option>
+              <option value="cotton">Tangail Taat Cotton</option>
+              <option value="katan">Mirpur Katan</option>
+              {availableFabricTypes
+                .filter((f) => !['jamdani', 'silk', 'muslin', 'cotton', 'katan'].some((k) => f.toLowerCase().includes(k)))
+                .map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+            </select>
+          </div>
 
-          {/* Add Row Button */}
-          <button
-            type="button"
-            onClick={handleAddNewRow}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-xs transition active:scale-95"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Row (New Saree)</span>
-          </button>
+          {/* 3. Delivery Slot Filter */}
+          <div className="flex items-center gap-1 bg-white dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700">
+            <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 shrink-0">Delivery:</span>
+            <select
+              value={selectedDeliveryFilter}
+              onChange={(e) => setSelectedDeliveryFilter(e.target.value as any)}
+              className="bg-transparent text-xs text-stone-800 dark:text-stone-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="all">All Deliveries</option>
+              <option value="free">✓ Free Delivery Only</option>
+              <option value="standard">Standard Fee Only</option>
+            </select>
+          </div>
+
+          {/* 4. Status Slot Filter */}
+          <div className="flex items-center gap-1 bg-white dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700">
+            <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 shrink-0">Status:</span>
+            <select
+              value={selectedStatusFilter}
+              onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
+              className="bg-transparent text-xs text-stone-800 dark:text-stone-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="all">All Status</option>
+              <option value="active">✓ Active Only</option>
+              <option value="inactive">✕ Inactive Only</option>
+            </select>
+          </div>
+
+          {/* 5. Main Category Filter */}
+          <div className="flex items-center gap-1 bg-white dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700">
+            <Tag className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 shrink-0">Category:</span>
+            <select
+              value={selectedCategoryFilter}
+              onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+              className="bg-transparent text-xs text-stone-800 dark:text-stone-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nameEn}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 6. Stock Level Slot */}
+          <div className="flex items-center gap-1 bg-white dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700">
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 shrink-0">Stock:</span>
+            <select
+              value={selectedStockFilter}
+              onChange={(e) => setSelectedStockFilter(e.target.value as any)}
+              className="bg-transparent text-xs text-stone-800 dark:text-stone-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="all">All Stock</option>
+              <option value="in_stock">In Stock (&gt;0)</option>
+              <option value="low_stock">Low Stock (≤5)</option>
+              <option value="out_of_stock">Out of Stock (0)</option>
+            </select>
+          </div>
+
+          {/* Reset Filters Button */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={resetAllFilters}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-lg border border-rose-200 dark:border-rose-900 transition cursor-pointer"
+              title="Clear all active filters"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -287,69 +396,110 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
         </div>
       )}
 
-      {/* Top Horizontal Scrollbar Control (Requirement: horizontal scrolling bar on top to scroll easily) */}
-      <div className="bg-stone-50 dark:bg-stone-850 border-y border-stone-200 dark:border-stone-700 px-3 py-1.5 flex items-center justify-between gap-3 text-[11px] text-stone-600 dark:text-stone-300">
-        <div className="flex items-center gap-1.5 shrink-0 font-semibold text-amber-900 dark:text-amber-400">
-          <ArrowLeftRight className="w-3.5 h-3.5" />
-          <span>Top Scroll Bar:</span>
+      {/* Top Horizontal Scrollbar Control (Requirement: sticky horizontal scrolling bar to scroll in the mid of inventory) */}
+      <div className="sticky top-[60px] z-20 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-y border-stone-200 dark:border-stone-700 px-4 py-2.5 shadow-md space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-400">
+            <ArrowLeftRight className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
+            <span>Top Horizontal Scroll Bar</span>
+            <span className="text-[11px] font-normal text-stone-500 dark:text-stone-400">
+              (Use bar, slider, or buttons to easily pan all 14 columns)
+            </span>
+          </div>
+
+          {/* Quick jump & scroll buttons */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => scrollToX(0)}
+              className="px-2 py-1 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950/60 font-semibold text-[11px] cursor-pointer transition shadow-2xs active:scale-95"
+              title="Scroll to beginning"
+            >
+              ⇤ Start
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const nextX = Math.max(0, currentScrollLeft - 300);
+                scrollToX(nextX);
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950/60 font-semibold text-[11px] cursor-pointer transition shadow-2xs active:scale-95"
+              title="Scroll Left"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Left</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const nextX = Math.min(maxScrollLeft || 2500, currentScrollLeft + 300);
+                scrollToX(nextX);
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950/60 font-semibold text-[11px] cursor-pointer transition shadow-2xs active:scale-95"
+              title="Scroll Right"
+            >
+              <span>Right</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToX(maxScrollLeft || 2500)}
+              className="px-2 py-1 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950/60 font-semibold text-[11px] cursor-pointer transition shadow-2xs active:scale-95"
+              title="Scroll to end"
+            >
+              End ⇥
+            </button>
+          </div>
         </div>
+
+        {/* Dedicated Native Scrollbar Container with custom styled track & thumb */}
         <div
           ref={topScrollRef}
           onScroll={handleTopScroll}
-          className="overflow-x-auto overflow-y-hidden flex-1 h-4 scrollbar-thin scrollbar-thumb-amber-600/70 scrollbar-track-stone-200 dark:scrollbar-track-stone-800 cursor-ew-resize"
-          title="Drag or scroll horizontally here to pan the table"
+          className="overflow-x-auto overflow-y-hidden w-full h-5 admin-horizontal-scrollbar rounded-md bg-stone-200/80 dark:bg-stone-800 cursor-ew-resize border border-stone-300 dark:border-stone-700"
+          title="Drag this horizontal scrollbar to pan the table"
         >
-          <div style={{ width: `${Math.max(tableScrollWidth, 1200)}px`, height: '1px' }} />
+          <div style={{ width: `${Math.max(tableScrollWidth, 1400)}px`, height: '4px' }} />
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              if (tableScrollRef.current) {
-                tableScrollRef.current.scrollBy({ left: -250, behavior: 'smooth' });
-              }
-            }}
-            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950 font-bold text-[10px] cursor-pointer"
-            title="Scroll Left"
-          >
-            <ChevronLeft className="w-3 h-3" />
-            <span>Left</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (tableScrollRef.current) {
-                tableScrollRef.current.scrollBy({ left: 250, behavior: 'smooth' });
-              }
-            }}
-            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-50 dark:hover:bg-amber-950 font-bold text-[10px] cursor-pointer"
-            title="Scroll Right"
-          >
-            <span>Right</span>
-            <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
+
+        {/* Range Slider Scrubber for immediate 1-click horizontal navigation */}
+        {maxScrollLeft > 0 && (
+          <div className="flex items-center gap-2 pt-0.5">
+            <span className="text-[10px] text-stone-400 font-mono">0%</span>
+            <input
+              type="range"
+              min={0}
+              max={maxScrollLeft}
+              value={currentScrollLeft}
+              onChange={(e) => scrollToX(Number(e.target.value))}
+              className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-600"
+              title="Pan table horizontally"
+            />
+            <span className="text-[10px] text-stone-400 font-mono">100%</span>
+          </div>
+        )}
       </div>
+
 
       {/* Spreadsheet Table */}
       <div ref={tableScrollRef} onScroll={handleTableScroll} className="overflow-x-auto">
         <table ref={tableInnerRef} className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-stone-100 dark:bg-stone-800 border-y border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-bold uppercase tracking-wider text-[10px]">
-              <th className="py-2.5 px-3 w-10 text-center">+/-</th>
+              <th className="py-2.5 px-3 text-center whitespace-nowrap">View More</th>
               <th className="py-2.5 px-2 w-14">Image</th>
               <th className="py-2.5 px-3">Code / SKU</th>
               <th className="py-2.5 px-4">Saree Name</th>
               <th className="py-2.5 px-3">Main Category</th>
               <th className="py-2.5 px-3">Subcategories</th>
               <th className="py-2.5 px-3">Offer Categories</th>
+              <th className="py-2.5 px-3">Silk / Fabric</th>
               <th className="py-2.5 px-3">Pricing Mode</th>
               <th className="py-2.5 px-3">Orig Price</th>
               <th className="py-2.5 px-3">Final Price</th>
               <th className="py-2.5 px-3 text-center">Stock</th>
               <th className="py-2.5 px-3 text-center">Free Delivery</th>
               <th className="py-2.5 px-3 text-center">Status</th>
-              <th className="py-2.5 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
@@ -371,30 +521,23 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
                       isExpanded ? 'bg-amber-50/60 dark:bg-stone-850 font-medium' : ''
                     }`}
                   >
-                    {/* Expand/Collapse Button */}
-                    <td className="py-2 px-3 text-center">
+                    {/* View More Button (Requirement: remove +/- and put view more in this place) */}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       <button
                         type="button"
-                        onClick={() => toggleExpandRow(p)}
-                        className={`w-6 h-6 rounded flex items-center justify-center transition border ${
-                          isExpanded
-                            ? 'bg-amber-700 text-white border-amber-800 shadow-xs'
-                            : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:border-amber-500'
-                        }`}
-                        title={isExpanded ? 'Collapse row' : 'Expand full details to view or edit'}
+                        onClick={() => onViewMore ? onViewMore(p) : onEditInFullModal?.(p)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-950 dark:text-amber-200 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/80 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-700/80 shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap"
+                        title={`View full details & protected editing for ${p.code}`}
                       >
-                        {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        )}
+                        <Eye className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
+                        <span>View More</span>
                       </button>
                     </td>
 
                     {/* Image */}
                     <td className="py-2 px-2">
                       <div className="w-9 h-9 rounded-md overflow-hidden bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700">
-                        <img src={p.primaryImage} alt="" className="w-full h-full object-cover" />
+                        <img src={p.primaryImage} alt="" onError={handleImageError} className="w-full h-full object-cover" />
                       </div>
                     </td>
 
@@ -454,6 +597,16 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
                       </div>
                     </td>
 
+                    {/* Silk / Fabric */}
+                    <td className="py-2 px-3 whitespace-nowrap">
+                      <span className="font-semibold text-xs text-stone-900 dark:text-stone-100 block">
+                        {p.sareeType || 'Heritage Saree'}
+                      </span>
+                      <span className="text-[10px] text-stone-500 block truncate max-w-[130px]">
+                        {p.fabric || p.fabricBn}
+                      </span>
+                    </td>
+
                     {/* Pricing Mode */}
                     <td className="py-2 px-3 whitespace-nowrap">
                       <span className="text-[11px] font-semibold text-stone-600 dark:text-stone-400">
@@ -471,88 +624,49 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
                       ৳{p.price.toLocaleString()}
                     </td>
 
-                    {/* Stock (Quick Inline Input) */}
-                    <td className="py-2 px-3 text-center">
-                      <input
-                        type="number"
-                        min="0"
-                        value={p.stock}
-                        onChange={(e) =>
-                          handleQuickUpdate(p, { stock: Math.max(0, parseInt(e.target.value) || 0) })
-                        }
-                        className="w-14 text-center py-1 px-1 text-xs rounded border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 font-mono font-bold"
-                      />
+                    {/* Stock (Read-only protected view) */}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded font-mono font-bold text-xs ${
+                          p.stock <= 0
+                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            : p.stock <= 5
+                            ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        }`}
+                        title="Stock quantity (click View to edit)"
+                      >
+                        {p.stock} pcs
+                      </span>
                     </td>
 
-                    {/* Free Delivery Toggle */}
-                    <td className="py-2 px-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickUpdate(p, { isFreeDelivery: !p.isFreeDelivery })}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition ${
+                    {/* Free Delivery (Read-only protected view) */}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           p.isFreeDelivery
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                            : 'bg-stone-100 text-stone-400 dark:bg-stone-800 dark:text-stone-500'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                            : 'bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400 border border-stone-200 dark:border-stone-700'
                         }`}
-                        title="Toggle Free Delivery for this saree"
+                        title="Free delivery setting (click View to edit)"
                       >
                         <Truck className="w-3 h-3" />
                         {p.isFreeDelivery ? 'Free' : 'Std'}
-                      </button>
+                      </span>
                     </td>
 
-                    {/* Status Toggle */}
-                    <td className="py-2 px-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickUpdate(p, { isActive: !p.isActive })}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    {/* Status (Read-only protected view) */}
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
                           p.isActive
-                            ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'
-                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 border border-green-300 dark:border-green-800'
+                            : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
                         }`}
+                        title="Listing status (click View to edit)"
                       >
                         {p.isActive ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-2 px-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1">
-                        {onViewMore && (
-                          <button
-                            type="button"
-                            onClick={() => onViewMore(p)}
-                            className="p-1 rounded text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800"
-                            title="View More (All Details & Photos)"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {onEditInFullModal && (
-                          <button
-                            type="button"
-                            onClick={() => onEditInFullModal(p)}
-                            className="p-1 rounded text-amber-700 hover:text-amber-900 hover:bg-amber-100 dark:hover:bg-amber-950/60"
-                            title="Open full wizard modal"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`Delete ${p.code}?`)) {
-                              store.deleteProduct(p.id);
-                              onRefresh();
-                            }
-                          }}
-                          className="p-1 rounded text-rose-600 hover:text-rose-800 hover:bg-rose-100 dark:hover:bg-rose-950/60"
-                          title="Delete row"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      </span>
                     </td>
                   </tr>
 
@@ -561,26 +675,71 @@ export const SareeSpreadsheet: React.FC<SareeSpreadsheetProps> = ({
                     <tr className="bg-amber-50/20 dark:bg-stone-850/90 border-b-2 border-amber-600/30">
                       <td colSpan={14} className="p-4 sm:p-6">
                         <div className="bg-white dark:bg-stone-900 p-5 rounded-xl border border-stone-200 dark:border-stone-800 shadow-md space-y-6 animate-fadeIn">
-                          {/* Expanded Header */}
-                          <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
+                          {/* Expanded Header with Security Controls */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 dark:border-stone-800 pb-3">
                             <div className="flex items-center gap-2">
                               <span className="font-mono font-bold text-amber-900 dark:text-amber-200 text-sm">
                                 {draftProduct.code}
                               </span>
-                              <span className="text-xs text-stone-500">· Full In-Sheet Editor</span>
+                              {expandedEditingId !== draftProduct.id ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                  <Lock className="w-3 h-3 text-amber-700" />
+                                  Protected View
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  Editing Unlocked
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
+                              {onViewMore && (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewMore(draftProduct)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-stone-300 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 rounded-lg transition"
+                                  title="Open Protected Full Modal"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View in Modal</span>
+                                </button>
+                              )}
+                              {expandedEditingId !== draftProduct.id ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedEditingId(draftProduct.id)}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-xs transition active:scale-95 cursor-pointer"
+                                  title="Unlock editing"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Unlock to Edit</span>
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedEditingId(null)}
+                                    className="px-2.5 py-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-lg"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveDraft}
+                                    className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-xs transition active:scale-95"
+                                  >
+                                    <Save className="w-3.5 h-3.5" />
+                                    <span>Save Changes</span>
+                                  </button>
+                                </>
+                              )}
                               <button
                                 type="button"
-                                onClick={handleSaveDraft}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-xs transition active:scale-95"
-                              >
-                                <Save className="w-3.5 h-3.5" />
-                                <span>Save Changes</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedRowId(null)}
+                                onClick={() => {
+                                  setExpandedRowId(null);
+                                  setExpandedEditingId(null);
+                                }}
                                 className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg"
                               >
                                 <X className="w-4 h-4" />
