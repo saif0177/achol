@@ -9,23 +9,25 @@ import {
   Truck,
   Save,
   Trash2,
-  Lock,
   Layers,
   Gift,
   FolderPlus,
   Package,
   AlertTriangle,
   Sparkles,
-  Phone,
   Info
 } from 'lucide-react';
-import { Coupon, CouponApplicableType } from '../../types';
+import { Coupon, CouponApplicableType, Category, Promotion, HiddenPromotionalCategory, Product, Subcategory } from '../../types';
 import { store } from '../../services/store';
 
 interface CouponModalProps {
   isOpen: boolean;
   onClose: () => void;
   couponToEdit?: Coupon | null;
+  categories?: Category[];
+  promotions?: Promotion[];
+  hiddenCategories?: HiddenPromotionalCategory[];
+  products?: Product[];
   onSave: (coupon: Coupon) => void;
   onDelete?: (id: string) => void;
 }
@@ -34,14 +36,18 @@ export const CouponModal: React.FC<CouponModalProps> = ({
   isOpen,
   onClose,
   couponToEdit,
+  categories: propCategories,
+  promotions: propPromos,
+  hiddenCategories: propHidden,
+  products: propProducts,
   onSave,
   onDelete
 }) => {
-  // Dynamic data from admin database
-  const categories = useMemo(() => store.getAllCategoriesAdmin(), []);
-  const promotions = useMemo(() => store.getAllPromotionsAdmin(), []);
-  const hiddenCategories = useMemo(() => store.getHiddenPromotionalCategories(), []);
-  const products = useMemo(() => store.getAllProductsAdmin(), []);
+  // Dynamic data from admin database with real-time updates
+  const categories = useMemo(() => propCategories || store.getAllCategoriesAdmin(), [propCategories, isOpen]);
+  const promotions = useMemo(() => propPromos || store.getAllPromotionsAdmin(), [propPromos, isOpen]);
+  const hiddenCategories = useMemo(() => propHidden || store.getHiddenPromotionalCategories(), [propHidden, isOpen]);
+  const products = useMemo(() => propProducts || store.getAllProductsAdmin(), [propProducts, isOpen]);
 
   // Basic coupon fields
   const [code, setCode] = useState(couponToEdit?.code || '');
@@ -52,7 +58,7 @@ export const CouponModal: React.FC<CouponModalProps> = ({
   const [descriptionBn, setDescriptionBn] = useState(couponToEdit?.descriptionBn || '');
   const [isActive, setIsActive] = useState<boolean>(couponToEdit?.isActive ?? true);
 
-  // Requirement 5: Applicable To options
+  // Requirement 3: Applicable To options
   const [applicableTo, setApplicableTo] = useState<CouponApplicableType>(couponToEdit?.applicableTo || 'all');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(couponToEdit?.applicableCategoryIds || []);
   const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState<string[]>(couponToEdit?.applicableSubcategoryIds || []);
@@ -64,19 +70,13 @@ export const CouponModal: React.FC<CouponModalProps> = ({
   // Collect all available subcategories across categories
   const allSubcategories = useMemo(() => {
     return categories.flatMap((cat) =>
-      (cat.subcategories || []).map((sub) => ({
+      (cat.subcategories || []).map((sub: Subcategory) => ({
         ...sub,
         parentCategoryName: cat.nameEn,
         parentCategoryId: cat.id
       }))
     );
   }, [categories]);
-
-  // Requirement 2: VIP / Private Negotiated Code management
-  const [isPrivate, setIsPrivate] = useState<boolean>(couponToEdit?.isPrivate ?? false);
-  const [targetPhone, setTargetPhone] = useState<string>(couponToEdit?.targetPhone || '');
-  const [isOneTime, setIsOneTime] = useState<boolean>(couponToEdit?.isOneTime ?? false);
-  const [note, setNote] = useState<string>(couponToEdit?.note || '');
 
   // Optional Conditions (Duration, Usage Limits, Thresholds)
   const [enableDuration, setEnableDuration] = useState<boolean>(!!couponToEdit?.startDate || !!couponToEdit?.endDate);
@@ -211,20 +211,13 @@ export const CouponModal: React.FC<CouponModalProps> = ({
       minOrderAmount: enableMinAmount ? Number(minOrderAmount) : undefined,
       maxDiscountAmount: enableMaxDiscount ? Number(maxDiscountAmount) : undefined,
 
-      // Requirement 5: Applicable To
+      // Applicable To
       applicableTo,
       applicableCategoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
       applicableSubcategoryIds: selectedSubcategoryIds.length > 0 ? selectedSubcategoryIds : undefined,
       applicableOfferIds: selectedOfferIds.length > 0 ? selectedOfferIds : undefined,
       applicableHiddenCategoryIds: selectedHiddenCategoryIds.length > 0 ? selectedHiddenCategoryIds : undefined,
-      applicableProductIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
-
-      // Requirement 2: VIP / Private Code fields
-      isPrivate,
-      targetPhone: isPrivate && targetPhone.trim() ? targetPhone.trim() : undefined,
-      isOneTime: isPrivate ? isOneTime : false,
-      used: couponToEdit?.used || false,
-      note: note.trim() || undefined
+      applicableProductIds: selectedProductIds.length > 0 ? selectedProductIds : undefined
     };
 
     onSave(newCoupon);
@@ -244,26 +237,15 @@ export const CouponModal: React.FC<CouponModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-850 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-              isPrivate
-                ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-300'
-                : 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300'
-            }`}>
-              {isPrivate ? <Lock className="w-4 h-4" /> : <Tag className="w-4 h-4" />}
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300">
+              <Tag className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
-                  {couponToEdit ? 'Edit Coupon & Conditions' : 'Create New Coupon Voucher'}
-                </h2>
-                {isPrivate && (
-                  <span className="bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    VIP Private
-                  </span>
-                )}
-              </div>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
+                {couponToEdit ? 'Edit Coupon & Conditions' : 'Create New Coupon Voucher'}
+              </h2>
               <p className="text-[11px] text-stone-500">
-                Configure discount rates, eligible products, and duration conditions
+                Configure discount rates, eligible products, and redemption conditions
               </p>
             </div>
           </div>
@@ -735,83 +717,6 @@ export const CouponModal: React.FC<CouponModalProps> = ({
             )}
           </div>
 
-          {/* ========================================================
-              Requirement 2: VIP / PRIVATE NEGOTIATED CODE SECTION
-              ======================================================== */}
-          <div className="space-y-3 p-4 rounded-xl border border-purple-200 dark:border-purple-900/40 bg-purple-50/40 dark:bg-purple-950/15">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                />
-                <div>
-                  <span className="font-bold text-xs text-purple-950 dark:text-purple-200 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-purple-700" />
-                    VIP / Private Negotiated Code
-                  </span>
-                  <span className="text-[10px] text-purple-700 dark:text-purple-300 block">
-                    Hidden from public promo lists; intended for custom customer deals via WhatsApp or phone.
-                  </span>
-                </div>
-              </label>
-            </div>
-
-            {isPrivate && (
-              <div className="pt-2 border-t border-purple-200 dark:border-purple-800 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-purple-900 dark:text-purple-200 mb-1 flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      Restrict to Customer Phone (Optional)
-                    </label>
-                    <input
-                      type="tel"
-                      value={targetPhone}
-                      onChange={(e) => setTargetPhone(e.target.value)}
-                      placeholder="e.g. 01712345678"
-                      className="w-full p-2 bg-white dark:bg-stone-850 rounded-xl border border-purple-300 dark:border-purple-700 text-xs font-mono"
-                    />
-                    <span className="text-[10px] text-stone-500 block mt-0.5">
-                      Only an order placed with this mobile number can use this code.
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-purple-900 dark:text-purple-200 mb-1">
-                      One-Time Single Redemption
-                    </label>
-                    <label className="flex items-center gap-2 p-2 bg-white dark:bg-stone-850 rounded-xl border border-purple-300 dark:border-purple-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isOneTime}
-                        onChange={(e) => setIsOneTime(e.target.checked)}
-                        className="rounded text-purple-600"
-                      />
-                      <span className="text-xs text-stone-700 dark:text-stone-300">
-                        Mark as single-use (expires after 1 order)
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-purple-900 dark:text-purple-200 mb-1">
-                    Internal Negotiation Note
-                  </label>
-                  <input
-                    type="text"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="e.g. Negotiated price ৳35,000 via WhatsApp with Mrs. Rahman for DM-204"
-                    className="w-full p-2 bg-white dark:bg-stone-850 rounded-xl border border-purple-300 dark:border-purple-700 text-xs"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Section: Optional Conditions (Duration, Usage Limits, Thresholds) */}
           <div className="space-y-3">

@@ -1705,10 +1705,7 @@ class StoreService {
 
       const storedCoupons = localStorage.getItem('aanchol_coupons');
       if (storedCoupons) {
-        const parsedCoupons: Coupon[] = JSON.parse(storedCoupons);
-        const existingCodes = new Set(parsedCoupons.map((c) => c.code.toUpperCase()));
-        const missing = INITIAL_COUPONS.filter((c) => !existingCodes.has(c.code.toUpperCase()));
-        this.coupons = [...parsedCoupons, ...missing];
+        this.coupons = JSON.parse(storedCoupons);
       } else {
         this.coupons = INITIAL_COUPONS;
       }
@@ -2978,11 +2975,13 @@ class StoreService {
       }
 
       let candidatePrice = originalPrice;
-      if (promo.type === 'percentage' && promo.discountPercent) {
+      if ((promo.type === 'percentage' || promo.pricingMethod === 'percentage') && promo.discountPercent) {
         candidatePrice = Math.round(originalPrice * (1 - promo.discountPercent / 100));
-      } else if (promo.type === 'fixed' && (promo.discountAmount || promo.fixedDiscount)) {
+      } else if ((promo.type === 'fixed' || promo.pricingMethod === 'fixed') && (promo.discountAmount || promo.fixedDiscount)) {
         const amt = promo.discountAmount || promo.fixedDiscount || 0;
         candidatePrice = Math.max(0, originalPrice - amt);
+      } else if ((promo.type === 'direct_sale_price' || promo.pricingMethod === 'sale_price' || (promo.salePrice && promo.salePrice > 0))) {
+        candidatePrice = Math.max(0, promo.salePrice || originalPrice);
       } else if (promo.type === 'flash_sale' && promo.discountPercent) {
         candidatePrice = Math.round(originalPrice * (1 - promo.discountPercent / 100));
       }
@@ -3225,7 +3224,9 @@ class StoreService {
                 .filter((c) => matchedCoupon.applicableCategoryIds?.includes(c.id))
                 .map((c) => c.nameEn)
                 .join(', ');
-              restrictionHint = `valid only for: ${catNames}`;
+              restrictionHint = `valid only for categories: ${catNames}`;
+            } else if (matchedCoupon.applicableSubcategoryIds?.length) {
+              restrictionHint = 'valid only for specific designated subcategories';
             } else if (matchedCoupon.applicableOfferIds?.length) {
               restrictionHint = 'valid only for specific promotional offers';
             } else if (matchedCoupon.applicableHiddenCategoryIds?.length) {
@@ -3344,22 +3345,8 @@ class StoreService {
         isFreeDelivery,
         promo,
         message: promo.type === 'free_delivery'
-          ? 'Free Delivery coupon applied!'
-          : `Coupon applied: ৳${discount.toLocaleString()} discount!`
-      };
-    }
-
-    // 3. Check private codes
-    const privateCode = this.privateCodes.find(
-      (c) => c.code.trim().toUpperCase() === code && c.isActive && !c.used
-    );
-    if (privateCode) {
-      const discount = privateCode.specialPrice;
-      return {
-        valid: true,
-        discount,
-        isFreeDelivery: false,
-        message: `Private VIP code applied: ৳${discount.toLocaleString()} discount!`
+          ? 'Free Delivery offer applied!'
+          : `Promo code ${promo.code || code} applied: ৳${discount.toLocaleString()} discount!`
       };
     }
 
@@ -3406,13 +3393,16 @@ class StoreService {
 
       // Check if any item in cart is part of the promo's products
       if (promo.productIds && promo.productIds.length > 0) {
-        const matches = items.some((item) => promo.productIds?.includes(item.productId));
+        const matches = items.some(
+          (item) => promo.productIds?.includes(item.productId) && !promo.excludedProductIds?.includes(item.productId)
+        );
         if (matches) return true;
       }
 
       // Check if any item belongs to the promotional category
       if (promo.promotionalCategoryId) {
         const matchesCat = items.some((item) => {
+          if (promo.excludedProductIds?.includes(item.productId)) return false;
           const prod = this.getProductById(item.productId);
           return (
             prod?.promotionalCategoryIds?.includes(promo.promotionalCategoryId!) ||

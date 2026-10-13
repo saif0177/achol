@@ -59,6 +59,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     return null; // As requested: If no banner assigned, slot remains empty!
   }
 
+  // Check if banner is graphic image-only mode
+  const isImageOnly = Boolean((current as any).displayMode === 'image_only' || (!current.titleEn?.trim() && !current.titleBn?.trim()));
+
   return (
     <div className="relative w-full overflow-hidden bg-stone-900 border-b border-stone-800">
       {/* Visual background image with measured contrast scrim for WCAG AA readability */}
@@ -71,20 +74,25 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           <div className="absolute inset-0">
             <img
               src={current.image}
-              alt={current.titleEn}
+              alt={current.titleEn || 'Hero Promotion Banner'}
               referrerPolicy="no-referrer"
               onError={(e) => handleImageError(e, FALLBACK_BANNER_IMAGE)}
               className="w-full h-full object-cover object-center transform scale-102 group-hover:scale-104 transition-transform duration-1000 ease-out"
             />
-            {/* Scrim gradient: 60-30-10 measured overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/80 to-stone-950/40" />
-            <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-black/50" />
+            {/* Scrim gradient: 60-30-10 measured overlay only when text content is present */}
+            {!isImageOnly && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/80 to-stone-950/40" />
+                <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-black/50" />
+              </>
+            )}
           </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950/40" />
         )}
 
-        {/* Content Box */}
+        {/* Content Box (hidden in image-only mode) */}
+        {!isImageOnly && (
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-10 w-full">
           <div className="max-w-2xl space-y-2.5 sm:space-y-3.5">
             
@@ -159,6 +167,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
           </div>
         </div>
+        )}
 
         {/* Carousel slide controls */}
         {activeBanners.length > 1 && (

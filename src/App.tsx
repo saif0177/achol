@@ -72,6 +72,15 @@ export default function App() {
     return () => window.removeEventListener('gmp-quota-exceeded', handleQuotaExceeded);
   }, []);
 
+  // Real-time store synchronization across the whole application (Requirement 2)
+  const [, setStoreUpdateTick] = useState(0);
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => {
+      setStoreUpdateTick((tick) => tick + 1);
+    });
+    return unsubscribe;
+  }, []);
+
   // Active view: 'home' | 'shop' | 'product-detail' | 'product-reviews' | 'all-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
   const [activeView, setActiveView] = useState<
     'home' | 'shop' | 'product-detail' | 'product-reviews' | 'all-reviews' | 'flash-sale' | 'offers' | 'offer-detail' | 'category-article' | 'admin'
@@ -85,6 +94,64 @@ export default function App() {
   // Selected Offer & Category for Dedicated Article Views
   const [selectedOffer, setSelectedOffer] = useState<Promotion | null>(null);
   const [selectedCategoryForArticle, setSelectedCategoryForArticle] = useState<Category | null>(null);
+
+  // Unified Destination Navigation Handler (Requirement 10)
+  const handleNavigateDestination = (destination: string) => {
+    if (!destination) {
+      setActiveView('shop');
+      return;
+    }
+    if (destination === 'offers' || destination === '/offers') {
+      setActiveView('offers');
+      return;
+    }
+    if (destination === 'flash-sale' || destination === 'flash_sale' || destination === '/flash-sale') {
+      setActiveView('flash-sale');
+      return;
+    }
+    if (destination === 'shop' || destination === '/shop') {
+      setActiveView('shop');
+      return;
+    }
+    // Check if destination matches an active promotion ID or code
+    const promo = store.getAllPromotionsAdmin().find(
+      (p) => p.id === destination || p.code?.toUpperCase() === destination.toUpperCase()
+    );
+    if (promo) {
+      setSelectedOffer(promo);
+      setActiveView('offer-detail');
+      return;
+    }
+    // Check if destination matches an actual catalog category
+    const cat = store.getCategories().find(
+      (c) => c.id === destination || c.slug === destination || destination.includes(c.id)
+    );
+    if (cat) {
+      setFilters({ ...defaultFilters, categoryId: cat.id });
+      setActiveView('shop');
+      return;
+    }
+    // Check if destination matches a hidden promotional category
+    const hiddenCat = store.getHiddenPromotionalCategories().find((c) => c.id === destination || c.slug === destination);
+    if (hiddenCat) {
+      // Find associated promotion if exists
+      const linkedPromo = store.getAllPromotionsAdmin().find((p) => p.promotionalCategoryId === hiddenCat.id);
+      if (linkedPromo) {
+        setSelectedOffer(linkedPromo);
+        setActiveView('offer-detail');
+        return;
+      }
+    }
+    // Check if destination matches a specific product ID or code
+    const prod = store.getProductById(destination) || store.getProductByCode(destination);
+    if (prod) {
+      setSelectedProduct(prod);
+      setSelectedVariant(prod.variants[0]);
+      setActiveView('product-detail');
+      return;
+    }
+    setActiveView('shop');
+  };
 
   // Cart State (saved to localStorage)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -590,17 +657,38 @@ export default function App() {
               banners={heroBanners}
               language={language}
               onCtaClick={(destination) => {
+                if (!destination || destination === 'shop') {
+                  setActiveView('shop');
+                  return;
+                }
+                if (destination === 'offers') {
+                  setActiveView('offers');
+                  return;
+                }
+                if (destination === 'flash-sale') {
+                  setActiveView('flash-sale');
+                  return;
+                }
+                if (destination.startsWith('category/')) {
+                  const catId = destination.replace('category/', '');
+                  handleSelectCategory(catId);
+                  return;
+                }
+                const cleanOfferId = destination.startsWith('offer-') ? destination.replace('offer-', '') : destination;
                 const promo = store.getPromotions().find(
-                  (p) => p.id === destination || p.code === destination
+                  (p) => p.id === cleanOfferId || p.id === destination || p.code === destination
                 );
                 if (promo) {
                   setSelectedOffer(promo);
                   setActiveView('offer-detail');
-                } else if (destination === 'offers') {
-                  setActiveView('offers');
-                } else {
-                  setActiveView('shop');
+                  return;
                 }
+                const cat = categories.find((c) => c.id === destination || c.slug === destination);
+                if (cat) {
+                  handleSelectCategory(cat.id);
+                  return;
+                }
+                setActiveView('shop');
               }}
             />
 

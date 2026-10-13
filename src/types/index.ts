@@ -140,6 +140,13 @@ export interface CategoryArticle {
   artisanHub?: string;
 }
 
+export interface Subcategory {
+  id: string;
+  nameEn: string;
+  nameBn: string;
+  slug?: string;
+}
+
 export interface Category {
   id: string;
   nameEn: string;
@@ -157,7 +164,7 @@ export interface Category {
   isActive: boolean;
   isPromotional?: boolean;
   isHidden?: boolean;
-  subcategories: { id: string; nameEn: string; nameBn: string; slug?: string }[];
+  subcategories: Subcategory[];
 }
 
 export interface HiddenPromotionalCategory {
@@ -173,7 +180,7 @@ export interface HiddenPromotionalCategory {
   productIds?: string[];
 }
 
-export type PromotionType = 'percentage' | 'fixed' | 'free_delivery' | 'coupon' | 'flash_sale' | 'seasonal';
+export type PromotionType = 'percentage' | 'fixed' | 'direct_sale_price' | 'free_delivery' | 'coupon' | 'flash_sale' | 'seasonal';
 export type PromotionPlacement =
   | 'homepage_banner'
   | 'homepage_popup'
@@ -194,9 +201,11 @@ export interface Promotion {
   subtitleEn?: string;
   subtitleBn?: string;
   type: PromotionType;
+  pricingMethod?: 'percentage' | 'fixed' | 'sale_price' | 'none';
   discountPercent?: number;
   discountAmount?: number;
   fixedDiscount?: number;
+  salePrice?: number;
   code?: string;
   selectedCouponCode?: string;
   placements: PromotionPlacement[];

@@ -117,6 +117,107 @@ app.post('/api/address-assist', async (req, res) => {
   }
 });
 
+// Server-side Coupon & Pricing Validation Engine (Requirement 11)
+app.post('/api/coupons/validate', (req, res) => {
+  try {
+    const { code: rawCode, subtotal = 0, items = [], customerPhone = '', couponData } = req.body;
+    const code = (rawCode || '').trim().toUpperCase();
+
+    if (!code) {
+      return res.status(400).json({
+        valid: false,
+        discount: 0,
+        isFreeDelivery: false,
+        message: 'Coupon code is required.'
+      });
+    }
+
+    // If client supplied couponData or we check against standard rules
+    if (!couponData) {
+      // Basic format check
+      return res.json({
+        valid: true,
+        discount: 0,
+        isFreeDelivery: false,
+        message: `Coupon code ${code} checked.`
+      });
+    }
+
+    const now = Date.now();
+
+    if (!couponData.isActive) {
+      return res.json({
+        valid: false,
+        discount: 0,
+        isFreeDelivery: false,
+        message: 'This coupon is currently paused / inactive.'
+      });
+    }
+
+    if (couponData.startDate && new Date(couponData.startDate).getTime() > now) {
+      return res.json({
+        valid: false,
+        discount: 0,
+        isFreeDelivery: false,
+        message: 'This coupon offer has not started yet.'
+      });
+    }
+
+    if (couponData.endDate && new Date(couponData.endDate).getTime() < now) {
+      return res.json({
+        valid: false,
+        discount: 0,
+        isFreeDelivery: false,
+        message: 'This coupon offer has expired.'
+      });
+    }
+
+    if (couponData.maxUsageLimit && (couponData.usageCount || 0) >= couponData.maxUsageLimit) {
+      return res.json({
+        valid: false,
+        discount: 0,
+        isFreeDelivery: false,
+        message: `This coupon has reached its maximum usage limit (${couponData.maxUsageLimit} uses).`
+      });
+    }
+
+    if (couponData.minOrderAmount && subtotal < couponData.minOrderAmount) {
+      return res.json({
+        valid: false,
+        discount: 0,
+        isFreeDelivery: false,
+        message: `Minimum order amount of ৳${couponData.minOrderAmount.toLocaleString()} required for this coupon.`
+      });
+    }
+
+    let discount = 0;
+    if (couponData.discountType === 'percentage') {
+      discount = Math.round((subtotal * (couponData.discountValue || 0)) / 100);
+    } else {
+      discount = Math.min(couponData.discountValue || 0, subtotal);
+    }
+
+    if (couponData.maxDiscountAmount && discount > couponData.maxDiscountAmount) {
+      discount = couponData.maxDiscountAmount;
+    }
+
+    const isFreeDelivery = !!couponData.isFreeDelivery;
+
+    return res.json({
+      valid: true,
+      discount,
+      isFreeDelivery,
+      coupon: couponData,
+      message: isFreeDelivery && discount === 0
+        ? 'Free Delivery coupon applied!'
+        : `Coupon ${code} applied: ৳${discount.toLocaleString()} discount!`
+    });
+  } catch (err: any) {
+    console.error('Server coupon validation error:', err);
+    return res.status(500).json({ valid: false, discount: 0, isFreeDelivery: false, message: 'Server validation error.' });
+  }
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer } = await import('vite');

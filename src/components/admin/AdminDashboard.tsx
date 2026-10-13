@@ -37,7 +37,7 @@ import {
   Percent,
   Flame
 } from 'lucide-react';
-import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig, Coupon } from '../../types';
+import { Product, Order, Banner, Category, Language, OrderStatus, FlashSaleCampaign, LandingPopupConfig, CategoryArticle, Promotion, PromotionType, HiddenPromotionalCategory, TopAnnouncement, TopAnnouncementBarConfig, Coupon } from '../../types';
 import { store } from '../../services/store';
 import { ProductFormModal } from './ProductFormModal';
 import { SareeQRCodeModal } from './SareeQRCodeModal';
@@ -126,7 +126,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [couponSearch, setCouponSearch] = useState('');
-  const [couponScopeFilter, setCouponScopeFilter] = useState<'all' | 'public' | 'vip'>('all');
+  const [couponScopeFilter, setCouponScopeFilter] = useState<'all' | 'active' | 'paused'>('all');
 
   // Inline Subcategories State (Requirement 2)
   const [inlineSubcatInputs, setInlineSubcatInputs] = useState<Record<string, { nameEn: string; nameBn: string }>>({});
@@ -164,6 +164,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [promoType, setPromoType] = useState<PromotionType>('percentage');
   const [promoDiscountPercent, setPromoDiscountPercent] = useState<number>(15);
   const [promoDiscountAmount, setPromoDiscountAmount] = useState<number>(500);
+  const [promoSalePrice, setPromoSalePrice] = useState<number>(2950);
   const [promoSelectedCouponCode, setPromoSelectedCouponCode] = useState<string>('');
   const [promoDestinationType, setPromoDestinationType] = useState<string>('offer_page');
   const [promoDestinationLink, setPromoDestinationLink] = useState<string>('');
@@ -179,6 +180,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setPromoType(editingPromo.type || 'percentage');
       setPromoDiscountPercent(editingPromo.discountPercent ?? 15);
       setPromoDiscountAmount(editingPromo.discountAmount ?? 500);
+      setPromoSalePrice(editingPromo.salePrice ?? 2950);
       setPromoSelectedCouponCode(editingPromo.selectedCouponCode || editingPromo.code || '');
       setPromoDestinationType(editingPromo.destinationType || 'offer_page');
       setPromoDestinationLink(editingPromo.destinationLink || '');
@@ -197,6 +199,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setPromoType('percentage');
       setPromoDiscountPercent(15);
       setPromoDiscountAmount(500);
+      setPromoSalePrice(2950);
       setPromoSelectedCouponCode('');
       setPromoDestinationType('offer_page');
       setPromoDestinationLink('');
@@ -762,6 +765,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const finalProductIds = promoScope === 'products' ? promoSelectedProductIds : undefined;
     const finalPromoCatId = promoScope === 'category' ? promoSelectedCategoryId : undefined;
 
+    let computedCtaLink = 'shop';
+    if (promoDestinationType === 'custom' && promoDestinationLink) {
+      computedCtaLink = promoDestinationLink;
+    } else if (promoDestinationType === 'offer_page') {
+      computedCtaLink = `offer-${promoId}`;
+    } else if (promoDestinationType === 'flash_sale') {
+      computedCtaLink = 'flash-sale';
+    } else if (promoDestinationType === 'actual_category') {
+      computedCtaLink = `category/${formData.get('destinationCategoryId') || categories[0]?.id}`;
+    }
+
     const promo: Promotion = {
       id: promoId,
       titleEn: String(formData.get('titleEn') || ''),
@@ -769,9 +783,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       subtitleEn: String(formData.get('subtitleEn') || ''),
       subtitleBn: String(formData.get('subtitleBn') || ''),
       type: promoType,
+      pricingMethod: promoType === 'percentage' ? 'percentage' : promoType === 'fixed' ? 'fixed' : promoType === 'direct_sale_price' ? 'sale_price' : 'none',
       discountPercent: (promoType === 'percentage' || promoType === 'flash_sale') ? Number(promoDiscountPercent) : undefined,
       discountAmount: promoType === 'fixed' ? Number(promoDiscountAmount) : undefined,
       fixedDiscount: promoType === 'fixed' ? Number(promoDiscountAmount) : undefined,
+      salePrice: promoType === 'direct_sale_price' ? Number(promoSalePrice) : undefined,
       code: promoSelectedCouponCode || (formData.get('code') ? String(formData.get('code')).trim().toUpperCase() : undefined),
       selectedCouponCode: promoSelectedCouponCode || undefined,
       minOrderAmount: formData.get('minOrderAmount') ? Number(formData.get('minOrderAmount')) : undefined,
@@ -784,9 +800,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       image: String(formData.get('image') || '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg'),
       ctaTextEn: String(formData.get('ctaTextEn') || 'Shop Special Offer'),
       ctaTextBn: String(formData.get('ctaTextBn') || 'অফার উপভোগ করুন'),
-      ctaLink: promoDestinationType === 'custom' && promoDestinationLink ? promoDestinationLink : 'shop',
+      ctaLink: computedCtaLink,
       destinationType: promoDestinationType as any,
-      destinationLink: promoDestinationLink || undefined,
+      destinationLink: promoDestinationType === 'offer_page' ? `offer-${promoId}` : (promoDestinationLink || undefined),
       destinationCategoryId: formData.get('destinationCategoryId') ? String(formData.get('destinationCategoryId')) : undefined,
       hasFreeDelivery,
       productIds: finalProductIds,
@@ -1341,7 +1357,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <span>Coupons &amp; Promotional Vouchers</span>
                 </h3>
                 <p className="text-xs text-stone-500 dark:text-stone-400">
-                  Manage public vouchers, VIP negotiated private codes, eligible scope, and redemption conditions.
+                  Manage store coupons, discount rates, eligible sarees &amp; categories, and redemption rules.
                 </p>
               </div>
 
@@ -1370,12 +1386,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* Scope Sub-Filter Tabs (Requirement 2: Manage everything under Coupons & Vouchers) */}
+            {/* Scope Sub-Filter Tabs (Requirement 1: Remove separate VIP section, filter by status) */}
             <div className="flex items-center gap-2 pb-1 border-b border-stone-100 dark:border-stone-800">
               {[
                 { id: 'all', label: `All Coupons (${coupons.length})` },
-                { id: 'public', label: `Public Vouchers (${coupons.filter((c) => !c.isPrivate).length})` },
-                { id: 'vip', label: `VIP Private Codes (${coupons.filter((c) => c.isPrivate).length})` }
+                { id: 'active', label: `Active (${coupons.filter((c) => c.isActive).length})` },
+                { id: 'paused', label: `Paused (${coupons.filter((c) => !c.isActive).length})` }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1396,8 +1412,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {coupons
                 .filter((c) => {
-                  if (couponScopeFilter === 'public' && c.isPrivate) return false;
-                  if (couponScopeFilter === 'vip' && !c.isPrivate) return false;
+                  if (couponScopeFilter === 'active' && !c.isActive) return false;
+                  if (couponScopeFilter === 'paused' && c.isActive) return false;
                   if (!couponSearch) return true;
                   const q = couponSearch.toLowerCase();
                   return (
@@ -1452,13 +1468,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             >
                               {!c.isActive ? 'Paused' : isExpired ? 'Expired' : isUsageExceeded ? 'Limit Reached' : 'Active'}
                             </span>
-                            {c.isPrivate && (
-                              <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
-                                <Lock className="w-2.5 h-2.5" />
-                                <span>VIP Code</span>
-                              </span>
-                            )}
-                          </div>
+                            </div>
                         </div>
 
                         {/* Value & Discount Badges */}
@@ -1473,7 +1483,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           )}
                         </div>
 
-                        {/* Requirement 5: Applicable To Scope Badge */}
+                        {/* Applicable To Scope Badge */}
                         <div className="p-2.5 bg-amber-50/60 dark:bg-stone-800/60 rounded-xl border border-amber-200/50 dark:border-stone-700/60 text-[11px] space-y-1">
                           <div className="flex items-center gap-1.5 font-bold text-amber-950 dark:text-amber-200">
                             <Layers className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400 shrink-0" />
@@ -1482,6 +1492,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 'Applicable: All Sarees (Storewide)'
                               ) : c.applicableTo === 'specific_categories' ? (
                                 `Applicable: ${c.applicableCategoryIds?.length || 0} Categories`
+                              ) : c.applicableTo === 'specific_subcategories' ? (
+                                `Applicable: ${c.applicableSubcategoryIds?.length || 0} Subcategories`
                               ) : c.applicableTo === 'specific_offers' ? (
                                 `Applicable: ${c.applicableOfferIds?.length || 0} Promotional Offers`
                               ) : c.applicableTo === 'specific_hidden_categories' ? (
@@ -1500,14 +1512,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               Categories: {c.applicableCategoryIds.join(', ')}
                             </div>
                           )}
-                          {c.targetPhone && (
-                            <div className="text-[10px] text-purple-700 dark:text-purple-300 font-mono">
-                              Restricted Phone: {c.targetPhone}
-                            </div>
-                          )}
-                          {c.isOneTime && (
-                            <div className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
-                              {c.used ? 'Redeemed (Used)' : 'Single Use (1-time only)'}
+                          {c.applicableSubcategoryIds && c.applicableSubcategoryIds.length > 0 && (
+                            <div className="text-[10px] text-stone-500 truncate">
+                              Subcategories: {c.applicableSubcategoryIds.join(', ')}
                             </div>
                           )}
                           {c.note && (
@@ -2363,6 +2370,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     >
                       <option value="percentage">Percentage Discount (%)</option>
                       <option value="fixed">Fixed Taka Discount (৳)</option>
+                      <option value="direct_sale_price">Direct Promotional Sale Price (৳)</option>
                       <option value="free_delivery">Free Delivery Nationwide (৳0)</option>
                       <option value="flash_sale">Flash Sale Drop (with Timer)</option>
                       <option value="seasonal">Special Festive Sale Campaign</option>
@@ -2401,6 +2409,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             value={promoDiscountAmount}
                             onChange={(e) => setPromoDiscountAmount(Number(e.target.value) || 0)}
                             placeholder="e.g. 500"
+                            className="w-full p-2.5 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-bold font-mono text-stone-900 dark:text-white"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-stone-400">৳</span>
+                        </div>
+                      </>
+                    ) : promoType === 'direct_sale_price' ? (
+                      <>
+                        <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                          Direct Promotional Sale Price (৳) *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="500"
+                            value={promoSalePrice}
+                            onChange={(e) => setPromoSalePrice(Number(e.target.value) || 0)}
+                            placeholder="e.g. 2950"
                             className="w-full p-2.5 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-bold font-mono text-stone-900 dark:text-white"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-stone-400">৳</span>
@@ -2720,6 +2745,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     } else if (promoType === 'fixed') {
                                       calcPrice = Math.max(0, orig - promoDiscountAmount);
                                       discountLabel = `৳${promoDiscountAmount.toLocaleString()} FLAT OFF`;
+                                    } else if (promoType === 'direct_sale_price') {
+                                      calcPrice = promoSalePrice;
+                                      discountLabel = `Sale Price: ৳${promoSalePrice.toLocaleString()} (-৳${Math.max(0, orig - promoSalePrice).toLocaleString()})`;
                                     } else if (promoType === 'free_delivery') {
                                       calcPrice = p.price;
                                       discountLabel = 'Free Shipping (৳0)';
@@ -2860,7 +2888,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                   <div>
                     <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
                       Start Date
@@ -2885,13 +2913,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                   <div>
                     <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
-                      Min Order Amount (৳)
+                      Min Order (৳)
                     </label>
                     <input
                       type="number"
                       name="minOrderAmount"
                       defaultValue={editingPromo?.minOrderAmount ?? ''}
                       placeholder="e.g. 3000"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Max Discount Cap (৳)
+                    </label>
+                    <input
+                      type="number"
+                      name="maxDiscountAmount"
+                      defaultValue={editingPromo?.maxDiscountAmount ?? ''}
+                      placeholder="e.g. 1500"
+                      className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                      Usage Limit (Orders)
+                    </label>
+                    <input
+                      type="number"
+                      name="maxUsageLimit"
+                      defaultValue={editingPromo?.maxUsageLimit ?? ''}
+                      placeholder="e.g. 200"
                       className="w-full p-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white"
                     />
                   </div>
@@ -3803,6 +3855,155 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onSave={handleSaveCoupon}
           onDelete={handleDeleteCoupon}
         />
+      )}
+
+      {/* Add Sarees to Promotional Category Modal (Requirement 6) */}
+      {showAddSareesModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-stone-200 dark:border-stone-800 animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-amber-900 dark:text-amber-400" />
+                  <span>Add Sarees to Promotional Category</span>
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                  Category:{' '}
+                  <strong className="text-amber-950 dark:text-amber-300">
+                    {hiddenCategories.find((c) => c.id === promoSelectedCategoryId)?.nameEn || promoSelectedCategoryId}
+                  </strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddSareesModal(false);
+                  setSareeSearchInModal('');
+                }}
+                className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-3 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30">
+              <div className="relative">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search sarees by code or name..."
+                  value={sareeSearchInModal}
+                  onChange={(e) => setSareeSearchInModal(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Sarees List */}
+            <div className="p-4 overflow-y-auto space-y-2 flex-1">
+              {products
+                .filter((p) => {
+                  if (!sareeSearchInModal) return true;
+                  const q = sareeSearchInModal.toLowerCase();
+                  return (
+                    p.code.toLowerCase().includes(q) ||
+                    p.nameEn.toLowerCase().includes(q) ||
+                    (p.nameBn && p.nameBn.toLowerCase().includes(q))
+                  );
+                })
+                .map((p) => {
+                  const isInCat =
+                    Boolean(p.promotionalCategoryIds?.includes(promoSelectedCategoryId)) ||
+                    p.promotionalCategoryId === promoSelectedCategoryId;
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
+                        isInCat
+                          ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50'
+                          : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-12 rounded-lg overflow-hidden bg-stone-200 shrink-0 border border-stone-300 dark:border-stone-700">
+                          <img
+                            src={p.primaryImage}
+                            alt={p.nameEn}
+                            onError={handleImageError}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[11px] font-bold text-amber-900 dark:text-amber-400">
+                              {p.code}
+                            </span>
+                            <span className="text-xs font-semibold text-stone-900 dark:text-stone-100 line-clamp-1">
+                              {p.nameEn}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-stone-500 mt-0.5">
+                            <span>৳{(p.originalPrice || p.price).toLocaleString()}</span>
+                            <span>·</span>
+                            <span className="capitalize">{p.categoryId}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isInCat ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-lg text-[10px] font-bold">
+                              ✓ In Category
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                store.removeProductFromHiddenCategory(promoSelectedCategoryId, p.id);
+                                refreshData();
+                              }}
+                              className="px-2.5 py-1 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              store.addProductToHiddenCategory(promoSelectedCategoryId, p.id);
+                              refreshData();
+                            }}
+                            className="px-3 py-1.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-stone-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddSareesModal(false);
+                  setSareeSearchInModal('');
+                }}
+                className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
