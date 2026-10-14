@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Tag,
   Clock,
@@ -25,6 +25,45 @@ interface AllOffersPageProps {
   onNavigateUrl?: (url: string) => void;
   onApplyCoupon?: (code: string) => void;
 }
+
+const OfferCountdown: React.FC<{ targetDate: string; label?: string; language: Language }> = ({
+  targetDate,
+  label,
+  language
+}) => {
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+  useEffect(() => {
+    const calc = () => {
+      const diff = Math.max(0, new Date(targetDate).getTime() - Date.now());
+      if (diff <= 0) return null;
+      return {
+        d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        m: Math.floor((diff / 1000 / 60) % 60),
+        s: Math.floor((diff / 1000) % 60)
+      };
+    };
+    setTimeLeft(calc());
+    const interval = setInterval(() => setTimeLeft(calc()), 1000);
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-950/90 text-amber-300 rounded-xl border border-amber-400/40 text-xs font-mono font-bold shadow-md">
+      <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+      <span className="text-[11px] font-sans font-bold text-amber-200">
+        {label || (language === 'bn' ? 'মেয়াদ বাকি:' : 'Ends In:')}
+      </span>
+      <span className="tabular-nums">
+        {timeLeft.d > 0 ? `${timeLeft.d}d ` : ''}
+        {String(timeLeft.h).padStart(2, '0')}:{String(timeLeft.m).padStart(2, '0')}:{String(timeLeft.s).padStart(2, '0')}
+      </span>
+    </div>
+  );
+};
 
 export const AllOffersPage: React.FC<AllOffersPageProps> = ({
   language,
@@ -60,10 +99,18 @@ export const AllOffersPage: React.FC<AllOffersPageProps> = ({
   };
 
   const filtered = promotions.filter((p) => {
-    if (filterType === 'all') return true;
-    if (filterType === 'discount') return p.type === 'percentage' || p.type === 'fixed' || p.type === 'coupon';
+    if (filterType === 'all') {
+      // By default show commercial offers (Flash Deals, Sales & Discounts)
+      return p.promotionKind !== 'general_promotion';
+    }
+    if (filterType === 'flash_sale') {
+      return p.promotionKind === 'flash_deal' || p.type === 'flash_sale';
+    }
+    if (filterType === 'discount') {
+      return p.promotionKind === 'sale_offer' || p.type === 'percentage' || p.type === 'fixed' || p.type === 'coupon';
+    }
     if (filterType === 'free_delivery') return p.type === 'free_delivery';
-    if (filterType === 'flash_sale') return p.type === 'flash_sale';
+    if (filterType === 'announcements') return p.promotionKind === 'general_promotion';
     return true;
   });
 
@@ -205,12 +252,24 @@ export const AllOffersPage: React.FC<AllOffersPageProps> = ({
             onClick={() => setFilterType('flash_sale')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               filterType === 'flash_sale'
-                ? 'bg-stone-900 dark:bg-amber-950 text-white shadow-xs'
+                ? 'bg-rose-600 text-white shadow-xs font-black'
                 : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-800 hover:bg-stone-50'
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-rose-500" />
-            <span>{language === 'bn' ? 'ফ্ল্যাশ সেল' : 'Flash Deals'}</span>
+            <Zap className="w-3.5 h-3.5 text-rose-500 fill-current" />
+            <span>{language === 'bn' ? 'ফ্ল্যাশ ডিল' : 'Flash Deals'}</span>
+          </button>
+
+          <button
+            onClick={() => setFilterType('announcements')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              filterType === 'announcements'
+                ? 'bg-amber-900 text-white shadow-xs'
+                : 'bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>{language === 'bn' ? 'মার্কেটিং ও কালেকশন' : 'Brand Announcements'}</span>
           </button>
         </div>
 
@@ -356,133 +415,183 @@ export const AllOffersPage: React.FC<AllOffersPageProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filtered.map((promo) => (
-                <div
-                  key={promo.id}
-                  onClick={() => handlePromoClick(promo)}
-                  className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 overflow-hidden shadow-sm hover:shadow-xl hover:border-amber-400/80 transition-all flex flex-col justify-between cursor-pointer group"
-                  title="Click anywhere to open this promotional offer"
-                >
-                  <div>
-                    {/* Card Media Header - Click anywhere opens offer */}
-                    <div className="relative h-44 sm:h-52 w-full bg-stone-900 overflow-hidden">
-                      <img
-                        src={promo.image || '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg'}
-                        alt={promo.titleEn}
-                        className="w-full h-full object-cover object-center transform group-hover:scale-104 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-                      
-                      {/* Badge */}
-                      <div className="absolute top-3.5 left-3.5 bg-amber-500 text-stone-950 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
-                        {language === 'bn' ? (promo.badgeBn || 'বিশেষ অফার') : (promo.badgeEn || 'SPECIAL OFFER')}
-                      </div>
+              {filtered.map((promo) => {
+                const isFlashDeal = promo.promotionKind === 'flash_deal' || promo.type === 'flash_sale';
+                const isGeneral = promo.promotionKind === 'general_promotion';
+                const isEntireClickable = Boolean(promo.isEntireBannerClickable);
 
-                      {/* Expiry / Validity */}
-                      {promo.endDate && (
-                        <div className="absolute top-3.5 right-3.5 bg-stone-950/80 backdrop-blur-md border border-white/20 text-stone-200 text-[10px] font-mono font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                          <span>
-                            {language === 'bn' ? 'মেয়াদ:' : 'Ends:'}{' '}
-                            {new Date(promo.endDate).toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', {
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="absolute bottom-3 left-4 right-4 text-white">
-                        <h3 className="font-serif text-xl sm:text-2xl font-bold leading-tight drop-shadow-md group-hover:text-amber-200 transition-colors">
-                          {language === 'bn' ? promo.titleBn : promo.titleEn}
-                        </h3>
-                      </div>
-                    </div>
-
-                    {/* Body Content */}
-                    <div className="p-5 sm:p-6 space-y-4">
-                      <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                        {language === 'bn' ? promo.subtitleBn : promo.subtitleEn}
-                      </p>
-
-                      {/* Promo Code Box */}
-                      {promo.code && (
-                        <div 
-                          onClick={(e) => e.stopPropagation()}
-                          className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex items-center justify-between gap-3 cursor-default"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-300 flex items-center justify-center shrink-0">
-                              <Tag className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-amber-800 dark:text-amber-400 uppercase font-semibold block">
-                                {language === 'bn' ? 'প্রোমো কুপন কোড' : 'Coupon Code'}
-                              </span>
-                              <span className="font-mono text-sm font-bold text-amber-950 dark:text-amber-200 tracking-wider">
-                                {promo.code}
-                              </span>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={(e) => handleCopy(promo.code!, e)}
-                            className="px-3 py-1.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                          >
-                            {copiedCode === promo.code ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>{language === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5" />
-                                <span>{language === 'bn' ? 'কোড কপি' : 'Copy'}</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Minimum Spend & Conditions */}
-                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-stone-500 dark:text-stone-400">
-                        {promo.minOrderAmount ? (
-                          <span>
-                            • {language === 'bn' ? `ন্যূনতম অর্ডার: ৳${promo.minOrderAmount.toLocaleString()}` : `Min. Order: ৳${promo.minOrderAmount.toLocaleString()}`}
-                          </span>
-                        ) : (
-                          <span>• {language === 'bn' ? 'কোনো ন্যূনতম অর্ডারের শর্ত নেই' : 'No minimum order required'}</span>
-                        )}
-                        <span>• {language === 'bn' ? 'ক্যাশ অন ডেলিভারিতে প্রযোজ্য' : 'Cash on Delivery eligible'}</span>
-                        
-                        {(promo.ctaLink || promo.destinationLink) && (
-                          <span className="text-amber-700 dark:text-amber-400 font-bold ml-auto">
-                            🔗 {language === 'bn' ? 'ক্লিক করলে সরাসরি যাবে' : 'Direct Link Active'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer Action */}
-                  <div className="p-5 sm:p-6 pt-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
+                return (
+                  <div
+                    key={promo.id}
+                    onClick={() => {
+                      if (isEntireClickable) {
                         handlePromoClick(promo);
-                      }}
-                      className="w-full py-3 px-5 bg-stone-900 hover:bg-amber-900 dark:bg-amber-950 dark:hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer"
-                    >
-                      <span>
-                        {language === 'bn'
-                          ? (promo.ctaTextBn || 'এই অফারের শাড়ি কিনুন')
-                          : (promo.ctaTextEn || 'Shop This Collection')}
-                      </span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                      }
+                    }}
+                    className={`bg-white dark:bg-stone-900 rounded-3xl overflow-hidden transition-all flex flex-col justify-between group ${
+                      isFlashDeal
+                        ? 'border-2 border-rose-500/80 dark:border-rose-500 ring-4 ring-rose-500/20 shadow-xl shadow-rose-950/15 hover:shadow-2xl hover:scale-[1.01]'
+                        : 'border border-stone-200 dark:border-stone-800 shadow-sm hover:shadow-xl hover:border-amber-400/80'
+                    } ${isEntireClickable ? 'cursor-pointer' : 'cursor-default'}`}
+                    title={isEntireClickable ? 'Click anywhere to open this promotional offer' : undefined}
+                  >
+                    <div>
+                      {/* Card Media Header */}
+                      <div className="relative h-48 sm:h-56 w-full bg-stone-900 overflow-hidden">
+                        <img
+                          src={promo.image || '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg'}
+                          alt={promo.titleEn}
+                          className="w-full h-full object-cover object-center transform group-hover:scale-104 transition-transform duration-500"
+                        />
+                        <div
+                          className={`absolute inset-0 ${
+                            isFlashDeal
+                              ? 'bg-gradient-to-t from-stone-950 via-stone-950/50 to-transparent'
+                              : 'bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent'
+                          }`}
+                        />
+
+                        {/* Top Badges */}
+                        <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-2">
+                          {isFlashDeal ? (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white text-[11px] font-black uppercase tracking-wider shadow-lg border border-amber-300/40 animate-pulse">
+                              <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                              <span>{language === 'bn' ? '⚡ এক্সক্লুসিভ ফ্ল্যাশ ডিল' : '⚡ EXCLUSIVE FLASH DEAL'}</span>
+                            </div>
+                          ) : isGeneral ? (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 text-[11px] font-bold uppercase tracking-wider">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>{language === 'bn' ? '✨ নতুন কালেকশন ও উন্মোচন' : '✨ NEW COLLECTION'}</span>
+                            </div>
+                          ) : (
+                            <div className="bg-amber-500 text-stone-950 text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                              {language === 'bn' ? (promo.badgeBn || 'বিশেষ অফার') : (promo.badgeEn || 'SPECIAL OFFER')}
+                            </div>
+                          )}
+
+                          {/* Prominent Discount Information */}
+                          {promo.discountText ? (
+                            <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-stone-950 font-black text-xs uppercase tracking-wider shadow-md">
+                              {promo.discountText}
+                            </span>
+                          ) : promo.discountPercent ? (
+                            <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-stone-950 font-black text-xs uppercase tracking-wider shadow-md">
+                              {promo.discountPercent}% OFF
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {/* Optional Countdown Timer */}
+                        {(promo.hasCountdown || promo.endDate) && promo.endDate && (
+                          <div className="absolute top-3.5 right-3.5">
+                            <OfferCountdown
+                              targetDate={promo.endDate}
+                              label={promo.timerLabel}
+                              language={language}
+                            />
+                          </div>
+                        )}
+
+                        <div className="absolute bottom-3 left-4 right-4 text-white">
+                          <h3
+                            className={`font-serif text-xl sm:text-2xl font-bold leading-tight drop-shadow-md transition-colors ${
+                              isFlashDeal ? 'group-hover:text-amber-300' : 'group-hover:text-amber-200'
+                            }`}
+                          >
+                            {language === 'bn' ? promo.titleBn : promo.titleEn}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Body Content */}
+                      <div className="p-5 sm:p-6 space-y-4">
+                        <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                          {language === 'bn' ? promo.subtitleBn : promo.subtitleEn}
+                        </p>
+
+                        {/* Promo Code Box (Regular & Flash Deals only, not General Announcement) */}
+                        {promo.code && !isGeneral && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex items-center justify-between gap-3 cursor-default"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-300 flex items-center justify-center shrink-0">
+                                <Tag className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-amber-800 dark:text-amber-400 uppercase font-semibold block">
+                                  {language === 'bn' ? 'প্রোমো কুপন কোড' : 'Coupon Code'}
+                                </span>
+                                <span className="font-mono text-sm font-bold text-amber-950 dark:text-amber-200 tracking-wider">
+                                  {promo.code}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => handleCopy(promo.code!, e)}
+                              className="px-3 py-1.5 bg-amber-900 hover:bg-amber-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              {copiedCode === promo.code ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>{language === 'bn' ? 'কপি হয়েছে' : 'Copied'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5" />
+                                  <span>{language === 'bn' ? 'কোড কপি' : 'Copy'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Minimum Spend & Conditions */}
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-stone-500 dark:text-stone-400">
+                          {promo.minOrderAmount ? (
+                            <span>
+                              • {language === 'bn' ? `ন্যূনতম অর্ডার: ৳${promo.minOrderAmount.toLocaleString()}` : `Min. Order: ৳${promo.minOrderAmount.toLocaleString()}`}
+                            </span>
+                          ) : (
+                            <span>• {language === 'bn' ? 'কোনো ন্যূনতম অর্ডারের শর্ত নেই' : 'No minimum order required'}</span>
+                          )}
+                          <span>• {language === 'bn' ? 'ক্যাশ অন ডেলিভারিতে প্রযোজ্য' : 'Cash on Delivery eligible'}</span>
+
+                          {(promo.ctaLink || promo.destinationLink) && (
+                            <span className="text-amber-700 dark:text-amber-400 font-bold ml-auto">
+                              🔗 {language === 'bn' ? 'সরাসরি লিঙ্ক সক্রিয়' : 'Direct Link Active'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer Action */}
+                    <div className="p-5 sm:p-6 pt-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePromoClick(promo);
+                        }}
+                        className={`w-full py-3.5 px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer ${
+                          isFlashDeal
+                            ? 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black shadow-md'
+                            : 'bg-stone-900 hover:bg-amber-900 dark:bg-amber-950 dark:hover:bg-amber-900 text-white'
+                        }`}
+                      >
+                        <span>
+                          {language === 'bn'
+                            ? (promo.ctaTextBn || (isFlashDeal ? 'ফ্ল্যাশ ডিল অর্ডার করুন' : 'এই অফারের শাড়ি কিনুন'))
+                            : (promo.ctaTextEn || (isFlashDeal ? 'Grab Flash Deal' : 'Shop This Collection'))}
+                        </span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         )}

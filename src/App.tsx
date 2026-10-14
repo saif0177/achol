@@ -101,6 +101,11 @@ export default function App() {
       setActiveView('shop');
       return;
     }
+    // External link support (can be another website)
+    if (destination.startsWith('http://') || destination.startsWith('https://')) {
+      window.open(destination, '_blank', 'noopener,noreferrer');
+      return;
+    }
     if (destination === 'offers' || destination === '/offers') {
       setActiveView('offers');
       return;
@@ -456,7 +461,9 @@ export default function App() {
   const shopProducts = store.searchProducts(filters.searchQuery, filters);
 
   // Active category for category specialized header (Requirement 5)
-  const activeCategory = categories.find((c) => c.id === filters.categoryId);
+  const activeCategory =
+    categories.find((c) => c.id === filters.categoryId) ||
+    (store.getHiddenPromotionalCategoryById(filters.categoryId || '') as any);
 
   const cartSubtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -652,45 +659,51 @@ export default function App() {
             ======================================================== */}
         {activeView === 'home' && (
           <div className="space-y-0">
-            {/* 1. Hero Carousel */}
-            <HeroBanner
-              banners={heroBanners}
-              language={language}
-              onCtaClick={(destination) => {
-                if (!destination || destination === 'shop') {
+            {/* 1. Hero Carousel (Only rendered if admin has active banners configured; otherwise starts directly from Category section) */}
+            {heroBanners.some((b) => b.isActive) && (
+              <HeroBanner
+                banners={heroBanners}
+                language={language}
+                onCtaClick={(destination) => {
+                  if (!destination || destination === 'shop') {
+                    setActiveView('shop');
+                    return;
+                  }
+                  if (destination.startsWith('http://') || destination.startsWith('https://')) {
+                    window.location.href = destination;
+                    return;
+                  }
+                  if (destination === 'offers') {
+                    setActiveView('offers');
+                    return;
+                  }
+                  if (destination === 'flash-sale') {
+                    setActiveView('flash-sale');
+                    return;
+                  }
+                  if (destination.startsWith('category/')) {
+                    const catId = destination.replace('category/', '');
+                    handleSelectCategory(catId);
+                    return;
+                  }
+                  const cleanOfferId = destination.startsWith('offer-') ? destination.replace('offer-', '') : destination;
+                  const promo = store.getPromotions().find(
+                    (p) => p.id === cleanOfferId || p.id === destination || p.code === destination
+                  );
+                  if (promo) {
+                    setSelectedOffer(promo);
+                    setActiveView('offer-detail');
+                    return;
+                  }
+                  const cat = categories.find((c) => c.id === destination || c.slug === destination);
+                  if (cat) {
+                    handleSelectCategory(cat.id);
+                    return;
+                  }
                   setActiveView('shop');
-                  return;
-                }
-                if (destination === 'offers') {
-                  setActiveView('offers');
-                  return;
-                }
-                if (destination === 'flash-sale') {
-                  setActiveView('flash-sale');
-                  return;
-                }
-                if (destination.startsWith('category/')) {
-                  const catId = destination.replace('category/', '');
-                  handleSelectCategory(catId);
-                  return;
-                }
-                const cleanOfferId = destination.startsWith('offer-') ? destination.replace('offer-', '') : destination;
-                const promo = store.getPromotions().find(
-                  (p) => p.id === cleanOfferId || p.id === destination || p.code === destination
-                );
-                if (promo) {
-                  setSelectedOffer(promo);
-                  setActiveView('offer-detail');
-                  return;
-                }
-                const cat = categories.find((c) => c.id === destination || c.slug === destination);
-                if (cat) {
-                  handleSelectCategory(cat.id);
-                  return;
-                }
-                setActiveView('shop');
-              }}
-            />
+                }}
+              />
+            )}
 
             {/* 2. Category Circles (Fabrilife circular navigation) */}
             <CategoryCircles
@@ -1316,6 +1329,10 @@ export default function App() {
           onNavigateShop={(destination) => {
           if (!destination || destination === 'shop') {
             setActiveView('shop');
+            return;
+          }
+          if (destination.startsWith('http://') || destination.startsWith('https://')) {
+            window.location.href = destination;
             return;
           }
           if (destination === 'offers') {

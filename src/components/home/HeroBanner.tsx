@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, ArrowRight, Ticket, Check, Zap, Sparkles } from 'lucide-react';
 import { Banner, Language } from '../../types';
 import { translations } from '../../i18n/translations';
 import { handleImageError, FALLBACK_BANNER_IMAGE } from '../../utils/imageHelper';
@@ -16,6 +16,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onCtaClick
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
   const t = translations[language];
 
   // Active banners only
@@ -61,14 +62,21 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   // Check if banner is graphic image-only mode
   const isImageOnly = Boolean((current as any).displayMode === 'image_only' || (!current.titleEn?.trim() && !current.titleBn?.trim()));
+  const isEntireClickable = Boolean(current.isEntireBannerClickable);
+  const isFlashDeal = current.bannerType === 'flash_deal';
+  const isGeneralPromo = current.bannerType === 'general_promotion';
 
   return (
-    <div className="relative w-full overflow-hidden bg-stone-900 border-b border-stone-800">
+    <div className={`relative w-full overflow-hidden bg-stone-900 border-b ${isFlashDeal ? 'border-amber-500/50 shadow-inner' : 'border-stone-800'}`}>
       {/* Visual background image with measured contrast scrim for WCAG AA readability */}
       <div 
-        onClick={() => onCtaClick(current.ctaLink || 'shop')}
-        className="relative h-[340px] sm:h-[380px] lg:h-[400px] w-full flex items-center cursor-pointer group"
-        title="Click anywhere to visit banner offer"
+        onClick={() => {
+          if (isEntireClickable) {
+            onCtaClick(current.ctaLink || 'shop');
+          }
+        }}
+        className={`relative h-[340px] sm:h-[380px] lg:h-[400px] w-full flex items-center group ${isEntireClickable ? 'cursor-pointer' : 'cursor-default'}`}
+        title={isEntireClickable ? 'Click anywhere to visit banner offer' : undefined}
       >
         {current.image ? (
           <div className="absolute inset-0">
@@ -82,13 +90,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             {/* Scrim gradient: 60-30-10 measured overlay only when text content is present */}
             {!isImageOnly && (
               <>
-                <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/80 to-stone-950/40" />
+                <div className={`absolute inset-0 ${isFlashDeal ? 'bg-gradient-to-r from-stone-950/95 via-stone-950/85 to-amber-950/40' : 'bg-gradient-to-r from-stone-950/95 via-stone-950/80 to-stone-950/40'}`} />
                 <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-black/50" />
               </>
             )}
           </div>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950/40" />
+          <div className={`absolute inset-0 ${isFlashDeal ? 'bg-gradient-to-br from-stone-950 via-[#260714] to-amber-950/60' : 'bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950/40'}`} />
         )}
 
         {/* Content Box (hidden in image-only mode) */}
@@ -96,10 +104,31 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-10 w-full">
           <div className="max-w-2xl space-y-2.5 sm:space-y-3.5">
             
-            {/* Kicker Tag */}
-            <div className="inline-flex items-center gap-2 text-[11px] sm:text-xs uppercase tracking-widest text-amber-300 font-bold">
-              <span className="w-5 h-[1.5px] bg-amber-400" />
-              <span>{language === 'bn' ? 'আঁচল হেরিটেজ এক্সক্লুসিভ' : 'Aanchol Heritage Masterpiece'}</span>
+            {/* Kicker Tag / Distinctive Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              {isFlashDeal ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white text-[11px] font-black uppercase tracking-wider shadow-lg border border-amber-300/40 animate-pulse">
+                  <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                  <span>{language === 'bn' ? '⚡ এক্সক্লুসিভ ফ্ল্যাশ ডিল' : '⚡ EXCLUSIVE FLASH DEAL'}</span>
+                </div>
+              ) : isGeneralPromo ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 text-[11px] font-bold uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{language === 'bn' ? '✨ নতুন কালেকশন ও উন্মোচন' : '✨ NEW COLLECTION & SHOWCASE'}</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 text-[11px] sm:text-xs uppercase tracking-widest text-amber-300 font-bold">
+                  <span className="w-5 h-[1.5px] bg-amber-400" />
+                  <span>{language === 'bn' ? 'আঁচল হেরিটেজ এক্সক্লুসিভ' : 'Aanchol Heritage Masterpiece'}</span>
+                </div>
+              )}
+
+              {/* Prominent Discount Text Badge */}
+              {current.discountText && (
+                <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-stone-950 text-xs font-black uppercase tracking-wider shadow-md">
+                  {current.discountText}
+                </span>
+              )}
             </div>
 
             {/* Title with anti-orphan balance */}
@@ -115,28 +144,28 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             {/* Countdown widget if offer active */}
             {current.hasCountdown && timeLeft && (
               <div className="pt-0.5">
-                <div className="inline-flex flex-row flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 px-3 py-1 bg-stone-950/85 backdrop-blur-md rounded-lg border border-amber-900/50 max-w-full">
-                  <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium shrink-0">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{t.countdownEndsIn}:</span>
+                <div className={`inline-flex flex-row flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 px-3 py-1.5 bg-stone-950/90 backdrop-blur-md rounded-xl max-w-full shadow-lg ${isFlashDeal ? 'border-2 border-amber-400/60' : 'border border-amber-900/50'}`}>
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{current.timerLabel || t.countdownEndsIn}:</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-center">
-                    <div className="px-1.5 py-0.5 bg-stone-900 rounded flex items-baseline gap-1">
+                    <div className="px-2 py-0.5 bg-stone-900/90 rounded-md border border-stone-800 flex items-baseline gap-1">
                       <span className="font-mono text-xs font-bold text-white tabular-nums">{timeLeft.days}</span>
                       <span className="text-[8px] uppercase text-stone-400">{t.days}</span>
                     </div>
                     <span className="text-amber-500 font-mono text-xs font-bold">:</span>
-                    <div className="px-1.5 py-0.5 bg-stone-900 rounded flex items-baseline gap-1">
+                    <div className="px-2 py-0.5 bg-stone-900/90 rounded-md border border-stone-800 flex items-baseline gap-1">
                       <span className="font-mono text-xs font-bold text-white tabular-nums">{timeLeft.hours}</span>
                       <span className="text-[8px] uppercase text-stone-400">{t.hours}</span>
                     </div>
                     <span className="text-amber-500 font-mono text-xs font-bold">:</span>
-                    <div className="px-1.5 py-0.5 bg-stone-900 rounded flex items-baseline gap-1">
+                    <div className="px-2 py-0.5 bg-stone-900/90 rounded-md border border-stone-800 flex items-baseline gap-1">
                       <span className="font-mono text-xs font-bold text-white tabular-nums">{timeLeft.minutes}</span>
                       <span className="text-[8px] uppercase text-stone-400">{t.minutes}</span>
                     </div>
                     <span className="text-amber-500 font-mono text-xs font-bold">:</span>
-                    <div className="px-1.5 py-0.5 bg-stone-900 rounded flex items-baseline gap-1">
+                    <div className="px-2 py-0.5 bg-stone-900/90 rounded-md border border-stone-800 flex items-baseline gap-1">
                       <span className="font-mono text-xs font-bold text-white tabular-nums">{timeLeft.seconds}</span>
                       <span className="text-[8px] uppercase text-stone-400">{t.seconds}</span>
                     </div>
@@ -145,23 +174,62 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               </div>
             )}
 
-            {/* CTA action button */}
+            {/* CTA action button & Optional Coupon Pill */}
             <div className="pt-1.5 flex flex-wrap items-center gap-3 sm:gap-4">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onCtaClick(current.ctaLink || 'shop');
                 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer"
+                className={`inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 font-bold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer ${
+                  isFlashDeal
+                    ? 'bg-gradient-to-r from-amber-400 via-rose-500 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black'
+                    : 'bg-amber-500 hover:bg-amber-400 text-stone-950'
+                }`}
               >
                 <span>{language === 'bn' ? current.ctaTextBn : current.ctaTextEn}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
+              {/* Coupon section with Copy button (Requirement 3) */}
+              {current.couponCode && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(current.couponCode || '');
+                    setCopiedCoupon(true);
+                    setTimeout(() => setCopiedCoupon(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 bg-stone-950/85 backdrop-blur-md rounded-xl border border-amber-500/50 cursor-pointer hover:bg-stone-900 transition-colors shadow-md"
+                  title="Click to copy coupon code"
+                >
+                  <Ticket className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="font-mono text-xs font-bold text-amber-300 uppercase tracking-wider">
+                    {current.couponCode}
+                  </span>
+                  <span className="px-2 py-0.5 bg-amber-500 text-stone-950 rounded-md text-[10px] font-bold flex items-center gap-1">
+                    {copiedCoupon ? (
+                      <>
+                        <Check className="w-2.5 h-2.5" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <span>Copy</span>
+                    )}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center gap-2.5 text-[11px] text-stone-400">
                 <span>✓ Cash on Delivery</span>
                 <span>·</span>
                 <span>✓ 100% Genuine Handloom</span>
+                {isEntireClickable && (
+                  <>
+                    <span>·</span>
+                    <span className="text-amber-400/90 font-medium">⚡ Click anywhere to visit</span>
+                  </>
+                )}
               </div>
             </div>
 

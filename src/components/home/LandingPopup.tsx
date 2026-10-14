@@ -22,9 +22,12 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
   });
 
   useEffect(() => {
-    // Check if dismissed in this browsing session
+    // Check if dismissed or already shown in this browsing session to prevent repeated pop-ups on refresh
     try {
-      if (sessionStorage.getItem('aanchol_popup_dismissed_session') === 'true') {
+      if (
+        sessionStorage.getItem('aanchol_popup_dismissed_session') === 'true' ||
+        sessionStorage.getItem('aanchol_popup_shown_session') === 'true'
+      ) {
         return;
       }
     } catch {}
@@ -33,12 +36,12 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
     const randomConfig = store.getRandomActiveLandingPopup();
     if (!randomConfig || !randomConfig.isActive) return;
 
-    // Check expiration: Expired popups must automatically stop appearing (Requirement 4B)
+    // Check expiration: Expired popups must automatically stop appearing
     if (randomConfig.endTime && new Date(randomConfig.endTime).getTime() <= Date.now()) {
       return;
     }
 
-    // Check cooldown: Reasonable cooldown (default 30 minutes) to avoid interrupting browsing
+    // Check cooldown
     const lastShown = Number(localStorage.getItem('aanchol_last_popup_shown') || '0');
     const cooldownMinutes = randomConfig.cooldownMinutes ?? 30;
     const cooldownMs = cooldownMinutes * 60 * 1000;
@@ -60,15 +63,17 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
       setTimeLeft(calculateTimeLeft());
     }
 
-    // Mark as shown immediately so quick re-renders cannot schedule duplicate popups
+    // Mark as shown immediately in sessionStorage so refresh does NOT repeatedly trigger popup
     try {
+      sessionStorage.setItem('aanchol_popup_shown_session', 'true');
       localStorage.setItem('aanchol_last_popup_shown', String(Date.now()));
     } catch {}
 
-    // Gentle appearance delay after landing
+    // Configurable appearance delay after landing (pop-up timing)
+    const delayMs = (randomConfig.delaySeconds !== undefined ? randomConfig.delaySeconds : 1.2) * 1000;
     const timer = setTimeout(() => {
       setIsOpen(true);
-    }, 1200);
+    }, delayMs);
 
     return () => clearTimeout(timer);
   }, []);
@@ -104,6 +109,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
     setIsOpen(false);
     try {
       sessionStorage.setItem('aanchol_popup_dismissed_session', 'true');
+      sessionStorage.setItem('aanchol_popup_shown_session', 'true');
       localStorage.setItem('aanchol_last_popup_shown', String(Date.now()));
     } catch {}
   };
@@ -122,6 +128,10 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
   };
 
   if (!isOpen || !config || !config.isActive) return null;
+
+  const isFlashDeal = config.popupType === 'flash_deal';
+  const isGeneralPromo = config.popupType === 'general_promotion';
+  const isEntireClickable = Boolean(config.isEntireBannerClickable);
 
   // Mode 1: Dedicated Image-Only Banner (Photoshop/Designer banner, tap anywhere to redirect)
   if (config.displayMode === 'image_only') {
@@ -171,7 +181,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-stone-950/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-amber-500/40 text-white flex items-center gap-3 shadow-xl pointer-events-none">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300 uppercase tracking-wider">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>{language === 'bn' ? 'অফার শেষ হতে বাকি:' : 'Offer Ends In:'}</span>
+                  <span>{config.timerLabel || (language === 'bn' ? 'অফার শেষ হতে বাকি:' : 'Offer Ends In:')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-mono text-sm font-bold text-amber-400">
                   <span>{String(timeLeft.hours).padStart(2, '0')}h</span>
@@ -189,7 +199,6 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
   }
 
   // Mode 2: Standard Luxury Popup Card with Copyable Code, Timer & Details
-  // Click anywhere on the banner/card to redirect to configured URL
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -198,11 +207,15 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
         onClick={handleClose}
       />
 
-      {/* Modal Dialog: Click anywhere to navigate to URL */}
+      {/* Modal Dialog */}
       <div 
-        onClick={handleCtaClick}
-        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden z-10 border border-amber-900/20 transform transition-all animate-in fade-in zoom-in-95 duration-300 cursor-pointer group hover:shadow-amber-900/10"
-        title="Click anywhere to visit offer link"
+        onClick={isEntireClickable ? handleCtaClick : undefined}
+        className={`relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden z-10 border transform transition-all animate-in fade-in zoom-in-95 duration-300 group ${
+          isFlashDeal 
+            ? 'border-rose-500 ring-4 ring-rose-500/20 shadow-rose-950/30' 
+            : 'border-amber-900/20 hover:shadow-amber-900/10'
+        } ${isEntireClickable ? 'cursor-pointer' : ''}`}
+        title={isEntireClickable ? 'Click anywhere to visit destination' : undefined}
       >
         {/* Close Button: stopPropagation */}
         <button
@@ -226,16 +239,38 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
           
-          <div className="absolute top-3.5 left-3.5 bg-amber-500 text-stone-950 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
-            <Sparkles className="w-3.5 h-3.5 fill-current" />
-            <span>{language === 'bn' ? 'বিশেষ উপহার' : 'Special Offer'}</span>
+          <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-2">
+            {isFlashDeal ? (
+              <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 text-white text-[10px] sm:text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg border border-amber-300/40 animate-pulse">
+                <span>⚡ {language === 'bn' ? 'ফ্ল্যাশ ডিল' : 'FLASH DEAL'}</span>
+              </div>
+            ) : isGeneralPromo ? (
+              <div className="bg-stone-900/90 text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-amber-400/40 shadow-md">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{language === 'bn' ? 'নতুন ঘোষণা' : 'Announcement'}</span>
+              </div>
+            ) : (
+              <div className="bg-amber-500 text-stone-950 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                <Sparkles className="w-3.5 h-3.5 fill-current" />
+                <span>{language === 'bn' ? 'বিশেষ অফার' : 'Special Offer'}</span>
+              </div>
+            )}
+
+            {config.discountText && (
+              <span className="bg-gradient-to-r from-amber-400 to-amber-300 text-stone-950 text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md">
+                {config.discountText}
+              </span>
+            )}
           </div>
 
           {/* Timer pill on banner */}
           {config.hasTimer && (
-            <div className="absolute top-3.5 right-14 bg-stone-950/80 backdrop-blur-md text-amber-300 text-[11px] font-mono font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-amber-400/30">
+            <div className={`absolute top-3.5 right-14 backdrop-blur-md text-amber-300 text-[11px] font-mono font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+              isFlashDeal ? 'bg-rose-950/90 border border-amber-400' : 'bg-stone-950/80 border border-amber-400/30'
+            }`}>
               <Clock className="w-3 h-3 text-amber-400" />
               <span>
+                {config.timerLabel ? `${config.timerLabel}: ` : ''}
                 {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
               </span>
             </div>
@@ -255,7 +290,7 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
           </p>
 
           {/* Discount Code Box (stopPropagation on copy button) */}
-          {config.discountCode && (
+          {config.discountCode && !isGeneralPromo && (
             <div 
               onClick={(e) => e.stopPropagation()} 
               className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-default"
@@ -315,7 +350,11 @@ export const LandingPopup: React.FC<LandingPopupProps> = ({ language, onNavigate
                 e.stopPropagation();
                 handleCtaClick();
               }}
-              className="w-full py-3 px-6 bg-stone-900 group-hover:bg-amber-900 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md cursor-pointer"
+              className={`w-full py-3 px-6 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer ${
+                isFlashDeal
+                  ? 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:to-amber-500 font-black'
+                  : 'bg-stone-900 hover:bg-amber-900'
+              }`}
             >
               <span>{language === 'bn' ? config.ctaTextBn : config.ctaTextEn}</span>
               <ArrowRight className="w-4 h-4" />

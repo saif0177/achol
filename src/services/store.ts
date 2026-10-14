@@ -881,55 +881,9 @@ const INITIAL_PRODUCTS: Product[] = [
   }
 ];
 
-// Initial Hero Banners
-const INITIAL_BANNERS: Banner[] = [
-  {
-    id: 'b-hero-1',
-    titleEn: 'The Rebirth of Dhakai Jamdani & Muslin',
-    titleBn: 'ঢাকাই জামদানি ও মসলিনের রাজকীয় অহংকার',
-    subtitleEn: 'Handwoven across Demra, Rupganj & Tangail by certified master weavers. Authentic, certified, and delivered with Cash on Delivery nationwide.',
-    subtitleBn: 'রূপগঞ্জ, ডেমরা ও টাঙ্গাইলের নিপুণ তাঁতিদের দক্ষ হাতের ছোঁয়ায় বোনা শাড়ি। কোনো মধ্যস্বত্বভোগী ছাড়া সরাসরি আপনার দুয়ারে ক্যাশ অন ডেলিভারিতে।',
-    image: '/src/assets/images/hero_jamdani_craft_1791268697306.jpg',
-    ctaTextEn: 'Explore Handlooms',
-    ctaTextBn: 'ঐতিহ্যবাহী শাড়ি দেখুন',
-    ctaLink: 'shop',
-    hasCountdown: false,
-    isActive: true,
-    displayOrder: 1,
-    sectionSlot: 'hero'
-  },
-  {
-    id: 'b-hero-2',
-    titleEn: 'Exclusive Flash Drop: 15% Off All Pure Handlooms',
-    titleBn: 'ধামাকা অফার: খাঁটি দেশীয় তাঁতের শাড়িতে ফ্ল্যাট ১৫% ছাড়',
-    subtitleEn: 'Order within 1-click with Cash on Delivery nationwide. Inspect your saree before paying.',
-    subtitleBn: '১-ক্লিকে ক্যাশ অন ডেলিভারিতে অর্ডার করুন। হাতে পেয়ে দেখে মূল্য পরিশোধের শতভাগ নিশ্চয়তা।',
-    image: '/src/assets/images/fabrilife_style_promo_banner_1791274654342.jpg',
-    ctaTextEn: 'Shop Flash Drop',
-    ctaTextBn: 'অফার উপভোগ করুন',
-    ctaLink: 'shop',
-    hasCountdown: true,
-    countdownTarget: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(), // 2 days remaining
-    isActive: true,
-    displayOrder: 2,
-    sectionSlot: 'hero'
-  },
-  {
-    id: 'b-hero-3',
-    titleEn: 'Heritage Eid & Wedding Collection 2026',
-    titleBn: 'ঈদ ও বিয়ের বিশেষ ঐতিহ্যবাহী সমাহার',
-    subtitleEn: 'Exclusive limited handlooms with instant Cash on Delivery and direct WhatsApp preview support.',
-    subtitleBn: 'সীমিত সংস্করণের সেরা কারুকাজ করা শাড়িসমূহ। সরাসরি ভিডিও কলে দেখে নেওয়ার বিশেষ সুবিধা।',
-    image: '/src/assets/images/product_muslin_royal_ivory_1791268715553.jpg',
-    ctaTextEn: 'Shop Eid Specials',
-    ctaTextBn: 'কালেকশন দেখুন',
-    ctaLink: 'shop',
-    hasCountdown: false,
-    isActive: true,
-    displayOrder: 3,
-    sectionSlot: 'hero'
-  }
-];
+// Initial Hero Banners (empty by default; only banners created via admin are shown)
+const INITIAL_BANNERS: Banner[] = [];
+
 
 // Initial Secret / Negotiated Private Price Codes
 const INITIAL_PRIVATE_CODES: PrivatePriceCode[] = [
@@ -1637,10 +1591,13 @@ class StoreService {
       }));
 
       const storedBanners = localStorage.getItem('aanchol_banners');
-      this.banners = (storedBanners ? JSON.parse(storedBanners) : INITIAL_BANNERS).map((b: Banner) => ({
+      const loadedBanners = (storedBanners ? JSON.parse(storedBanners) : INITIAL_BANNERS)
+        .filter((b: Banner) => !['b-hero-1', 'b-hero-2', 'b-hero-3'].includes(b.id));
+      this.banners = loadedBanners.map((b: Banner) => ({
         ...b,
         image: b.image && b.image.trim() !== '' ? b.image : '/src/assets/images/hero_jamdani_craft_1791268697306.jpg'
       }));
+      this.persist('aanchol_banners', this.banners);
 
       const storedOrders = localStorage.getItem('aanchol_orders');
       this.orders = storedOrders ? JSON.parse(storedOrders) : INITIAL_ORDERS;
@@ -1980,7 +1937,15 @@ class StoreService {
 
   // LANDING POPUPS (Requirement 3: Multiple popups, random rotation on direct jump, add/edit/delete/toggle)
   public getLandingPopups(): LandingPopupConfig[] {
-    return this.landingPopups.filter((p) => p.isActive);
+    const now = Date.now();
+    return this.landingPopups
+      .filter((p) => {
+        if (!p.isActive) return false;
+        if (p.startDate && new Date(p.startDate).getTime() > now) return false;
+        if (p.endTime && new Date(p.endTime).getTime() < now) return false;
+        return true;
+      })
+      .sort((a, b) => (a.priority ?? 1) - (b.priority ?? 1));
   }
 
   public getAllLandingPopupsAdmin(): LandingPopupConfig[] {
@@ -2074,8 +2039,17 @@ class StoreService {
   }
 
   // BANNERS
-  public getBanners(slot: 'hero' | 'promo_mid'): Banner[] {
-    return this.banners.filter((b) => b.isActive && b.sectionSlot === slot).sort((a, b) => a.displayOrder - b.displayOrder);
+  public getBanners(slot?: 'hero' | 'promo_mid'): Banner[] {
+    const now = Date.now();
+    return this.banners
+      .filter((b) => {
+        if (!b.isActive) return false;
+        if (slot && b.sectionSlot !== slot) return false;
+        if (b.startDate && new Date(b.startDate).getTime() > now) return false;
+        if (b.endDate && new Date(b.endDate).getTime() < now) return false;
+        return true;
+      })
+      .sort((a, b) => (a.priority ?? a.displayOrder) - (b.priority ?? b.displayOrder));
   }
 
   public getAllBannersAdmin(): Banner[] {
@@ -2239,7 +2213,18 @@ class StoreService {
     // Apply Filters
     if (filters) {
       if (filters.categoryId) {
-        list = list.filter((p) => p.categoryId === filters.categoryId);
+        const hiddenCat = this.hiddenPromotionalCategories.find((hc) => hc.id === filters.categoryId || hc.slug === filters.categoryId);
+        if (hiddenCat) {
+          list = list.filter(
+            (p) =>
+              p.categoryId === filters.categoryId ||
+              p.promotionalCategoryId === hiddenCat.id ||
+              (p.promotionalCategoryIds && p.promotionalCategoryIds.includes(hiddenCat.id)) ||
+              (hiddenCat.productIds && hiddenCat.productIds.includes(p.id))
+          );
+        } else {
+          list = list.filter((p) => p.categoryId === filters.categoryId);
+        }
       }
       if (filters.sareeType) {
         list = list.filter((p) => p.sareeType === filters.sareeType);

@@ -180,6 +180,8 @@ export interface HiddenPromotionalCategory {
   productIds?: string[];
 }
 
+export type PromotionKind = 'flash_deal' | 'sale_offer' | 'general_promotion';
+
 export type PromotionType = 'percentage' | 'fixed' | 'direct_sale_price' | 'free_delivery' | 'coupon' | 'flash_sale' | 'seasonal';
 export type PromotionPlacement =
   | 'homepage_banner'
@@ -196,12 +198,14 @@ export type PromotionPlacement =
 
 export interface Promotion {
   id: string;
+  promotionKind?: PromotionKind;
   titleEn: string;
   titleBn: string;
   subtitleEn?: string;
   subtitleBn?: string;
   type: PromotionType;
   pricingMethod?: 'percentage' | 'fixed' | 'sale_price' | 'none';
+  discountText?: string;
   discountPercent?: number;
   discountAmount?: number;
   fixedDiscount?: number;
@@ -212,8 +216,9 @@ export interface Promotion {
   productIds?: string[];
   categoryIds?: string[];
   promotionalCategoryId?: string;
+  hiddenCategoryId?: string;
   excludedProductIds?: string[];
-  destinationType?: 'actual_category' | 'hidden_promotional_category' | 'offer_page' | 'products' | 'shop' | 'custom' | 'flash_sale';
+  destinationType?: 'actual_category' | 'hidden_promotional_category' | 'category' | 'hidden_category' | 'offer_page' | 'products' | 'shop' | 'offers' | 'custom' | 'flash_sale';
   destinationCategoryId?: string;
   destinationLink?: string;
   hasFreeDelivery?: boolean;
@@ -225,23 +230,36 @@ export interface Promotion {
   endDate?: string;
   durationDays?: number;
   isActive: boolean;
+  priority?: number;
+  delaySeconds?: number;
   image?: string;
   ctaTextEn?: string;
   ctaTextBn?: string;
   ctaLink?: string;
   badgeEn?: string;
   badgeBn?: string;
+  hasImage?: boolean;
+  hasText?: boolean;
+  hasCountdown?: boolean;
+  timerLabel?: string;
+  isEntireBannerClickable?: boolean;
+  hasFlashDeal?: boolean;
+  hasCouponBar?: boolean;
+  hasDestinationLink?: boolean;
+  displayMode?: 'standard' | 'image_only' | 'text_only';
 }
 
 export interface LandingPopupConfig {
   id: string;
   isActive: boolean;
+  popupType?: PromotionKind;
   titleEn: string;
   titleBn: string;
   subtitleEn: string;
   subtitleBn: string;
   image: string;
   discountCode?: string;
+  discountText?: string;
   selectedCouponCode?: string;
   ctaTextEn: string;
   ctaTextBn: string;
@@ -250,9 +268,13 @@ export interface LandingPopupConfig {
   destinationTargetId?: string;
   displayMode?: 'standard' | 'image_only';
   hasTimer?: boolean;
+  timerLabel?: string;
   startDate?: string;
   endTime?: string;
   durationDays?: number;
+  delaySeconds?: number;
+  priority?: number;
+  isEntireBannerClickable?: boolean;
   maxUsageLimit?: number;
   minOrderAmount?: number;
   cooldownMinutes?: number;
@@ -287,11 +309,13 @@ export interface FlashSaleCampaign {
 
 export interface Banner {
   id: string;
+  bannerType?: PromotionKind;
   titleEn: string;
   titleBn: string;
   subtitleEn: string;
   subtitleBn: string;
   image: string;
+  discountText?: string;
   ctaTextEn: string;
   ctaTextBn: string;
   ctaLink: string;
@@ -302,9 +326,15 @@ export interface Banner {
   durationDays?: number;
   hasCountdown: boolean;
   countdownTarget?: string; // ISO date string
+  timerLabel?: string;
   isActive: boolean;
   displayOrder: number;
+  priority?: number;
+  delaySeconds?: number;
+  isEntireBannerClickable?: boolean;
   sectionSlot: 'hero' | 'promo_mid';
+  displayMode?: 'standard' | 'image_only' | 'text_only';
+  couponCode?: string;
 }
 
 export interface HomepageSection {

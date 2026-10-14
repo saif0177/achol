@@ -174,17 +174,23 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      {/* 1. Top Announcement Marquee Ticker */}
-      <div className={`bg-stone-900 text-stone-200 text-xs py-1.5 px-4 text-center border-b border-stone-800 tracking-wide flex items-center justify-between ${!announcementConfig.isEnabled ? 'hidden' : ''}`}>
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between text-[11px] sm:text-xs">
-          <div className="flex items-center gap-2 mx-auto sm:mx-0 overflow-hidden">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-            <span className="font-medium truncate transition-opacity duration-300">
-              {currentAnnouncement
-                ? (language === 'bn' ? currentAnnouncement.textBn : currentAnnouncement.textEn)
-                : (language === 'bn' ? 'আঁচল হেরিটেজ শাড়ি - খাঁটি ঢাকাই জামদানি ও সিল্ক' : 'Aanchol Heritage Sarees Dhaka - Authentic Dhakai Jamdani & Pure Silk')}
-            </span>
-          </div>
+      {/* 1. Top Announcement Bar (Pure informative English/Bangla text; strictly no click actions/links) */}
+      {announcementConfig.isEnabled && activeAnnouncements.length > 0 && (
+        <div className="bg-stone-900 text-stone-200 text-xs py-1.5 px-4 text-center border-b border-stone-800 tracking-wide flex items-center justify-between">
+          <div className="max-w-7xl mx-auto w-full flex items-center justify-between text-[11px] sm:text-xs">
+            <div className="flex items-center gap-2 mx-auto sm:mx-0 overflow-hidden">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 animate-pulse" />
+              <span className="font-medium truncate transition-opacity duration-300 text-stone-100 select-none">
+                {currentAnnouncement
+                  ? (language === 'bn' ? currentAnnouncement.textBn : currentAnnouncement.textEn)
+                  : (language === 'bn' ? 'আঁচল হেরিটেজ শাড়ি - খাঁটি ঢাকাই জামদানি ও সিল্ক' : 'Aanchol Heritage Sarees Dhaka - Authentic Dhakai Jamdani & Pure Silk')}
+              </span>
+              {activeAnnouncements.length > 1 && (
+                <span className="text-[10px] text-stone-400 font-mono hidden md:inline shrink-0">
+                  ({announcementIndex + 1}/{activeAnnouncements.length})
+                </span>
+              )}
+            </div>
 
           <div className="hidden sm:flex items-center gap-4 text-stone-400 shrink-0">
             <a
@@ -205,6 +211,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+    )}
 
       {/* 2. Main Header Bar */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-colors">
